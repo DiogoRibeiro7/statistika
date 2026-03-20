@@ -46,6 +46,36 @@ export interface LinearRegressionResult {
   predict: (x: number) => number;
 }
 
+/** Result of a multiple linear regression fit. */
+export interface MultipleRegressionResult {
+  coefficients: number[];
+  intercept: number;
+  rSquared: number;
+  predict: (x: number[]) => number;
+}
+
+/** Result of a polynomial regression fit. */
+export interface PolynomialRegressionResult {
+  coefficients: number[];
+  degree: number;
+  rSquared: number;
+  predict: (x: number) => number;
+}
+
+/** Result of a logistic regression fit. */
+export interface LogisticRegressionResult {
+  coefficients: number[];
+  intercept: number;
+  iterations: number;
+  predict: (x: number[]) => number;
+}
+
+/** Result of a correlation computation. */
+export interface CorrelationResult {
+  coefficient: number;
+  pValue: number;
+}
+
 /** Result of a hypothesis test. */
 export interface HypothesisTestResult {
   statistic: number;
@@ -72,4 +102,41 @@ export interface KSTestResult {
   statistic: number;
   pValue: number;
   rejected: boolean;
+}
+
+/** Result of a confidence interval computation. */
+export interface ConfidenceInterval {
+  estimate: number;
+  lower: number;
+  upper: number;
+  confidenceLevel: number;
+  marginOfError: number;
+}
+
+/** Result of an effect size computation. */
+export interface EffectSizeResult {
+  measure: string;
+  value: number;
+  interpretation: "negligible" | "small" | "medium" | "large";
+}
+
+/** Result of an odds ratio computation. */
+export interface OddsRatioResult {
+  oddsRatio: number;
+  logOddsRatio: number;
+  standardError: number;
+  lower: number;
+  upper: number;
+  confidenceLevel: number;
+}
+
+/** Result of a regression coefficient confidence interval computation. */
+export interface RegressionCoefficientCI {
+  name: string;
+  estimate: number;
+  standardError: number;
+  lower: number;
+  upper: number;
+  tStatistic: number;
+  pValue: number;
 }

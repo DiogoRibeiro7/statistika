@@ -30,6 +30,9 @@ Thumbs.db
 # Coverage
 coverage/
 
+# Generated docs
+docs/
+
 # Fortran build artifacts
 *.o
 *.mod

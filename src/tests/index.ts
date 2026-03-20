@@ -2,3 +2,7 @@ export { oneSampleTTest, twoSampleTTest, welchTTest, pairedTTest } from "./t-tes
 export { chiSquaredGoodnessOfFit, chiSquaredIndependence } from "./chi-squared-test";
 export { oneWayAnova } from "./anova";
 export { ksTest, ksTwoSampleTest } from "./ks-test";
+export { mannWhitneyU, wilcoxonSignedRank } from "./nonparametric";
+export { fisherExactTest } from "./fisher-exact-test";
+export { twoWayAnova } from "./two-way-anova";
+export type { TwoWayAnovaResult } from "./two-way-anova";
