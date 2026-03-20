@@ -10,3 +10,4 @@ export * from "./survival";
 export * from "./time-series";
 export * from "./bayesian";
 export * from "./cox-regression";
+export * from "./nonparametric";
