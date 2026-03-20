@@ -30,6 +30,10 @@ Thumbs.db
 # Coverage
 coverage/
 
+# Fortran build artifacts
+*.o
+*.mod
+
 # Cache
 .cache/
 .eslintcache

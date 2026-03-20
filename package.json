@@ -4,9 +4,13 @@
   "description": "Statistical models library for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:fortran && tsc",
+    "build:fortran": "gfortran -c -fPIC -O2 -o native/fortran/special_functions.o native/fortran/special_functions.f90 && node-gyp configure build",
+    "build:ts": "tsc",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/ tests/",
@@ -29,5 +33,9 @@
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "node-addon-api": "^8.6.0",
+    "node-gyp": "^12.2.0"
   }
 }

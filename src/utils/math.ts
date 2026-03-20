@@ -1,7 +1,32 @@
+// Try to load the native Fortran addon; fall back to pure-TS implementations.
+interface NativeSpecial {
+  gammaLn(x: number): number;
+  gamma(x: number): number;
+  logFactorial(n: number): number;
+  factorial(n: number): number;
+  binomialCoeff(n: number, k: number): number;
+  betaFn(a: number, b: number): number;
+  erf(x: number): number;
+  erfc(x: number): number;
+  regularizedGammaP(s: number, x: number): number;
+  regularizedBeta(x: number, a: number, b: number): number;
+}
+
+let native: NativeSpecial | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  native = require("../../build/Release/fortran_special.node") as NativeSpecial;
+} catch {
+  // Native addon not available — pure TypeScript fallback will be used.
+}
+
+// ==========================================================================
+// Pure-TypeScript fallback implementations
+// ==========================================================================
+
 const EPSILON = 1e-14;
 const MAX_ITERATIONS = 200;
 
-// Lanczos approximation coefficients (g=7, n=9)
 const LANCZOS_G = 7;
 const LANCZOS_COEFF = [
   0.99999999999980993, 676.5203681218851, -1259.1392167224028,
@@ -9,16 +34,12 @@ const LANCZOS_COEFF = [
   -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7,
 ];
 
-/** Natural log of the gamma function. */
-export function gammaLn(x: number): number {
+function tsGammaLn(x: number): number {
   if (x <= 0 && Number.isInteger(x)) {
     throw new Error("gammaLn is not defined for non-positive integers");
   }
   if (x < 0.5) {
-    // Reflection formula: Gamma(x) * Gamma(1-x) = pi / sin(pi*x)
-    return (
-      Math.log(Math.PI / Math.sin(Math.PI * x)) - gammaLn(1 - x)
-    );
+    return Math.log(Math.PI / Math.sin(Math.PI * x)) - tsGammaLn(1 - x);
   }
   x -= 1;
   let a = LANCZOS_COEFF[0];
@@ -29,43 +50,35 @@ export function gammaLn(x: number): number {
   return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
 }
 
-/** Gamma function. */
-export function gamma(x: number): number {
-  return Math.exp(gammaLn(x));
+function tsGamma(x: number): number {
+  return Math.exp(tsGammaLn(x));
 }
 
-/** Log of the factorial: ln(n!) */
-export function logFactorial(n: number): number {
+function tsLogFactorial(n: number): number {
   if (n < 0 || !Number.isInteger(n)) {
     throw new Error("logFactorial requires a non-negative integer");
   }
-  return gammaLn(n + 1);
+  return tsGammaLn(n + 1);
 }
 
-/** Factorial n! (for n <= 170 to avoid Infinity). */
-export function factorial(n: number): number {
+function tsFactorial(n: number): number {
   if (n < 0 || !Number.isInteger(n)) {
     throw new Error("factorial requires a non-negative integer");
   }
   if (n > 170) return Infinity;
-  return Math.exp(logFactorial(n));
+  return Math.exp(tsLogFactorial(n));
 }
 
-/** Binomial coefficient C(n, k). */
-export function binomialCoeff(n: number, k: number): number {
+function tsBinomialCoeff(n: number, k: number): number {
   if (k < 0 || k > n) return 0;
-  return Math.exp(logFactorial(n) - logFactorial(k) - logFactorial(n - k));
+  return Math.exp(tsLogFactorial(n) - tsLogFactorial(k) - tsLogFactorial(n - k));
 }
 
-/** Beta function B(a, b). */
-export function betaFn(a: number, b: number): number {
-  return Math.exp(gammaLn(a) + gammaLn(b) - gammaLn(a + b));
+function tsBetaFn(a: number, b: number): number {
+  return Math.exp(tsGammaLn(a) + tsGammaLn(b) - tsGammaLn(a + b));
 }
 
-// --- Error function ---
-
-/** Error function erf(x) using Horner approximation. */
-export function erf(x: number): number {
+function tsErf(x: number): number {
   const sign = x >= 0 ? 1 : -1;
   x = Math.abs(x);
   const t = 1 / (1 + 0.3275911 * x);
@@ -78,25 +91,8 @@ export function erf(x: number): number {
   return sign * (1 - poly * Math.exp(-x * x));
 }
 
-/** Complementary error function erfc(x) = 1 - erf(x). */
-export function erfc(x: number): number {
-  return 1 - erf(x);
-}
-
-// --- Regularized incomplete gamma ---
-
-/** Lower regularized incomplete gamma function P(s, x) = γ(s,x) / Γ(s). */
-export function regularizedGammaP(s: number, x: number): number {
-  if (x < 0) throw new Error("x must be non-negative");
-  if (x === 0) return 0;
-
-  if (x < s + 1) {
-    // Series expansion
-    return gammaPSeries(s, x);
-  } else {
-    // Continued fraction
-    return 1 - gammaPContinuedFraction(s, x);
-  }
+function tsErfc(x: number): number {
+  return 1 - tsErf(x);
 }
 
 function gammaPSeries(s: number, x: number): number {
@@ -107,11 +103,10 @@ function gammaPSeries(s: number, x: number): number {
     sum += term;
     if (Math.abs(term) < Math.abs(sum) * EPSILON) break;
   }
-  return sum * Math.exp(-x + s * Math.log(x) - gammaLn(s));
+  return sum * Math.exp(-x + s * Math.log(x) - tsGammaLn(s));
 }
 
 function gammaPContinuedFraction(s: number, x: number): number {
-  // Lentz's algorithm for Q(s,x) = 1 - P(s,x)
   let f = x + 1 - s;
   if (Math.abs(f) < EPSILON) f = EPSILON;
   let c = f;
@@ -128,31 +123,19 @@ function gammaPContinuedFraction(s: number, x: number): number {
     f *= delta;
     if (Math.abs(delta - 1) < EPSILON) break;
   }
-  return Math.exp(-x + s * Math.log(x) - gammaLn(s)) / f;
+  return Math.exp(-x + s * Math.log(x) - tsGammaLn(s)) / f;
 }
 
-// --- Regularized incomplete beta ---
-
-/** Regularized incomplete beta function I_x(a, b). */
-export function regularizedBeta(x: number, a: number, b: number): number {
-  if (x < 0 || x > 1) throw new Error("x must be in [0, 1]");
+function tsRegularizedGammaP(s: number, x: number): number {
+  if (x < 0) throw new Error("x must be non-negative");
   if (x === 0) return 0;
-  if (x === 1) return 1;
-
-  // Use symmetry for better convergence
-  if (x > (a + 1) / (a + b + 2)) {
-    return 1 - regularizedBeta(1 - x, b, a);
+  if (x < s + 1) {
+    return gammaPSeries(s, x);
+  } else {
+    return 1 - gammaPContinuedFraction(s, x);
   }
-
-  const lnPrefactor =
-    gammaLn(a + b) - gammaLn(a) - gammaLn(b) +
-    a * Math.log(x) + b * Math.log(1 - x);
-  const prefactor = Math.exp(lnPrefactor);
-
-  return prefactor * betaCF(x, a, b) / a;
 }
 
-/** Continued fraction for the incomplete beta (Lentz's algorithm). */
 function betaCF(x: number, a: number, b: number): number {
   let f = 1;
   let c = 1;
@@ -160,9 +143,7 @@ function betaCF(x: number, a: number, b: number): number {
   if (Math.abs(d) < EPSILON) d = EPSILON;
   d = 1 / d;
   f = d;
-
   for (let m = 1; m <= MAX_ITERATIONS; m++) {
-    // Even step
     let numerator = m * (b - m) * x / ((a + 2 * m - 1) * (a + 2 * m));
     d = 1 + numerator * d;
     if (Math.abs(d) < EPSILON) d = EPSILON;
@@ -170,10 +151,7 @@ function betaCF(x: number, a: number, b: number): number {
     if (Math.abs(c) < EPSILON) c = EPSILON;
     d = 1 / d;
     f *= c * d;
-
-    // Odd step
-    numerator =
-      -(a + m) * (a + b + m) * x / ((a + 2 * m) * (a + 2 * m + 1));
+    numerator = -(a + m) * (a + b + m) * x / ((a + 2 * m) * (a + 2 * m + 1));
     d = 1 + numerator * d;
     if (Math.abs(d) < EPSILON) d = EPSILON;
     c = 1 + numerator / c;
@@ -181,13 +159,93 @@ function betaCF(x: number, a: number, b: number): number {
     d = 1 / d;
     const delta = c * d;
     f *= delta;
-
     if (Math.abs(delta - 1) < EPSILON) break;
   }
   return f;
 }
 
-// --- Quantile helpers ---
+function tsRegularizedBeta(x: number, a: number, b: number): number {
+  if (x < 0 || x > 1) throw new Error("x must be in [0, 1]");
+  if (x === 0) return 0;
+  if (x === 1) return 1;
+  if (x > (a + 1) / (a + b + 2)) {
+    return 1 - tsRegularizedBeta(1 - x, b, a);
+  }
+  const lnPrefactor =
+    tsGammaLn(a + b) - tsGammaLn(a) - tsGammaLn(b) +
+    a * Math.log(x) + b * Math.log(1 - x);
+  const prefactor = Math.exp(lnPrefactor);
+  return prefactor * betaCF(x, a, b) / a;
+}
+
+// ==========================================================================
+// Public API — delegates to Fortran native addon when available,
+// falls back to pure TypeScript.
+// ==========================================================================
+
+/** Natural log of the gamma function. */
+export function gammaLn(x: number): number {
+  if (native) return native.gammaLn(x);
+  return tsGammaLn(x);
+}
+
+/** Gamma function. */
+export function gamma(x: number): number {
+  if (native) return native.gamma(x);
+  return tsGamma(x);
+}
+
+/** Log of the factorial: ln(n!) */
+export function logFactorial(n: number): number {
+  if (native) return native.logFactorial(n);
+  return tsLogFactorial(n);
+}
+
+/** Factorial n! (for n <= 170 to avoid Infinity). */
+export function factorial(n: number): number {
+  if (native) return native.factorial(n);
+  return tsFactorial(n);
+}
+
+/** Binomial coefficient C(n, k). */
+export function binomialCoeff(n: number, k: number): number {
+  if (native) return native.binomialCoeff(n, k);
+  return tsBinomialCoeff(n, k);
+}
+
+/** Beta function B(a, b). */
+export function betaFn(a: number, b: number): number {
+  if (native) return native.betaFn(a, b);
+  return tsBetaFn(a, b);
+}
+
+/** Error function erf(x). */
+export function erf(x: number): number {
+  if (native) return native.erf(x);
+  return tsErf(x);
+}
+
+/** Complementary error function erfc(x) = 1 - erf(x). */
+export function erfc(x: number): number {
+  if (native) return native.erfc(x);
+  return tsErfc(x);
+}
+
+/** Lower regularized incomplete gamma function P(s, x). */
+export function regularizedGammaP(s: number, x: number): number {
+  if (native) return native.regularizedGammaP(s, x);
+  return tsRegularizedGammaP(s, x);
+}
+
+/** Regularized incomplete beta function I_x(a, b). */
+export function regularizedBeta(x: number, a: number, b: number): number {
+  if (native) return native.regularizedBeta(x, a, b);
+  return tsRegularizedBeta(x, a, b);
+}
+
+// ==========================================================================
+// Quantile helper (pure TS — no Fortran needed)
+// ==========================================================================
 
 /** Generic quantile by bisection on the CDF. */
 export function quantileBisect(
@@ -213,4 +271,9 @@ export function quantileBisect(
     if (hi - lo < tolerance) break;
   }
   return (lo + hi) / 2;
+}
+
+/** Returns true if the native Fortran addon is loaded. */
+export function isNativeAvailable(): boolean {
+  return native !== null;
 }
