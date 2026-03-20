@@ -180,7 +180,9 @@ describe(data);
 // { count: 6, mean: 18, median: 15.5, variance: 177.2, stdDev: 13.31, min: 4, max: 42 }
 ```
 
-## Linear regression
+## Regression models
+
+### Simple linear regression
 
 ```typescript
 import { linearRegression } from "node_stats";
@@ -189,10 +191,79 @@ const x = [1, 2, 3, 4, 5];
 const y = [2.1, 3.9, 6.2, 7.8, 10.1];
 
 const fit = linearRegression(x, y);
-console.log(fit.slope);     // ~2.0
-console.log(fit.intercept); // ~0.06
-console.log(fit.rSquared);  // ~0.999
+console.log(fit.slope);      // ~2.0
+console.log(fit.intercept);  // ~0.06
+console.log(fit.rSquared);   // ~0.999
 console.log(fit.predict(6)); // predict y for x = 6
+```
+
+### Multiple linear regression
+
+```typescript
+import { multipleRegression } from "node_stats";
+
+const X = [
+  [1, 5], [2, 3], [3, 1], [4, 6], [5, 2],
+];
+const y = [14.0, 11.0, 8.0, 17.0, 13.0];
+
+const fit = multipleRegression(X, y);
+console.log(fit.coefficients); // [coeff_x1, coeff_x2]
+console.log(fit.intercept);    // intercept
+console.log(fit.rSquared);     // R²
+console.log(fit.predict([3, 4])); // predict for new observation
+```
+
+### Polynomial regression
+
+```typescript
+import { polynomialRegression } from "node_stats";
+
+const x = [-2, -1, 0, 1, 2, 3];
+const y = x.map((xi) => 1 + 2 * xi + 3 * xi ** 2);
+
+const fit = polynomialRegression(x, y, 2); // degree 2
+console.log(fit.coefficients); // [1, 2, 3] — a0 + a1*x + a2*x²
+console.log(fit.rSquared);     // 1.0
+console.log(fit.predict(4));   // 57
+```
+
+### Logistic regression
+
+```typescript
+import { logisticRegression } from "node_stats";
+
+const X = [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]];
+const y = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1];
+
+const fit = logisticRegression(X, y);
+console.log(fit.coefficients); // feature weights
+console.log(fit.intercept);    // intercept
+console.log(fit.predict([3])); // P(y=1) — close to 0
+console.log(fit.predict([8])); // P(y=1) — close to 1
+```
+
+## Correlation
+
+```typescript
+import {
+  pearsonCorrelation,
+  spearmanCorrelation,
+  kendallCorrelation,
+} from "node_stats";
+
+const x = [1, 2, 3, 4, 5];
+const y = [2, 4, 6, 8, 10];
+
+const r = pearsonCorrelation(x, y);
+console.log(r.coefficient); // 1.0
+console.log(r.pValue);      // ~0
+
+const rho = spearmanCorrelation(x, y);
+console.log(rho.coefficient); // 1.0
+
+const tau = kendallCorrelation(x, y);
+console.log(tau.coefficient); // 1.0
 ```
 
 ## Special math functions

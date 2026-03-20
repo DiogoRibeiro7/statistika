@@ -46,6 +46,36 @@ export interface LinearRegressionResult {
   predict: (x: number) => number;
 }
 
+/** Result of a multiple linear regression fit. */
+export interface MultipleRegressionResult {
+  coefficients: number[];
+  intercept: number;
+  rSquared: number;
+  predict: (x: number[]) => number;
+}
+
+/** Result of a polynomial regression fit. */
+export interface PolynomialRegressionResult {
+  coefficients: number[];
+  degree: number;
+  rSquared: number;
+  predict: (x: number) => number;
+}
+
+/** Result of a logistic regression fit. */
+export interface LogisticRegressionResult {
+  coefficients: number[];
+  intercept: number;
+  iterations: number;
+  predict: (x: number[]) => number;
+}
+
+/** Result of a correlation computation. */
+export interface CorrelationResult {
+  coefficient: number;
+  pValue: number;
+}
+
 /** Result of a hypothesis test. */
 export interface HypothesisTestResult {
   statistic: number;
