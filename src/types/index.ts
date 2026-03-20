@@ -45,3 +45,31 @@ export interface LinearRegressionResult {
   rSquared: number;
   predict: (x: number) => number;
 }
+
+/** Result of a hypothesis test. */
+export interface HypothesisTestResult {
+  statistic: number;
+  pValue: number;
+  degreesOfFreedom: number;
+  rejected: boolean;
+}
+
+/** Result of an ANOVA test. */
+export interface AnovaResult {
+  fStatistic: number;
+  pValue: number;
+  dfBetween: number;
+  dfWithin: number;
+  ssBetween: number;
+  ssWithin: number;
+  msBetween: number;
+  msWithin: number;
+  rejected: boolean;
+}
+
+/** Result of a Kolmogorov-Smirnov test. */
+export interface KSTestResult {
+  statistic: number;
+  pValue: number;
+  rejected: boolean;
+}
