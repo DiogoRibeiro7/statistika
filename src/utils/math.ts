@@ -36,7 +36,7 @@ const LANCZOS_COEFF = [
 
 function tsGammaLn(x: number): number {
   if (x <= 0 && Number.isInteger(x)) {
-    throw new Error("gammaLn is not defined for non-positive integers");
+    return NaN;
   }
   if (x < 0.5) {
     return Math.log(Math.PI / Math.sin(Math.PI * x)) - tsGammaLn(1 - x);
