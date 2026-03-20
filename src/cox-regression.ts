@@ -12,6 +12,7 @@
  */
 
 import type { SurvivalObservation } from "./survival";
+import { invertMatrix, normalCdf } from "./utils/linalg";
 
 /** A survival observation with covariates. */
 export interface CoxObservation extends SurvivalObservation {
@@ -326,66 +327,3 @@ function computeConcordance(
   return total > 0 ? concordant / total : 0.5;
 }
 
-function invertMatrix(A: number[][]): number[][] | null {
-  const n = A.length;
-  // Create augmented matrix [A | I]
-  const aug: number[][] = [];
-  for (let i = 0; i < n; i++) {
-    aug[i] = new Array(2 * n).fill(0);
-    for (let j = 0; j < n; j++) aug[i][j] = A[i][j];
-    aug[i][n + i] = 1;
-  }
-
-  // Gauss-Jordan elimination
-  for (let col = 0; col < n; col++) {
-    // Find pivot
-    let maxVal = Math.abs(aug[col][col]);
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > maxVal) {
-        maxVal = Math.abs(aug[row][col]);
-        maxRow = row;
-      }
-    }
-
-    if (maxVal < 1e-15) return null; // Singular
-
-    // Swap rows
-    if (maxRow !== col) {
-      [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-    }
-
-    // Eliminate
-    const pivot = aug[col][col];
-    for (let j = 0; j < 2 * n; j++) aug[col][j] /= pivot;
-
-    for (let row = 0; row < n; row++) {
-      if (row === col) continue;
-      const factor = aug[row][col];
-      for (let j = 0; j < 2 * n; j++) {
-        aug[row][j] -= factor * aug[col][j];
-      }
-    }
-  }
-
-  // Extract inverse
-  const inv: number[][] = [];
-  for (let i = 0; i < n; i++) {
-    inv[i] = aug[i].slice(n, 2 * n);
-  }
-  return inv;
-}
-
-function normalCdf(x: number): number {
-  // Abramowitz and Stegun approximation
-  if (x < 0) return 1 - normalCdf(-x);
-  const t = 1 / (1 + 0.2316419 * x);
-  const d = 0.3989422804014327; // 1/sqrt(2*pi)
-  const poly =
-    t *
-    (0.319381530 +
-      t *
-        (-0.356563782 +
-          t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
-  return 1 - d * Math.exp(-0.5 * x * x) * poly;
-}

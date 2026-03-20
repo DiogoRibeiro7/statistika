@@ -12,3 +12,14 @@ export {
   regularizedBeta,
   quantileBisect,
 } from "./math";
+export {
+  solveLinearSystem,
+  invertMatrix,
+  transpose,
+  matMul,
+  normalCdf,
+  normalQuantile,
+  createRng,
+  randomSample,
+} from "./linalg";
+export type { Matrix } from "./linalg";

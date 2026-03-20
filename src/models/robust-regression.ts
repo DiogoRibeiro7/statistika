@@ -3,6 +3,7 @@
  */
 
 import { mean } from "../utils/descriptive";
+import { solveLinearSystem, randomSample } from "../utils/linalg";
 
 // ---- Huber Regression ----
 
@@ -333,66 +334,3 @@ function wlsSolve(X: number[][], y: number[], w: number[]): number[] {
   return solveLinearSystem(XtWX, XtWy);
 }
 
-/**
- * Solve Ax = b via Gaussian elimination with partial pivoting.
- */
-function solveLinearSystem(A: number[][], b: number[]): number[] {
-  const n = A.length;
-
-  // Augmented matrix
-  const aug: number[][] = [];
-  for (let i = 0; i < n; i++) {
-    aug[i] = [...A[i], b[i]];
-  }
-
-  // Forward elimination
-  for (let col = 0; col < n; col++) {
-    // Partial pivoting
-    let maxVal = Math.abs(aug[col][col]);
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > maxVal) {
-        maxVal = Math.abs(aug[row][col]);
-        maxRow = row;
-      }
-    }
-    if (maxRow !== col) [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-
-    const pivot = aug[col][col];
-    if (Math.abs(pivot) < 1e-15) continue;
-
-    for (let j = col; j <= n; j++) aug[col][j] /= pivot;
-    for (let row = col + 1; row < n; row++) {
-      const factor = aug[row][col];
-      for (let j = col; j <= n; j++) aug[row][j] -= factor * aug[col][j];
-    }
-  }
-
-  // Back substitution
-  const x = new Array(n).fill(0);
-  for (let i = n - 1; i >= 0; i--) {
-    x[i] = aug[i][n];
-    for (let j = i + 1; j < n; j++) {
-      x[i] -= aug[i][j] * x[j];
-    }
-  }
-
-  return x;
-}
-
-/**
- * Random sample without replacement.
- */
-function randomSample(
-  n: number,
-  k: number,
-  random: () => number,
-): number[] {
-  const indices = Array.from({ length: n }, (_, i) => i);
-  // Fisher-Yates partial shuffle
-  for (let i = 0; i < k; i++) {
-    const j = i + Math.floor(random() * (n - i));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
-  }
-  return indices.slice(0, k);
-}

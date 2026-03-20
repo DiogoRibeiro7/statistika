@@ -2,10 +2,9 @@
  * Multivariate statistics: PCA, factor analysis, k-means, hierarchical clustering.
  */
 
-// ── Types ───────────────────────────────────────────────────────────────
+import { transpose, matMul, createRng, type Matrix } from "./utils/linalg";
 
-/** A matrix represented as an array of row arrays. */
-export type Matrix = number[][];
+// ── Types ───────────────────────────────────────────────────────────────
 
 export interface PCAResult {
   /** Eigenvalues in descending order. */
@@ -59,38 +58,7 @@ export interface HierarchicalClusterResult {
   nClusters: number;
 }
 
-// ── Internal linear algebra helpers ─────────────────────────────────────
-
-/** Transpose a matrix. */
-function transpose(A: Matrix): Matrix {
-  const m = A.length;
-  const n = A[0].length;
-  const T: Matrix = Array.from({ length: n }, () => new Array(m));
-  for (let i = 0; i < m; i++) {
-    for (let j = 0; j < n; j++) {
-      T[j][i] = A[i][j];
-    }
-  }
-  return T;
-}
-
-/** Multiply two matrices. */
-function matMul(A: Matrix, B: Matrix): Matrix {
-  const m = A.length;
-  const n = B[0].length;
-  const k = B.length;
-  const C: Matrix = Array.from({ length: m }, () => new Array(n).fill(0));
-  for (let i = 0; i < m; i++) {
-    for (let j = 0; j < n; j++) {
-      let sum = 0;
-      for (let l = 0; l < k; l++) {
-        sum += A[i][l] * B[l][j];
-      }
-      C[i][j] = sum;
-    }
-  }
-  return C;
-}
+// ── Internal helpers ────────────────────────────────────────────────────
 
 /** Compute column means of a matrix. */
 function colMeans(X: Matrix): number[] {
@@ -442,25 +410,6 @@ export function factorAnalysis(
 }
 
 // ── K-Means Clustering ──────────────────────────────────────────────────
-
-/**
- * Seeded pseudo-random number generator (xorshift128+).
- */
-function createRng(seed: number): () => number {
-  let s0 = seed | 0 || 1;
-  let s1 = (seed * 2654435761) | 0 || 2;
-  return () => {
-    let a = s0;
-    const b = s1;
-    s0 = b;
-    a ^= a << 23;
-    a ^= a >> 17;
-    a ^= b;
-    a ^= b >> 26;
-    s1 = a;
-    return ((s0 + s1) >>> 0) / 4294967296;
-  };
-}
 
 /** Squared Euclidean distance between two vectors. */
 function sqDist(a: number[], b: number[]): number {

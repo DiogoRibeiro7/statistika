@@ -2,6 +2,8 @@
  * Survival analysis: Kaplan-Meier estimator, log-rank test, and Nelson-Aalen estimator.
  */
 
+import { normalQuantile } from "./utils/linalg";
+
 /** A single survival observation. */
 export interface SurvivalObservation {
   /** Time to event or censoring */
@@ -398,24 +400,3 @@ function erf(x: number): number {
   return sign * y;
 }
 
-/**
- * Standard normal quantile (rational approximation).
- */
-function normalQuantile(p: number): number {
-  if (p <= 0) return -Infinity;
-  if (p >= 1) return Infinity;
-  if (p === 0.5) return 0;
-
-  if (p < 0.5) return -normalQuantile(1 - p);
-
-  // Rational approximation for upper half
-  const t = Math.sqrt(-2 * Math.log(1 - p));
-  const c0 = 2.515517;
-  const c1 = 0.802853;
-  const c2 = 0.010328;
-  const d1 = 1.432788;
-  const d2 = 0.189269;
-  const d3 = 0.001308;
-
-  return t - (c0 + c1 * t + c2 * t * t) / (1 + d1 * t + d2 * t * t + d3 * t * t * t);
-}

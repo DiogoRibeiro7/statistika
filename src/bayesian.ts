@@ -3,6 +3,7 @@
  */
 
 import { gammaLn } from "./utils/math";
+import { normalQuantile } from "./utils/linalg";
 
 // ---- Conjugate Prior Models ----
 
@@ -393,24 +394,3 @@ function betaCredibleInterval(
   return [Math.max(0, mean - z * std), Math.min(1, mean + z * std)];
 }
 
-/**
- * Standard normal quantile.
- */
-function normalQuantile(p: number): number {
-  if (p <= 0) return -Infinity;
-  if (p >= 1) return Infinity;
-  if (p < 0.5) return -normalQuantile(1 - p);
-
-  const t = Math.sqrt(-2 * Math.log(1 - p));
-  const c0 = 2.515517;
-  const c1 = 0.802853;
-  const c2 = 0.010328;
-  const d1 = 1.432788;
-  const d2 = 0.189269;
-  const d3 = 0.001308;
-
-  return (
-    t -
-    (c0 + c1 * t + c2 * t * t) / (1 + d1 * t + d2 * t * t + d3 * t * t * t)
-  );
-}

@@ -1,5 +1,6 @@
 import { Dataset, ConfidenceInterval, RegressionCoefficientCI } from "./types";
 import { mean, variance } from "./utils/descriptive";
+import { solveLinearSystem, invertMatrix } from "./utils/linalg";
 import { Normal } from "./distributions/continuous/normal";
 import { StudentT } from "./distributions/continuous/student-t";
 
@@ -331,6 +332,7 @@ export function multipleRegressionCI(
 
   // Invert X^T X using Gauss-Jordan elimination
   const inv = invertMatrix(XtX);
+  if (!inv) throw new Error("Singular matrix cannot be inverted");
 
   const alpha = 1 - confidence;
   const t = new StudentT(df);
@@ -369,80 +371,3 @@ function validateConfidence(confidence: number): void {
   }
 }
 
-/** Solve Ax = b via Gaussian elimination with partial pivoting. */
-function solveLinearSystem(A: number[][], b: number[]): number[] {
-  const n = A.length;
-  const aug: number[][] = A.map((row, i) => [...row, b[i]]);
-
-  for (let col = 0; col < n; col++) {
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) {
-        maxRow = row;
-      }
-    }
-    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-
-    if (Math.abs(aug[col][col]) < 1e-12) {
-      throw new Error("Singular matrix: features may be linearly dependent");
-    }
-
-    for (let row = col + 1; row < n; row++) {
-      const factor = aug[row][col] / aug[col][col];
-      for (let j = col; j <= n; j++) {
-        aug[row][j] -= factor * aug[col][j];
-      }
-    }
-  }
-
-  const x = new Array(n).fill(0);
-  for (let row = n - 1; row >= 0; row--) {
-    x[row] = aug[row][n];
-    for (let col = row + 1; col < n; col++) {
-      x[row] -= aug[row][col] * x[col];
-    }
-    x[row] /= aug[row][row];
-  }
-
-  return x;
-}
-
-/** Invert a square matrix using Gauss-Jordan elimination. */
-function invertMatrix(M: number[][]): number[][] {
-  const n = M.length;
-  // Augment with identity
-  const aug: number[][] = M.map((row, i) => {
-    const id = new Array(n).fill(0);
-    id[i] = 1;
-    return [...row, ...id];
-  });
-
-  for (let col = 0; col < n; col++) {
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) {
-        maxRow = row;
-      }
-    }
-    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-
-    const pivot = aug[col][col];
-    if (Math.abs(pivot) < 1e-12) {
-      throw new Error("Singular matrix cannot be inverted");
-    }
-
-    for (let j = 0; j < 2 * n; j++) {
-      aug[col][j] /= pivot;
-    }
-
-    for (let row = 0; row < n; row++) {
-      if (row === col) continue;
-      const factor = aug[row][col];
-      for (let j = 0; j < 2 * n; j++) {
-        aug[row][j] -= factor * aug[col][j];
-      }
-    }
-  }
-
-  return aug.map((row) => row.slice(n));
-}

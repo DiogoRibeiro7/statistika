@@ -1,5 +1,6 @@
 import { Dataset } from "./types";
 import { mean } from "./utils/descriptive";
+import { createRng, normalCdf, normalQuantile } from "./utils/linalg";
 
 // ── Kernel Density Estimation ───────────────────────────────────────────
 
@@ -117,25 +118,6 @@ export interface BootstrapCIResult {
 }
 
 /**
- * Seeded pseudo-random number generator (xorshift128+).
- */
-function createRng(seed: number): () => number {
-  let s0 = seed | 0 || 1;
-  let s1 = (seed * 2654435761) | 0 || 2;
-  return () => {
-    let a = s0;
-    const b = s1;
-    s0 = b;
-    a ^= a << 23;
-    a ^= a >> 17;
-    a ^= b;
-    a ^= b >> 26;
-    s1 = a;
-    return ((s0 + s1) >>> 0) / 4294967296;
-  };
-}
-
-/**
  * Bootstrap confidence interval.
  *
  * Estimates a confidence interval for any statistic by resampling with
@@ -207,7 +189,7 @@ export function bootstrapCI(
   // BCa method
   // Bias correction factor z0
   const countBelow = replicates.filter((v) => v < estimate).length;
-  const z0 = normalQuantileApprox(countBelow / nReplicates);
+  const z0 = normalQuantile(countBelow / nReplicates);
 
   // Acceleration factor a (jackknife)
   const jackknife = new Array<number>(n);
@@ -226,11 +208,11 @@ export function bootstrapCI(
   const a = den === 0 ? 0 : num / (6 * Math.pow(den, 1.5));
 
   // Adjusted percentiles
-  const zAlphaLower = normalQuantileApprox(alpha / 2);
-  const zAlphaUpper = normalQuantileApprox(1 - alpha / 2);
+  const zAlphaLower = normalQuantile(alpha / 2);
+  const zAlphaUpper = normalQuantile(1 - alpha / 2);
 
-  const adjLower = normalCdfApprox(z0 + (z0 + zAlphaLower) / (1 - a * (z0 + zAlphaLower)));
-  const adjUpper = normalCdfApprox(z0 + (z0 + zAlphaUpper) / (1 - a * (z0 + zAlphaUpper)));
+  const adjLower = normalCdf(z0 + (z0 + zAlphaLower) / (1 - a * (z0 + zAlphaLower)));
+  const adjUpper = normalCdf(z0 + (z0 + zAlphaUpper) / (1 - a * (z0 + zAlphaUpper)));
 
   const lowerIdx = Math.max(0, Math.floor(adjLower * nReplicates) - 1);
   const upperIdx = Math.min(nReplicates - 1, Math.ceil(adjUpper * nReplicates) - 1);
@@ -391,70 +373,3 @@ export function oneSamplePermutationTest(
   };
 }
 
-// ── Internal helpers ────────────────────────────────────────────────────
-
-/** Standard normal CDF approximation. */
-function normalCdfApprox(x: number): number {
-  const a1 = 0.254829592;
-  const a2 = -0.284496736;
-  const a3 = 1.421413741;
-  const a4 = -1.453152027;
-  const a5 = 1.061405429;
-  const p = 0.3275911;
-
-  const sign = x < 0 ? -1 : 1;
-  const ax = Math.abs(x) / Math.SQRT2;
-  const t = 1.0 / (1.0 + p * ax);
-  const y = 1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
-  return 0.5 * (1.0 + sign * y);
-}
-
-/** Rational approximation of the standard normal quantile function. */
-function normalQuantileApprox(p: number): number {
-  if (p <= 0) return -Infinity;
-  if (p >= 1) return Infinity;
-  if (p === 0.5) return 0;
-
-  // Rational approximation (Peter Acklam)
-  const a = [
-    -3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2,
-    1.383577518672690e2, -3.066479806614716e1, 2.506628277459239e0,
-  ];
-  const b = [
-    -5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2,
-    6.680131188771972e1, -1.328068155288572e1,
-  ];
-  const c = [
-    -7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838e0,
-    -2.549732539343734e0, 4.374664141464968e0, 2.938163982698783e0,
-  ];
-  const d = [
-    7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996e0,
-    3.754408661907416e0,
-  ];
-
-  const pLow = 0.02425;
-  const pHigh = 1 - pLow;
-
-  let q: number;
-  if (p < pLow) {
-    q = Math.sqrt(-2 * Math.log(p));
-    return (
-      (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
-      ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
-    );
-  } else if (p <= pHigh) {
-    q = p - 0.5;
-    const r = q * q;
-    return (
-      ((((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q) /
-      (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
-    );
-  } else {
-    q = Math.sqrt(-2 * Math.log(1 - p));
-    return -(
-      (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
-      ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
-    );
-  }
-}
