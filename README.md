@@ -118,6 +118,9 @@ import {
   oneWayAnova,
   ksTest,
   ksTwoSampleTest,
+  mannWhitneyU,
+  wilcoxonSignedRank,
+  fisherExactTest,
 } from "node_stats";
 ```
 
@@ -162,6 +165,23 @@ ksTest(data, cdfFunction, alpha?);
 
 // Two-sample KS test
 ksTwoSampleTest(data1, data2, alpha?);
+```
+
+### Non-parametric tests
+
+```typescript
+// Mann-Whitney U test (two independent samples)
+mannWhitneyU(data1, data2, alpha?);
+
+// Wilcoxon signed-rank test (paired samples)
+wilcoxonSignedRank(before, after, alpha?);
+```
+
+### Fisher's exact test
+
+```typescript
+// 2x2 contingency table — exact p-value via hypergeometric distribution
+fisherExactTest([[a, b], [c, d]], alpha?);
 ```
 
 ## Descriptive statistics
