@@ -33,4 +33,47 @@ describe("Student-t distribution", () => {
       expect(t5.cdf(t5.quantile(p))).toBeCloseTo(p, 2);
     }
   });
+
+  it("variance is Infinity for 1 < nu <= 2", () => {
+    expect(new StudentT(1.5).variance()).toBe(Infinity);
+    expect(new StudentT(2).variance()).toBe(Infinity);
+  });
+
+  it("variance is NaN for nu <= 1", () => {
+    expect(new StudentT(0.5).variance()).toBeNaN();
+  });
+
+  it("stdDev is sqrt(variance)", () => {
+    expect(t5.stdDev()).toBeCloseTo(Math.sqrt(t5.variance()), 8);
+  });
+
+  it("sf(x) = 1 - cdf(x)", () => {
+    expect(t5.sf(1)).toBeCloseTo(1 - t5.cdf(1), 10);
+  });
+
+  it("quantile edge cases", () => {
+    expect(t5.quantile(0)).toBe(-Infinity);
+    expect(t5.quantile(1)).toBe(Infinity);
+    expect(() => t5.quantile(-0.1)).toThrow();
+    expect(() => t5.quantile(1.1)).toThrow();
+  });
+
+  it("quantile uses symmetry for p < 0.5", () => {
+    expect(t5.quantile(0.25)).toBeCloseTo(-t5.quantile(0.75), 4);
+  });
+
+  it("sample returns finite values", () => {
+    for (let i = 0; i < 50; i++) {
+      expect(isFinite(t5.sample())).toBe(true);
+    }
+  });
+
+  it("sampleN returns correct number of samples", () => {
+    expect(t5.sampleN(10).length).toBe(10);
+  });
+
+  it("throws on non-positive nu", () => {
+    expect(() => new StudentT(0)).toThrow();
+    expect(() => new StudentT(-1)).toThrow();
+  });
 });

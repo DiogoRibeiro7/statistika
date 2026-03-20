@@ -52,4 +52,31 @@ describe("Pareto distribution", () => {
     expect(() => new Pareto(-1)).toThrow();
     expect(() => new Pareto(2, 0)).toThrow();
   });
+
+  it("stdDev is sqrt(variance)", () => {
+    expect(p.stdDev()).toBeCloseTo(Math.sqrt(p.variance()), 8);
+  });
+
+  it("sf(x) = 1 - cdf(x)", () => {
+    expect(p.sf(2)).toBeCloseTo(1 - p.cdf(2), 10);
+  });
+
+  it("quantile(1) = Infinity", () => {
+    expect(p.quantile(1)).toBe(Infinity);
+  });
+
+  it("quantile throws on out-of-range p", () => {
+    expect(() => p.quantile(-0.1)).toThrow();
+    expect(() => p.quantile(1.1)).toThrow();
+  });
+
+  it("sample returns values >= xm", () => {
+    for (let i = 0; i < 50; i++) {
+      expect(p.sample()).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("sampleN returns correct number of samples", () => {
+    expect(p.sampleN(10).length).toBe(10);
+  });
 });

@@ -54,4 +54,35 @@ describe("F distribution", () => {
     expect(() => new FDistribution(5, -1)).toThrow();
     expect(() => new FDistribution(1.5, 3)).toThrow();
   });
+
+  it("stdDev is sqrt(variance)", () => {
+    expect(f.stdDev()).toBeCloseTo(Math.sqrt(f.variance()), 8);
+  });
+
+  it("sf(x) = 1 - cdf(x)", () => {
+    expect(f.sf(1)).toBeCloseTo(1 - f.cdf(1), 10);
+  });
+
+  it("quantile edge cases", () => {
+    expect(f.quantile(0)).toBe(0);
+    expect(f.quantile(1)).toBe(Infinity);
+    expect(() => f.quantile(-0.1)).toThrow();
+    expect(() => f.quantile(1.1)).toThrow();
+  });
+
+  it("sample returns positive values", () => {
+    for (let i = 0; i < 50; i++) {
+      expect(f.sample()).toBeGreaterThan(0);
+    }
+  });
+
+  it("sampleN returns correct number of samples", () => {
+    expect(f.sampleN(10).length).toBe(10);
+  });
+
+  it("sample mean converges to theoretical mean", () => {
+    const samples = f.sampleN(5000);
+    const sampleMean = samples.reduce((a, b) => a + b, 0) / samples.length;
+    expect(sampleMean).toBeCloseTo(f.mean(), 0);
+  });
 });

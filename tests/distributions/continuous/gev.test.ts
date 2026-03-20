@@ -64,4 +64,60 @@ describe("GEV distribution", () => {
   it("throws on non-positive sigma", () => {
     expect(() => new GEV(0, 0, 0)).toThrow();
   });
+
+  describe("coverage for edge cases", () => {
+    it("mean is Infinity for xi >= 1", () => {
+      expect(new GEV(0, 1, 1).mean()).toBe(Infinity);
+    });
+
+    it("variance is Infinity for xi >= 0.5", () => {
+      expect(new GEV(0, 1, 0.5).variance()).toBe(Infinity);
+    });
+
+    it("stdDev is sqrt(variance) for Gumbel", () => {
+      const gev = new GEV(0, 1, 0);
+      expect(gev.stdDev()).toBeCloseTo(Math.sqrt(gev.variance()), 8);
+    });
+
+    it("sf(x) = 1 - cdf(x)", () => {
+      const gev = new GEV(0, 1, 0);
+      expect(gev.sf(0)).toBeCloseTo(1 - gev.cdf(0), 10);
+    });
+
+    it("quantile(0) = -Infinity for Gumbel", () => {
+      expect(new GEV(0, 1, 0).quantile(0)).toBe(-Infinity);
+    });
+
+    it("quantile(1) = Infinity for Gumbel and Fréchet", () => {
+      expect(new GEV(0, 1, 0).quantile(1)).toBe(Infinity);
+      expect(new GEV(0, 1, 0.5).quantile(1)).toBe(Infinity);
+    });
+
+    it("pdf returns 0 outside support for xi > 0", () => {
+      const gev = new GEV(0, 1, 0.5);
+      expect(gev.pdf(-10)).toBe(0);
+    });
+
+    it("sample returns finite values", () => {
+      const gev = new GEV(0, 1, 0);
+      for (let i = 0; i < 50; i++) {
+        expect(isFinite(gev.sample())).toBe(true);
+      }
+    });
+
+    it("sampleN returns correct number of samples", () => {
+      expect(new GEV(0, 1, 0).sampleN(10).length).toBe(10);
+    });
+
+    it("Fréchet variance with xi > 0 and < 0.5", () => {
+      const gev = new GEV(0, 1, 0.3);
+      expect(gev.variance()).toBeGreaterThan(0);
+      expect(isFinite(gev.variance())).toBe(true);
+    });
+
+    it("Reversed Weibull mean for xi < 0", () => {
+      const gev = new GEV(0, 1, -0.5);
+      expect(isFinite(gev.mean())).toBe(true);
+    });
+  });
 });
