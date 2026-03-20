@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 jobs:
   lint:
@@ -84,6 +86,30 @@ jobs:
           name: api-docs
           path: docs/
           retention-days: 14
+
+  deploy-docs:
+    name: Deploy Docs to GitHub Pages
+    needs: docs
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download docs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-docs
+          path: docs/
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   build-native:
     name: Build (Native)

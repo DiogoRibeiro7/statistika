@@ -9,6 +9,9 @@ import {
   median,
   variance,
   stdDev,
+  skewness,
+  kurtosis,
+  percentile,
   describe,
   meanCI,
   proportionCI,
@@ -29,15 +32,14 @@ console.log(`  Mean: ${stats.mean.toFixed(2)}`);
 console.log(`  Median: ${stats.median.toFixed(2)}`);
 console.log(`  Variance: ${stats.variance.toFixed(2)}`);
 console.log(`  Std Dev: ${stats.stdDev.toFixed(2)}`);
+console.log(`  Skewness: ${skewness(scores).toFixed(4)}`);
+console.log(`  Kurtosis: ${kurtosis(scores).toFixed(4)}`);
 console.log(`  Min: ${stats.min}, Max: ${stats.max}`);
-
-// Compute quartiles from sorted data
-const sorted = [...scores].sort((a, b) => a - b);
-const q1 = median(sorted.slice(0, Math.floor(sorted.length / 2)));
-const q3 = median(sorted.slice(Math.ceil(sorted.length / 2)));
-console.log(`  Q1: ${q1.toFixed(1)}`);
-console.log(`  Q3: ${q3.toFixed(1)}`);
-console.log(`  IQR: ${(q3 - q1).toFixed(1)}`);
+console.log(`  Q1: ${percentile(scores, 25).toFixed(1)}`);
+console.log(`  Q3: ${percentile(scores, 75).toFixed(1)}`);
+console.log(`  IQR: ${(percentile(scores, 75) - percentile(scores, 25)).toFixed(1)}`);
+console.log(`  P10: ${percentile(scores, 10).toFixed(1)}`);
+console.log(`  P90: ${percentile(scores, 90).toFixed(1)}`);
 console.log();
 
 // --- Confidence intervals ---
