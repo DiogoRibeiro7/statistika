@@ -6,3 +6,8 @@ export { ChiSquared } from "./chi-squared";
 export { BetaDistribution } from "./beta";
 export { StudentT } from "./student-t";
 export { LogNormal } from "./log-normal";
+export { GEV } from "./gev";
+export { Gumbel } from "./gumbel";
+export { Frechet } from "./frechet";
+export { Weibull } from "./weibull";
+export { GPD } from "./gpd";
