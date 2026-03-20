@@ -48,6 +48,7 @@
   "author": "Diogo Ribeiro",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
     "eslint": "^10.0.3",
@@ -56,7 +57,8 @@
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typedoc": "^0.27.9",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.1"
   },
   "optionalDependencies": {
     "node-addon-api": "^8.6.0",

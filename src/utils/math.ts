@@ -137,12 +137,11 @@ function tsRegularizedGammaP(s: number, x: number): number {
 }
 
 function betaCF(x: number, a: number, b: number): number {
-  let f = 1;
   let c = 1;
   let d = 1 - (a + b) * x / (a + 1);
   if (Math.abs(d) < EPSILON) d = EPSILON;
   d = 1 / d;
-  f = d;
+  let f = d;
   for (let m = 1; m <= MAX_ITERATIONS; m++) {
     let numerator = m * (b - m) * x / ((a + 2 * m - 1) * (a + 2 * m));
     d = 1 + numerator * d;

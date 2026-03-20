@@ -293,7 +293,7 @@ export function arima(
   const centered = diffed.map((v) => v - mu);
 
   // Step 2: Estimate AR coefficients via Yule-Walker
-  let arCoeffs = new Array(p).fill(0);
+  const arCoeffs = new Array(p).fill(0);
 
   if (p > 0) {
     // Compute autocovariances

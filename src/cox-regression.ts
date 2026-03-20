@@ -81,7 +81,7 @@ export function coxRegression(
   const X: number[][] = sorted.map((o) => o.covariates);
 
   // Newton-Raphson optimization of partial log-likelihood
-  let beta = new Array(p).fill(0);
+  const beta = new Array(p).fill(0);
   let iterations = 0;
 
   for (let iter = 0; iter < maxIterations; iter++) {
@@ -111,7 +111,7 @@ export function coxRegression(
     // Walk backwards through sorted observations
     // At time t, risk set = {i : time_i >= t}
     // We accumulate from the end
-    let ii = n - 1;
+    const ii = n - 1;
     // First, add all to risk set
     for (let i = 0; i < n; i++) {
       riskSum += expXBeta[i];
@@ -125,8 +125,8 @@ export function coxRegression(
 
     // Now process events from earliest to latest
     // Remove subjects with times before the current event time from risk set
-    let prevTime = -Infinity;
-    let removeIdx = 0;
+    const prevTime = -Infinity;
+    const removeIdx = 0;
 
     for (let i = 0; i < n; i++) {
       if (events[i] === 0) continue;
