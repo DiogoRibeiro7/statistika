@@ -17,6 +17,8 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/ tests/",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "bench": "npx ts-node benchmark/special-functions.ts",
+    "docs": "typedoc",
     "install": "node scripts/build-native.js",
     "prepublishOnly": "npm run build"
   },
@@ -53,6 +55,7 @@
     "prettier": "^3.8.1",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
+    "typedoc": "^0.27.9",
     "typescript": "^5.9.3"
   },
   "optionalDependencies": {

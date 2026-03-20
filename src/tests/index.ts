@@ -5,3 +5,4 @@ export { ksTest, ksTwoSampleTest } from "./ks-test";
 export { mannWhitneyU, wilcoxonSignedRank } from "./nonparametric";
 export { fisherExactTest } from "./fisher-exact-test";
 export { twoWayAnova } from "./two-way-anova";
+export type { TwoWayAnovaResult } from "./two-way-anova";

@@ -11,3 +11,7 @@ export {
   quantileRegression,
   multipleQuantileRegression,
 } from "./quantile-regression";
+export type {
+  QuantileRegressionResult,
+  SimpleQuantileRegressionResult,
+} from "./quantile-regression";
