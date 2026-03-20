@@ -4,3 +4,4 @@ export { oneWayAnova } from "./anova";
 export { ksTest, ksTwoSampleTest } from "./ks-test";
 export { mannWhitneyU, wilcoxonSignedRank } from "./nonparametric";
 export { fisherExactTest } from "./fisher-exact-test";
+export { twoWayAnova } from "./two-way-anova";

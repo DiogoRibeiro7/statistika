@@ -7,3 +7,7 @@ export {
   spearmanCorrelation,
   kendallCorrelation,
 } from "./correlation";
+export {
+  quantileRegression,
+  multipleQuantileRegression,
+} from "./quantile-regression";

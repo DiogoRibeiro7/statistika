@@ -6,3 +6,4 @@ export * from "./tests";
 export * from "./confidence-intervals";
 export * from "./effect-size";
 export * from "./power-analysis";
+export * from "./survival";
