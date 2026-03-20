@@ -1,29 +1,50 @@
 {
   "name": "node_stats",
   "version": "1.0.0",
-  "description": "Statistical models library for Node.js",
+  "description": "Comprehensive statistical library for Node.js — distributions, hypothesis tests, regression models, correlation, and special math functions with optional native Fortran acceleration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "native",
+    "binding.gyp"
   ],
   "scripts": {
-    "build": "npm run build:fortran && tsc",
-    "build:fortran": "gfortran -c -fPIC -O2 -o native/fortran/special_functions.o native/fortran/special_functions.f90 && node-gyp configure build",
+    "build": "npm run build:native && tsc",
+    "build:native": "node scripts/build-native.js",
     "build:ts": "tsc",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/ tests/",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "install": "node scripts/build-native.js",
     "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "http://local_proxy@127.0.0.1:41079/git/DiogoRibeiro7/node_stats"
+    "url": "https://github.com/DiogoRibeiro7/node_stats.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "homepage": "https://github.com/DiogoRibeiro7/node_stats#readme",
+  "bugs": {
+    "url": "https://github.com/DiogoRibeiro7/node_stats/issues"
+  },
+  "keywords": [
+    "statistics",
+    "regression",
+    "hypothesis-testing",
+    "probability",
+    "distributions",
+    "correlation",
+    "t-test",
+    "anova",
+    "chi-squared",
+    "linear-regression",
+    "logistic-regression",
+    "math",
+    "data-science"
+  ],
+  "author": "Diogo Ribeiro",
+  "license": "MIT",
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
@@ -34,7 +55,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "node-addon-api": "^8.6.0",
     "node-gyp": "^12.2.0"
   }
