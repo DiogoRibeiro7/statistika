@@ -1,0 +1,16 @@
+export { Normal } from "./normal";
+export { Uniform } from "./uniform";
+export { Exponential } from "./exponential";
+export { GammaDistribution } from "./gamma";
+export { ChiSquared } from "./chi-squared";
+export { BetaDistribution } from "./beta";
+export { StudentT } from "./student-t";
+export { LogNormal } from "./log-normal";
+export { GEV } from "./gev";
+export { Gumbel } from "./gumbel";
+export { Frechet } from "./frechet";
+export { Weibull } from "./weibull";
+export { GPD } from "./gpd";
+export { FDistribution } from "./f-distribution";
+export { Cauchy } from "./cauchy";
+export { Pareto } from "./pareto";
