@@ -103,3 +103,23 @@ export interface KSTestResult {
   pValue: number;
   rejected: boolean;
 }
+
+/** Result of a confidence interval computation. */
+export interface ConfidenceInterval {
+  estimate: number;
+  lower: number;
+  upper: number;
+  confidenceLevel: number;
+  marginOfError: number;
+}
+
+/** Result of a regression coefficient confidence interval computation. */
+export interface RegressionCoefficientCI {
+  name: string;
+  estimate: number;
+  standardError: number;
+  lower: number;
+  upper: number;
+  tStatistic: number;
+  pValue: number;
+}
