@@ -7,3 +7,6 @@ export * from "./confidence-intervals";
 export * from "./effect-size";
 export * from "./power-analysis";
 export * from "./survival";
+export * from "./time-series";
+export * from "./bayesian";
+export * from "./cox-regression";
