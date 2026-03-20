@@ -113,6 +113,23 @@ export interface ConfidenceInterval {
   marginOfError: number;
 }
 
+/** Result of an effect size computation. */
+export interface EffectSizeResult {
+  measure: string;
+  value: number;
+  interpretation: "negligible" | "small" | "medium" | "large";
+}
+
+/** Result of an odds ratio computation. */
+export interface OddsRatioResult {
+  oddsRatio: number;
+  logOddsRatio: number;
+  standardError: number;
+  lower: number;
+  upper: number;
+  confidenceLevel: number;
+}
+
 /** Result of a regression coefficient confidence interval computation. */
 export interface RegressionCoefficientCI {
   name: string;
