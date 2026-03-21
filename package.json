@@ -26,6 +26,8 @@
     "lint": "eslint src/ tests/",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "bench": "npx ts-node benchmark/special-functions.ts",
+    "bench:linalg": "npx ts-node benchmark/linalg.ts",
+    "bench:all": "npx ts-node benchmark/special-functions.ts && npx ts-node benchmark/linalg.ts",
     "docs": "typedoc",
     "install": "node scripts/build-native.js",
     "prepublishOnly": "npm run build"
