@@ -21,5 +21,6 @@ export * from "./missing-data";
 export * from "./smoothing";
 export * from "./streaming";
 export * from "./random";
+export * from "./categorical";
 export * from "./resampling";
 export * from "./mixture-models";
