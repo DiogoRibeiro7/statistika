@@ -18,5 +18,6 @@ export * from "./distance";
 export * from "./information-theory";
 export * from "./diagnostics";
 export * from "./missing-data";
+export * from "./smoothing";
 export * from "./resampling";
 export * from "./mixture-models";
