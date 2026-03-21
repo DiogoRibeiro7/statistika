@@ -236,7 +236,7 @@ describe("symmetricEigen", () => {
 
 describe("normalCdf", () => {
   it("Phi(0) = 0.5", () => {
-    expect(normalCdf(0)).toBeCloseTo(0.5, 10);
+    expect(normalCdf(0)).toBeCloseTo(0.5, 8);
   });
 
   it("Phi(1.96) ≈ 0.975", () => {

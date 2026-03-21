@@ -116,5 +116,177 @@ describe("Missing Data Handling", () => {
       const result = forwardFill([null, null, 3, null, 5]);
       expect(result).toEqual([3, 3, 3, 3, 5]);
     });
+
+    it("throws when all values are missing", () => {
+      expect(() => forwardFill([null, undefined, null])).toThrow("all values are missing");
+    });
+
+    it("returns empty array for empty input", () => {
+      expect(forwardFill([])).toEqual([]);
+    });
+
+    it("handles NaN as missing", () => {
+      const result = forwardFill([1, NaN, 3]);
+      expect(result).toEqual([1, 1, 3]);
+    });
+
+    it("single observed value fills everything", () => {
+      const result = forwardFill([null, null, 5, null, null]);
+      expect(result).toEqual([5, 5, 5, 5, 5]);
+    });
+  });
+
+  describe("analyzeMissing edge cases", () => {
+    it("handles empty array", () => {
+      const result = analyzeMissing([]);
+      expect(result.totalValues).toBe(0);
+      expect(result.missingCount).toBe(0);
+      expect(result.missingProportion).toBe(0);
+    });
+
+    it("handles all missing", () => {
+      const result = analyzeMissing([null, undefined, NaN]);
+      expect(result.missingCount).toBe(3);
+      expect(result.completeCount).toBe(0);
+      expect(result.missingProportion).toBeCloseTo(1);
+    });
+
+    it("totalValues matches input length", () => {
+      const result = analyzeMissing([1, null, 3, undefined, 5]);
+      expect(result.totalValues).toBe(5);
+    });
+  });
+
+  describe("listwiseDeletion edge cases", () => {
+    it("throws on no columns", () => {
+      expect(() => listwiseDeletion()).toThrow("at least one");
+    });
+
+    it("throws on mismatched column lengths", () => {
+      expect(() => listwiseDeletion([1, 2], [1])).toThrow("same length");
+    });
+
+    it("returns empty arrays when all rows have missing values", () => {
+      const [ra, rb] = listwiseDeletion([null, 1], [1, null]);
+      expect(ra).toEqual([]);
+      expect(rb).toEqual([]);
+    });
+
+    it("handles NaN as missing", () => {
+      const [ra] = listwiseDeletion([1, NaN, 3]);
+      expect(ra).toEqual([1, 3]);
+    });
+
+    it("handles single column", () => {
+      const [ra] = listwiseDeletion([1, null, 3, 4]);
+      expect(ra).toEqual([1, 3, 4]);
+    });
+  });
+
+  describe("pairwiseDeletion edge cases", () => {
+    it("throws on mismatched lengths", () => {
+      expect(() => pairwiseDeletion([1, 2], [1])).toThrow("same length");
+    });
+
+    it("returns empty arrays when no complete pairs", () => {
+      const result = pairwiseDeletion([null, 1], [1, null]);
+      expect(result.a).toEqual([]);
+      expect(result.b).toEqual([]);
+      expect(result.indices).toEqual([]);
+    });
+
+    it("handles NaN as missing", () => {
+      const result = pairwiseDeletion([1, NaN, 3], [4, 5, NaN]);
+      expect(result.a).toEqual([1]);
+      expect(result.b).toEqual([4]);
+      expect(result.indices).toEqual([0]);
+    });
+
+    it("keeps all when no missing", () => {
+      const result = pairwiseDeletion([1, 2, 3], [4, 5, 6]);
+      expect(result.a).toEqual([1, 2, 3]);
+      expect(result.b).toEqual([4, 5, 6]);
+    });
+  });
+
+  describe("meanImputation edge cases", () => {
+    it("handles NaN as missing", () => {
+      const result = meanImputation([2, NaN, 4]);
+      expect(result).toEqual([2, 3, 4]);
+    });
+
+    it("handles undefined as missing", () => {
+      const result = meanImputation([2, undefined, 4]);
+      expect(result).toEqual([2, 3, 4]);
+    });
+
+    it("no missing values returns copy of original", () => {
+      const result = meanImputation([1, 2, 3]);
+      expect(result).toEqual([1, 2, 3]);
+    });
+  });
+
+  describe("medianImputation edge cases", () => {
+    it("throws when all missing", () => {
+      expect(() => medianImputation([null, null])).toThrow("No observed");
+    });
+
+    it("handles even number of observed values", () => {
+      const result = medianImputation([1, null, 2, null]);
+      // median of [1,2] = 1.5
+      expect(result).toEqual([1, 1.5, 2, 1.5]);
+    });
+
+    it("no missing values returns copy of original", () => {
+      const result = medianImputation([5, 10, 15]);
+      expect(result).toEqual([5, 10, 15]);
+    });
+  });
+
+  describe("modeImputation edge cases", () => {
+    it("throws when all missing", () => {
+      expect(() => modeImputation([null, undefined])).toThrow("No observed");
+    });
+
+    it("uses first most frequent if tied", () => {
+      const result = modeImputation([1, 2, null]);
+      // Both 1 and 2 appear once; mode takes whichever has higher count first
+      expect([1, 2]).toContain(result[2]);
+    });
+
+    it("no missing returns copy of original", () => {
+      const result = modeImputation([3, 3, 5]);
+      expect(result).toEqual([3, 3, 5]);
+    });
+  });
+
+  describe("linearInterpolation edge cases", () => {
+    it("throws when all missing", () => {
+      expect(() => linearInterpolation([null, null, null])).toThrow("No observed");
+    });
+
+    it("returns empty array for empty input", () => {
+      expect(linearInterpolation([])).toEqual([]);
+    });
+
+    it("single observed value fills everything", () => {
+      const result = linearInterpolation([null, 5, null]);
+      expect(result).toEqual([5, 5, 5]);
+    });
+
+    it("handles no missing values", () => {
+      const result = linearInterpolation([1, 2, 3]);
+      expect(result).toEqual([1, 2, 3]);
+    });
+
+    it("handles undefined as missing", () => {
+      const result = linearInterpolation([1, undefined, 3]);
+      expect(result[1]).toBeCloseTo(2);
+    });
+
+    it("handles NaN as missing", () => {
+      const result = linearInterpolation([0, NaN, 10]);
+      expect(result[1]).toBeCloseTo(5);
+    });
   });
 });
