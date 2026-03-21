@@ -22,5 +22,6 @@ export * from "./smoothing";
 export * from "./streaming";
 export * from "./random";
 export * from "./categorical";
+export * from "./glm";
 export * from "./resampling";
 export * from "./mixture-models";
