@@ -17,9 +17,11 @@ export {
   invertMatrix,
   transpose,
   matMul,
+  symmetricEigen,
   normalCdf,
   normalQuantile,
   createRng,
   randomSample,
+  hasNativeLinalg,
 } from "./linalg";
 export type { Matrix } from "./linalg";

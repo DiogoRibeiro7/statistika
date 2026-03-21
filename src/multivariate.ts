@@ -2,7 +2,7 @@
  * Multivariate statistics: PCA, factor analysis, k-means, hierarchical clustering.
  */
 
-import { transpose, matMul, createRng, type Matrix } from "./utils/linalg";
+import { transpose, matMul, createRng, symmetricEigen, type Matrix } from "./utils/linalg";
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -102,106 +102,14 @@ function covarianceMatrix(centered: Matrix): Matrix {
   return cov;
 }
 
-/**
- * Eigenvalue decomposition of a symmetric matrix using the Jacobi method.
- * Returns eigenvalues (descending) and corresponding eigenvectors as columns.
- */
-function symmetricEigen(
-  A: Matrix,
-  maxIter = 200,
-): { eigenvalues: number[]; eigenvectors: Matrix } {
-  const n = A.length;
-
-  // Work on a copy
-  const S: Matrix = A.map((row) => [...row]);
-
-  // Initialize eigenvector matrix as identity
-  const V: Matrix = Array.from({ length: n }, (_, i) => {
-    const row = new Array(n).fill(0);
-    row[i] = 1;
-    return row;
-  });
-
-  for (let iter = 0; iter < maxIter; iter++) {
-    // Find the largest off-diagonal element
-    let maxVal = 0;
-    let p = 0;
-    let q = 1;
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        if (Math.abs(S[i][j]) > maxVal) {
-          maxVal = Math.abs(S[i][j]);
-          p = i;
-          q = j;
-        }
-      }
-    }
-
-    if (maxVal < 1e-12) break;
-
-    // Compute rotation angle
-    const theta =
-      Math.abs(S[p][p] - S[q][q]) < 1e-15
-        ? Math.PI / 4
-        : 0.5 * Math.atan2(2 * S[p][q], S[p][p] - S[q][q]);
-
-    const c = Math.cos(theta);
-    const s = Math.sin(theta);
-
-    // Apply Jacobi rotation to S
-    const Spp = c * c * S[p][p] + 2 * s * c * S[p][q] + s * s * S[q][q];
-    const Sqq = s * s * S[p][p] - 2 * s * c * S[p][q] + c * c * S[q][q];
-
-    S[p][p] = Spp;
-    S[q][q] = Sqq;
-    S[p][q] = 0;
-    S[q][p] = 0;
-
-    for (let i = 0; i < n; i++) {
-      if (i !== p && i !== q) {
-        const Sip = c * S[i][p] + s * S[i][q];
-        const Siq = -s * S[i][p] + c * S[i][q];
-        S[i][p] = Sip;
-        S[p][i] = Sip;
-        S[i][q] = Siq;
-        S[q][i] = Siq;
-      }
-    }
-
-    // Update eigenvectors
-    for (let i = 0; i < n; i++) {
-      const Vip = c * V[i][p] + s * V[i][q];
-      const Viq = -s * V[i][p] + c * V[i][q];
-      V[i][p] = Vip;
-      V[i][q] = Viq;
-    }
-  }
-
-  // Extract eigenvalues and sort descending
-  const eigenvalues = new Array(n);
-  for (let i = 0; i < n; i++) eigenvalues[i] = S[i][i];
-
-  const indices = Array.from({ length: n }, (_, i) => i);
-  indices.sort((a, b) => eigenvalues[b] - eigenvalues[a]);
-
-  const sortedValues = indices.map((i) => eigenvalues[i]);
-  const sortedVectors: Matrix = Array.from({ length: n }, () => new Array(n));
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      sortedVectors[i][j] = V[i][indices[j]];
-    }
-  }
-
-  return { eigenvalues: sortedValues, eigenvectors: sortedVectors };
-}
-
 // ── PCA ─────────────────────────────────────────────────────────────────
 
 /**
  * Principal Component Analysis.
  *
  * Reduces dimensionality by finding orthogonal directions of maximum variance.
- * Uses eigendecomposition of the covariance matrix via the Jacobi method.
+ * Uses eigendecomposition of the covariance matrix (LAPACK DSYEV when
+ * available, Jacobi iteration fallback).
  *
  * @param data - Data matrix (n observations x p features)
  * @param options - Configuration options

@@ -10,6 +10,9 @@
       ],
       "libraries": [
         "<(module_root_dir)/native/fortran/special_functions.o",
+        "<(module_root_dir)/native/fortran/linalg.o",
+        "-llapack",
+        "-lblas",
         "-lgfortran"
       ],
       "defines": ["NAPI_DISABLE_CPP_EXCEPTIONS"],
