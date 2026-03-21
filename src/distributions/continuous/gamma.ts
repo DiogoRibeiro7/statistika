@@ -49,7 +49,7 @@ export class GammaDistribution extends BaseContinuous {
     // Initial bracket
     const m = this.mean();
     const sd = this.stdDev();
-    let upper = m + 10 * sd;
+    const upper = m + 10 * sd;
     return quantileBisect((x) => this.cdf(x), p, 0, upper);
   }
 

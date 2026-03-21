@@ -1,29 +1,11 @@
 import { Dataset, HypothesisTestResult } from "../types";
-
-/**
- * Standard normal CDF approximation (Abramowitz & Stegun 26.2.17).
- */
-function normalCDF(x: number): number {
-  const a1 = 0.254829592;
-  const a2 = -0.284496736;
-  const a3 = 1.421413741;
-  const a4 = -1.453152027;
-  const a5 = 1.061405429;
-  const p = 0.3275911;
-
-  const sign = x < 0 ? -1 : 1;
-  const ax = Math.abs(x) / Math.SQRT2;
-  const t = 1.0 / (1.0 + p * ax);
-  const y =
-    1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
-  return 0.5 * (1.0 + sign * y);
-}
+import { normalCdf } from "../utils/linalg";
 
 /**
  * Two-tailed p-value from a z-score.
  */
 function zPValue(z: number): number {
-  return 2 * (1 - normalCDF(Math.abs(z)));
+  return 2 * (1 - normalCdf(Math.abs(z)));
 }
 
 /**

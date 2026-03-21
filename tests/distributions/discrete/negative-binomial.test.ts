@@ -54,4 +54,35 @@ describe("Negative Binomial distribution", () => {
     expect(() => new NegativeBinomial(3, 0)).toThrow();
     expect(() => new NegativeBinomial(3, 1.5)).toThrow();
   });
+
+  it("stdDev is sqrt(variance)", () => {
+    expect(nb.stdDev()).toBeCloseTo(Math.sqrt(nb.variance()), 8);
+  });
+
+  it("sf(k) = 1 - cdf(k)", () => {
+    expect(nb.sf(5)).toBeCloseTo(1 - nb.cdf(5), 10);
+  });
+
+  it("cdf returns 0 for negative k", () => {
+    expect(nb.cdf(-1)).toBe(0);
+  });
+
+  it("quantile edge cases", () => {
+    expect(nb.quantile(0)).toBe(0);
+    expect(nb.quantile(1)).toBe(Infinity);
+    expect(() => nb.quantile(-0.1)).toThrow();
+    expect(() => nb.quantile(1.1)).toThrow();
+  });
+
+  it("sample returns non-negative integers", () => {
+    for (let i = 0; i < 50; i++) {
+      const s = nb.sample();
+      expect(s).toBeGreaterThanOrEqual(0);
+      expect(Number.isInteger(s)).toBe(true);
+    }
+  });
+
+  it("sampleN returns correct number of samples", () => {
+    expect(nb.sampleN(10).length).toBe(10);
+  });
 });

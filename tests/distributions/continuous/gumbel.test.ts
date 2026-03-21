@@ -42,4 +42,29 @@ describe("Gumbel distribution", () => {
     expect(() => new Gumbel(0, 0)).toThrow();
     expect(() => new Gumbel(0, -1)).toThrow();
   });
+
+  it("stdDev is sqrt(variance)", () => {
+    expect(g.stdDev()).toBeCloseTo(Math.sqrt(g.variance()), 8);
+  });
+
+  it("sf(x) = 1 - cdf(x)", () => {
+    expect(g.sf(0)).toBeCloseTo(1 - g.cdf(0), 10);
+  });
+
+  it("quantile edge cases", () => {
+    expect(g.quantile(0)).toBe(-Infinity);
+    expect(g.quantile(1)).toBe(Infinity);
+    expect(() => g.quantile(-0.1)).toThrow();
+    expect(() => g.quantile(1.1)).toThrow();
+  });
+
+  it("sample returns finite values", () => {
+    for (let i = 0; i < 50; i++) {
+      expect(isFinite(g.sample())).toBe(true);
+    }
+  });
+
+  it("sampleN returns correct number of samples", () => {
+    expect(g.sampleN(10).length).toBe(10);
+  });
 });

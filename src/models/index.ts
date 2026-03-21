@@ -15,3 +15,8 @@ export type {
   QuantileRegressionResult,
   SimpleQuantileRegressionResult,
 } from "./quantile-regression";
+export { huberRegression, ransacRegression } from "./robust-regression";
+export type {
+  HuberRegressionResult,
+  RANSACResult,
+} from "./robust-regression";

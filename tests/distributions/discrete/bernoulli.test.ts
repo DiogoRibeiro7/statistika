@@ -28,4 +28,23 @@ describe("Bernoulli distribution", () => {
     expect(b.quantile(0.5)).toBe(0);
     expect(b.quantile(0.8)).toBe(1);
   });
+
+  it("stdDev is sqrt(variance)", () => {
+    expect(b.stdDev()).toBeCloseTo(Math.sqrt(0.21), 8);
+  });
+
+  it("sf(k) = 1 - cdf(k)", () => {
+    expect(b.sf(0)).toBeCloseTo(1 - b.cdf(0), 10);
+  });
+
+  it("sample returns 0 or 1", () => {
+    for (let i = 0; i < 50; i++) {
+      const s = b.sample();
+      expect(s === 0 || s === 1).toBe(true);
+    }
+  });
+
+  it("sampleN returns correct number of samples", () => {
+    expect(b.sampleN(10).length).toBe(10);
+  });
 });

@@ -1,49 +1,6 @@
 import { Dataset, MultipleRegressionResult } from "../types";
 import { mean } from "../utils/descriptive";
-
-/**
- * Solve a linear system Ax = b using Gaussian elimination with partial pivoting.
- * A is modified in place. Returns the solution vector x.
- */
-function solveLinearSystem(A: number[][], b: number[]): number[] {
-  const n = A.length;
-  const aug: number[][] = A.map((row, i) => [...row, b[i]]);
-
-  for (let col = 0; col < n; col++) {
-    // Partial pivoting
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) {
-        maxRow = row;
-      }
-    }
-    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-
-    if (Math.abs(aug[col][col]) < 1e-12) {
-      throw new Error("Singular matrix: features may be linearly dependent");
-    }
-
-    // Eliminate below
-    for (let row = col + 1; row < n; row++) {
-      const factor = aug[row][col] / aug[col][col];
-      for (let j = col; j <= n; j++) {
-        aug[row][j] -= factor * aug[col][j];
-      }
-    }
-  }
-
-  // Back substitution
-  const x = new Array(n).fill(0);
-  for (let row = n - 1; row >= 0; row--) {
-    x[row] = aug[row][n];
-    for (let col = row + 1; col < n; col++) {
-      x[row] -= aug[row][col] * x[col];
-    }
-    x[row] /= aug[row][row];
-  }
-
-  return x;
-}
+import { solveLinearSystem } from "../utils/linalg";
 
 /**
  * Multiple linear regression using ordinary least squares (normal equations).

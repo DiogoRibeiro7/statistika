@@ -1,4 +1,4 @@
-export { mean, median, variance, stdDev, describe } from "./descriptive";
+export { mean, median, variance, stdDev, skewness, kurtosis, percentile, describe } from "./descriptive";
 export {
   gammaLn,
   gamma,
@@ -12,3 +12,16 @@ export {
   regularizedBeta,
   quantileBisect,
 } from "./math";
+export {
+  solveLinearSystem,
+  invertMatrix,
+  transpose,
+  matMul,
+  symmetricEigen,
+  normalCdf,
+  normalQuantile,
+  createRng,
+  randomSample,
+  hasNativeLinalg,
+} from "./linalg";
+export type { Matrix } from "./linalg";

@@ -27,4 +27,46 @@ describe("Geometric distribution", () => {
       expect(g.cdf(k)).toBeGreaterThanOrEqual(p);
     }
   });
+
+  it("stdDev is sqrt(variance)", () => {
+    expect(g.stdDev()).toBeCloseTo(Math.sqrt(g.variance()), 8);
+  });
+
+  it("sf(k) = 1 - cdf(k)", () => {
+    expect(g.sf(1)).toBeCloseTo(1 - g.cdf(1), 10);
+  });
+
+  it("cdf returns 0 for negative k", () => {
+    expect(g.cdf(-1)).toBe(0);
+  });
+
+  it("pmf returns 0 for non-integer and negative k", () => {
+    expect(g.pmf(-1)).toBe(0);
+    expect(g.pmf(1.5)).toBe(0);
+  });
+
+  it("quantile edge cases", () => {
+    expect(g.quantile(0)).toBe(0);
+    expect(g.quantile(1)).toBe(Infinity);
+    expect(() => g.quantile(-0.1)).toThrow();
+    expect(() => g.quantile(1.1)).toThrow();
+  });
+
+  it("sample returns non-negative integers", () => {
+    for (let i = 0; i < 50; i++) {
+      const s = g.sample();
+      expect(s).toBeGreaterThanOrEqual(0);
+      expect(Number.isInteger(s)).toBe(true);
+    }
+  });
+
+  it("sampleN returns correct number of samples", () => {
+    expect(g.sampleN(10).length).toBe(10);
+  });
+
+  it("throws on invalid p", () => {
+    expect(() => new Geometric(0)).toThrow();
+    expect(() => new Geometric(1.5)).toThrow();
+    expect(() => new Geometric(-0.1)).toThrow();
+  });
 });

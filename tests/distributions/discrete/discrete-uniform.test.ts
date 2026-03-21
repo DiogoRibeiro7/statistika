@@ -29,4 +29,59 @@ describe("DiscreteUniform distribution", () => {
   it("cdf(3) = 3/6", () => {
     expect(du.cdf(3)).toBeCloseTo(0.5, 8);
   });
+
+  it("cdf returns 0 for values below a", () => {
+    expect(du.cdf(0)).toBe(0);
+  });
+
+  it("stdDev is sqrt(variance)", () => {
+    expect(du.stdDev()).toBeCloseTo(Math.sqrt(du.variance()), 8);
+  });
+
+  it("sf(k) = 1 - cdf(k)", () => {
+    expect(du.sf(3)).toBeCloseTo(1 - du.cdf(3), 10);
+  });
+
+  it("quantile edge cases", () => {
+    expect(du.quantile(0)).toBe(1);
+    expect(du.quantile(1)).toBe(6);
+    expect(() => du.quantile(-0.1)).toThrow();
+    expect(() => du.quantile(1.1)).toThrow();
+  });
+
+  it("quantile returns values in [a, b]", () => {
+    for (const p of [0.1, 0.25, 0.5, 0.75, 0.9]) {
+      const k = du.quantile(p);
+      expect(k).toBeGreaterThanOrEqual(1);
+      expect(k).toBeLessThanOrEqual(6);
+      expect(Number.isInteger(k)).toBe(true);
+    }
+  });
+
+  it("sample returns values in [a, b]", () => {
+    for (let i = 0; i < 50; i++) {
+      const s = du.sample();
+      expect(s).toBeGreaterThanOrEqual(1);
+      expect(s).toBeLessThanOrEqual(6);
+      expect(Number.isInteger(s)).toBe(true);
+    }
+  });
+
+  it("sampleN returns correct number of samples", () => {
+    expect(du.sampleN(10).length).toBe(10);
+  });
+
+  it("throws on non-integer parameters", () => {
+    expect(() => new DiscreteUniform(1.5, 6)).toThrow();
+    expect(() => new DiscreteUniform(1, 6.5)).toThrow();
+  });
+
+  it("throws when a >= b", () => {
+    expect(() => new DiscreteUniform(6, 6)).toThrow();
+    expect(() => new DiscreteUniform(7, 3)).toThrow();
+  });
+
+  it("pmf returns 0 for non-integer k", () => {
+    expect(du.pmf(1.5)).toBe(0);
+  });
 });

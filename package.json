@@ -2,22 +2,32 @@
   "name": "node_stats",
   "version": "1.0.0",
   "description": "Comprehensive statistical library for Node.js — distributions, hypothesis tests, regression models, correlation, and special math functions with optional native Fortran acceleration",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/cjs/index.d.ts"
+    }
+  },
   "files": [
     "dist",
     "native",
     "binding.gyp"
   ],
   "scripts": {
-    "build": "npm run build:native && tsc",
+    "build": "npm run build:native && npm run build:ts",
     "build:native": "node scripts/build-native.js",
-    "build:ts": "tsc",
+    "build:ts": "tsc -p tsconfig.json && tsc -p tsconfig.esm.json && node -e \"require('fs').writeFileSync('dist/esm/package.json','{\\\"type\\\":\\\"module\\\"}\\n')\" && node scripts/fix-esm-imports.js",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/ tests/",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "bench": "npx ts-node benchmark/special-functions.ts",
+    "bench:linalg": "npx ts-node benchmark/linalg.ts",
+    "bench:all": "npx ts-node benchmark/special-functions.ts && npx ts-node benchmark/linalg.ts",
     "docs": "typedoc",
     "install": "node scripts/build-native.js",
     "prepublishOnly": "npm run build"
@@ -48,6 +58,7 @@
   "author": "Diogo Ribeiro",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
     "eslint": "^10.0.3",
@@ -56,7 +67,8 @@
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typedoc": "^0.27.9",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.1"
   },
   "optionalDependencies": {
     "node-addon-api": "^8.6.0",

@@ -62,4 +62,42 @@ describe("Hypergeometric distribution", () => {
     expect(() => new Hypergeometric(10, 15, 3)).toThrow();
     expect(() => new Hypergeometric(10, 5, 15)).toThrow();
   });
+
+  it("stdDev is sqrt(variance)", () => {
+    expect(h.stdDev()).toBeCloseTo(Math.sqrt(h.variance()), 8);
+  });
+
+  it("sf(k) = 1 - cdf(k)", () => {
+    expect(h.sf(1)).toBeCloseTo(1 - h.cdf(1), 10);
+  });
+
+  it("cdf returns 0 below lower bound", () => {
+    expect(h.cdf(-1)).toBe(0);
+  });
+
+  it("quantile edge cases", () => {
+    expect(h.quantile(0)).toBe(0);
+    expect(h.quantile(1)).toBe(5);
+    expect(() => h.quantile(-0.1)).toThrow();
+    expect(() => h.quantile(1.1)).toThrow();
+  });
+
+  it("sample returns integers in valid range", () => {
+    for (let i = 0; i < 50; i++) {
+      const s = h.sample();
+      expect(s).toBeGreaterThanOrEqual(0);
+      expect(s).toBeLessThanOrEqual(5);
+      expect(Number.isInteger(s)).toBe(true);
+    }
+  });
+
+  it("sampleN returns correct number of samples", () => {
+    expect(h.sampleN(10).length).toBe(10);
+  });
+
+  it("throws on non-integer parameters", () => {
+    expect(() => new Hypergeometric(10.5, 5, 3)).toThrow();
+    expect(() => new Hypergeometric(10, 5.5, 3)).toThrow();
+    expect(() => new Hypergeometric(10, 5, 3.5)).toThrow();
+  });
 });
