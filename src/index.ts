@@ -25,5 +25,6 @@ export * from "./categorical";
 export * from "./glm";
 export * from "./forecasting";
 export * from "./mcmc";
+export * from "./dimensionality";
 export * from "./resampling";
 export * from "./mixture-models";
