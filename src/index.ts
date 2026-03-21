@@ -15,3 +15,4 @@ export * from "./multivariate";
 export * from "./multiple-testing";
 export * from "./robust-statistics";
 export * from "./distance";
+export * from "./information-theory";
