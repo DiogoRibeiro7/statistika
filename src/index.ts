@@ -16,3 +16,4 @@ export * from "./multiple-testing";
 export * from "./robust-statistics";
 export * from "./distance";
 export * from "./information-theory";
+export * from "./diagnostics";
