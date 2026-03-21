@@ -1,6 +1,7 @@
 import { Dataset } from "./types";
 import { mean, variance } from "./utils/descriptive";
 import { invertMatrix } from "./utils/linalg";
+import { pairwiseEuclidean as nativePairwiseEuclidean } from "./utils/native-stats";
 
 /**
  * Euclidean distance between two vectors.
@@ -247,6 +248,12 @@ export function distanceMatrix(
   metric: (a: Dataset, b: Dataset) => number = euclidean,
 ): number[][] {
   const n = vectors.length;
+
+  // Use Fortran-accelerated pairwise Euclidean when the default metric is used
+  if (metric === euclidean && n > 0) {
+    return nativePairwiseEuclidean(vectors);
+  }
+
   const matrix = Array.from({ length: n }, () => new Array<number>(n).fill(0));
 
   for (let i = 0; i < n; i++) {

@@ -1,3 +1,5 @@
+import { welfordBatch } from "./utils/native-stats";
+
 /**
  * Online/streaming statistics using Welford's algorithm.
  *
@@ -110,12 +112,27 @@ export class OnlineStats {
 
   /**
    * Add multiple observations.
+   * Uses Fortran-accelerated batch update when the native addon is available.
    * @param values - Array of numeric values to add
    * @returns void
    * @throws {Error} If any value is NaN
    */
   pushAll(values: number[]): void {
-    for (const v of values) this.push(v);
+    for (const v of values) {
+      if (Number.isNaN(v)) throw new Error("Cannot push NaN value into OnlineStats");
+    }
+    const result = welfordBatch(values, {
+      count: this._count,
+      mean: this._mean,
+      m2: this._m2,
+      min: this._min,
+      max: this._max,
+    });
+    this._count = result.count;
+    this._mean = result.mean;
+    this._m2 = result.m2;
+    this._min = result.min;
+    this._max = result.max;
   }
 
   /**

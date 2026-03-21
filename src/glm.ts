@@ -1,6 +1,7 @@
 import { Dataset } from "./types";
 import { mean } from "./utils/descriptive";
 import { solveLinearSystem, invertMatrix, normalCdf, normalQuantile } from "./utils/linalg";
+import { weightedCrossProducts } from "./utils/native-stats";
 
 /**
  * Link function for GLM.
@@ -218,18 +219,9 @@ export function glm(
     }
 
     // Weighted least squares: solve (X^T W X) beta = X^T W z
-    const XtWX = Array.from({ length: cols }, () => new Array<number>(cols).fill(0));
-    const XtWz = new Array<number>(cols).fill(0);
-
-    for (let i = 0; i < n; i++) {
-      const row = [1, ...X[i]];
-      for (let j = 0; j < cols; j++) {
-        XtWz[j] += row[j] * W[i] * z[i];
-        for (let k = 0; k < cols; k++) {
-          XtWX[j][k] += row[j] * W[i] * row[k];
-        }
-      }
-    }
+    // Uses Fortran-accelerated cross-products when native addon is available
+    const designMatrix = X.map((row) => [1, ...row]);
+    const { XtWX, XtWz } = weightedCrossProducts(designMatrix, W, z);
 
     const betaNew = solveLinearSystem(XtWX, XtWz);
 

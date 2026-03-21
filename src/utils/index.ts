@@ -25,3 +25,11 @@ export {
   hasNativeLinalg,
 } from "./linalg";
 export type { Matrix } from "./linalg";
+export {
+  hasNativeStats,
+  pairwiseEuclidean,
+  gaussianPdfBatch,
+  kdeGaussian,
+  weightedCrossProducts,
+  welfordBatch,
+} from "./native-stats";
