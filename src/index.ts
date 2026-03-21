@@ -20,5 +20,6 @@ export * from "./diagnostics";
 export * from "./missing-data";
 export * from "./smoothing";
 export * from "./streaming";
+export * from "./random";
 export * from "./resampling";
 export * from "./mixture-models";
