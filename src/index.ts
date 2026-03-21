@@ -19,5 +19,6 @@ export * from "./information-theory";
 export * from "./diagnostics";
 export * from "./missing-data";
 export * from "./smoothing";
+export * from "./streaming";
 export * from "./resampling";
 export * from "./mixture-models";
