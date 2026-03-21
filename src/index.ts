@@ -19,3 +19,4 @@ export * from "./information-theory";
 export * from "./diagnostics";
 export * from "./missing-data";
 export * from "./resampling";
+export * from "./mixture-models";
