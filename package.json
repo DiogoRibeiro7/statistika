@@ -18,7 +18,7 @@
     "binding.gyp"
   ],
   "scripts": {
-    "build": "npm run build:native && npm run build:ts",
+    "build": "yarn build:native && yarn build:ts",
     "build:native": "node scripts/build-native.js",
     "build:ts": "tsc -p tsconfig.json && tsc -p tsconfig.esm.json && node -e \"require('fs').writeFileSync('dist/esm/package.json','{\\\"type\\\":\\\"module\\\"}\\n')\" && node scripts/fix-esm-imports.js",
     "test": "jest",
@@ -30,7 +30,7 @@
     "bench:all": "npx ts-node benchmark/special-functions.ts && npx ts-node benchmark/linalg.ts",
     "docs": "typedoc",
     "install": "node scripts/build-native.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "yarn build"
   },
   "repository": {
     "type": "git",
