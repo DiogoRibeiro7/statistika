@@ -14,3 +14,4 @@ export * from "./nonparametric";
 export * from "./multivariate";
 export * from "./multiple-testing";
 export * from "./robust-statistics";
+export * from "./distance";
