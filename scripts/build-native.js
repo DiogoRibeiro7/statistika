@@ -68,6 +68,21 @@ function main() {
     return;
   }
 
+  // Compile statistics.f90
+  const statsSrc = path.join(ROOT, "native/fortran/statistics.f90");
+  const statsObj = path.join(ROOT, "native/fortran/statistics.o");
+  if (fs.existsSync(statsSrc)) {
+    if (
+      !run(
+        `gfortran -c -fPIC -O2 -o ${statsObj} ${statsSrc}`,
+        "Fortran statistics compilation",
+      )
+    ) {
+      // Create empty stub if compilation fails
+      try { fs.unlinkSync(statsObj); } catch {}
+    }
+  }
+
   // Compile linalg.f90 (only if LAPACK is available and source exists)
   if (hasLapack && fs.existsSync(linalgSrc)) {
     const linalgObj = path.join(ROOT, "native/fortran/linalg.o");
@@ -131,6 +146,56 @@ subroutine fortran_normal_cdf(x, result) bind(C, name="fortran_normal_cdf")
   real(c_double), intent(in), value :: x
   real(c_double), intent(out) :: result
   result = 0.0d0
+end subroutine
+
+subroutine fortran_pairwise_euclidean(data, dist, n, p) bind(C, name="fortran_pairwise_euclidean")
+  use iso_c_binding
+  real(c_double), intent(in) :: data(*)
+  real(c_double), intent(out) :: dist(*)
+  integer(c_int), intent(in) :: n, p
+  dist(1) = 0.0d0
+end subroutine
+
+subroutine fortran_gaussian_pdf_batch(x, mu, sigma2, result, n) bind(C, name="fortran_gaussian_pdf_batch")
+  use iso_c_binding
+  real(c_double), intent(in) :: x(*)
+  real(c_double), intent(in), value :: mu, sigma2
+  real(c_double), intent(out) :: result(*)
+  integer(c_int), intent(in) :: n
+  result(1) = 0.0d0
+end subroutine
+
+subroutine fortran_kde_gaussian(data, eval_points, density, n, m, bandwidth) bind(C, name="fortran_kde_gaussian")
+  use iso_c_binding
+  real(c_double), intent(in) :: data(*), eval_points(*)
+  real(c_double), intent(out) :: density(*)
+  integer(c_int), intent(in) :: n, m
+  real(c_double), intent(in), value :: bandwidth
+  density(1) = 0.0d0
+end subroutine
+
+subroutine fortran_weighted_cross_products(X, W, z, XtWX, XtWz, n, cols) bind(C, name="fortran_weighted_cross_products")
+  use iso_c_binding
+  real(c_double), intent(in) :: X(*), W(*), z(*)
+  real(c_double), intent(out) :: XtWX(*), XtWz(*)
+  integer(c_int), intent(in) :: n, cols
+  XtWX(1) = 0.0d0
+  XtWz(1) = 0.0d0
+end subroutine
+
+subroutine fortran_welford_batch(values, n, count_in, mean_in, m2_in, min_in, max_in, count_out, mean_out, m2_out, min_out, max_out) bind(C, name="fortran_welford_batch")
+  use iso_c_binding
+  real(c_double), intent(in) :: values(*)
+  integer(c_int), intent(in) :: n
+  integer(c_int), intent(in), value :: count_in
+  real(c_double), intent(in), value :: mean_in, m2_in, min_in, max_in
+  integer(c_int), intent(out) :: count_out
+  real(c_double), intent(out) :: mean_out, m2_out, min_out, max_out
+  count_out = count_in
+  mean_out = mean_in
+  m2_out = m2_in
+  min_out = min_in
+  max_out = max_in
 end subroutine
 `);
     run(

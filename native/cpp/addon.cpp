@@ -28,6 +28,27 @@ extern "C" {
   void fortran_normal_cdf(double x, double* result);
 }
 
+// Fortran function declarations — statistics.f90
+extern "C" {
+  void fortran_pairwise_euclidean(const double* data, double* dist,
+                                  const int* n, const int* p);
+  void fortran_gaussian_pdf_batch(const double* x, double mu, double sigma2,
+                                   double* result, const int* n);
+  void fortran_kde_gaussian(const double* data, const double* eval_points,
+                             double* density, const int* n, const int* m,
+                             double bandwidth);
+  void fortran_weighted_cross_products(const double* X, const double* W,
+                                        const double* z, double* XtWX,
+                                        double* XtWz, const int* n,
+                                        const int* cols);
+  void fortran_welford_batch(const double* values, const int* n,
+                              int count_in, double mean_in, double m2_in,
+                              double min_in, double max_in,
+                              int* count_out, double* mean_out,
+                              double* m2_out, double* min_out,
+                              double* max_out);
+}
+
 // ==========================================================================
 // Helpers: JS row-major array-of-arrays <-> Fortran column-major flat array
 // ==========================================================================
@@ -269,6 +290,124 @@ Napi::Value NormalCdf(const Napi::CallbackInfo& info) {
 }
 
 // ==========================================================================
+// Statistics module wrappers (statistics.f90)
+// ==========================================================================
+
+// pairwiseEuclidean(data: number[][], n: number, p: number) => number[][]
+Napi::Value PairwiseEuclidean(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[1].As<Napi::Number>().Int32Value();
+  int p = info[2].As<Napi::Number>().Int32Value();
+
+  auto data = jsMatrixToColMajor(env, info[0].As<Napi::Array>(), n, p);
+  std::vector<double> dist(n * n);
+
+  fortran_pairwise_euclidean(data.data(), dist.data(), &n, &p);
+
+  return colMajorToJsMatrix(env, dist.data(), n, n);
+}
+
+// gaussianPdfBatch(x: number[], mu: number, sigma2: number) => number[]
+Napi::Value GaussianPdfBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array xArr = info[0].As<Napi::Array>();
+  double mu = info[1].As<Napi::Number>().DoubleValue();
+  double sigma2 = info[2].As<Napi::Number>().DoubleValue();
+  int n = xArr.Length();
+
+  auto x = jsArrayToVector(env, xArr, n);
+  std::vector<double> result(n);
+
+  fortran_gaussian_pdf_batch(x.data(), mu, sigma2, result.data(), &n);
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+// kdeGaussian(data: number[], evalPoints: number[], bandwidth: number) => number[]
+Napi::Value KdeGaussian(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array dataArr = info[0].As<Napi::Array>();
+  Napi::Array evalArr = info[1].As<Napi::Array>();
+  double bandwidth = info[2].As<Napi::Number>().DoubleValue();
+  int n = dataArr.Length();
+  int m = evalArr.Length();
+
+  auto data = jsArrayToVector(env, dataArr, n);
+  auto eval_points = jsArrayToVector(env, evalArr, m);
+  std::vector<double> density(m);
+
+  fortran_kde_gaussian(data.data(), eval_points.data(), density.data(),
+                       &n, &m, bandwidth);
+
+  Napi::Array jsResult = Napi::Array::New(env, m);
+  for (int i = 0; i < m; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, density[i]));
+  }
+  return jsResult;
+}
+
+// weightedCrossProducts(X: number[][], W: number[], z: number[], n, cols)
+Napi::Value WeightedCrossProducts(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[3].As<Napi::Number>().Int32Value();
+  int cols = info[4].As<Napi::Number>().Int32Value();
+
+  auto X = jsMatrixToColMajor(env, info[0].As<Napi::Array>(), n, cols);
+  auto W = jsArrayToVector(env, info[1].As<Napi::Array>(), n);
+  auto z = jsArrayToVector(env, info[2].As<Napi::Array>(), n);
+
+  std::vector<double> XtWX(cols * cols);
+  std::vector<double> XtWz(cols);
+
+  fortran_weighted_cross_products(X.data(), W.data(), z.data(),
+                                   XtWX.data(), XtWz.data(), &n, &cols);
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("XtWX", colMajorToJsMatrix(env, XtWX.data(), cols, cols));
+
+  Napi::Array jsXtWz = Napi::Array::New(env, cols);
+  for (int i = 0; i < cols; i++) {
+    jsXtWz.Set(static_cast<uint32_t>(i), Napi::Number::New(env, XtWz[i]));
+  }
+  result.Set("XtWz", jsXtWz);
+
+  return result;
+}
+
+// welfordBatch(values: number[], count, mean, m2, min, max)
+Napi::Value WelfordBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array valArr = info[0].As<Napi::Array>();
+  int n = valArr.Length();
+  int count_in = info[1].As<Napi::Number>().Int32Value();
+  double mean_in = info[2].As<Napi::Number>().DoubleValue();
+  double m2_in = info[3].As<Napi::Number>().DoubleValue();
+  double min_in = info[4].As<Napi::Number>().DoubleValue();
+  double max_in = info[5].As<Napi::Number>().DoubleValue();
+
+  auto values = jsArrayToVector(env, valArr, n);
+
+  int count_out;
+  double mean_out, m2_out, min_out, max_out;
+
+  fortran_welford_batch(values.data(), &n, count_in, mean_in, m2_in,
+                         min_in, max_in, &count_out, &mean_out, &m2_out,
+                         &min_out, &max_out);
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("count", Napi::Number::New(env, count_out));
+  result.Set("mean", Napi::Number::New(env, mean_out));
+  result.Set("m2", Napi::Number::New(env, m2_out));
+  result.Set("min", Napi::Number::New(env, min_out));
+  result.Set("max", Napi::Number::New(env, max_out));
+  return result;
+}
+
+// ==========================================================================
 // Module initialization
 // ==========================================================================
 
@@ -291,6 +430,13 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("invert", Napi::Function::New(env, Invert));
   exports.Set("symEigen", Napi::Function::New(env, SymEigen));
   exports.Set("normalCdf", Napi::Function::New(env, NormalCdf));
+
+  // Statistics (Fortran-accelerated)
+  exports.Set("pairwiseEuclidean", Napi::Function::New(env, PairwiseEuclidean));
+  exports.Set("gaussianPdfBatch", Napi::Function::New(env, GaussianPdfBatch));
+  exports.Set("kdeGaussian", Napi::Function::New(env, KdeGaussian));
+  exports.Set("weightedCrossProducts", Napi::Function::New(env, WeightedCrossProducts));
+  exports.Set("welfordBatch", Napi::Function::New(env, WelfordBatch));
 
   return exports;
 }
