@@ -17,3 +17,4 @@ export * from "./robust-statistics";
 export * from "./distance";
 export * from "./information-theory";
 export * from "./diagnostics";
+export * from "./missing-data";
