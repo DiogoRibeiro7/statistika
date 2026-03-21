@@ -1,5 +1,5 @@
 import { mean, variance } from "./utils/descriptive";
-import { createRng } from "./utils/linalg";
+import { SeededRng } from "./random";
 
 /**
  * MCMC chain diagnostics and results.
@@ -21,6 +21,8 @@ export interface MCMCResult {
   credibleInterval: { lower: number; upper: number; level: number };
   /** Effective sample size estimate. */
   effectiveSampleSize: number;
+  /** Warning message if acceptance rate is problematic. */
+  warning?: string;
 }
 
 /**
@@ -39,6 +41,8 @@ export interface MCMCResultND {
   posteriorMeans: number[];
   /** Posterior standard deviations. */
   posteriorStds: number[];
+  /** Warning message if acceptance rate is problematic. */
+  warning?: string;
 }
 
 /**
@@ -49,6 +53,21 @@ export interface MCMCResultND {
  *
  * @param logDensity - Unnormalized log-density function (log-posterior or log-likelihood + log-prior)
  * @param options - Configuration
+ * @returns MCMCResult containing the chain, acceptance rate, posterior summary, and diagnostics
+ * @throws {Error} If iterations or burnIn are invalid
+ * @throws {Error} If proposalStd is not positive
+ *
+ * @example
+ * ```ts
+ * // Sample from a standard normal distribution
+ * const result = metropolisHastings(
+ *   (x) => -0.5 * x * x, // log-density of N(0,1)
+ *   { iterations: 10000, proposalStd: 1.0, seed: 42 }
+ * );
+ * console.log(result.posteriorMean);  // ≈ 0
+ * console.log(result.posteriorStd);   // ≈ 1
+ * console.log(result.acceptanceRate); // typical: 0.2–0.5
+ * ```
  */
 export function metropolisHastings(
   logDensity: (x: number) => number,
@@ -66,22 +85,29 @@ export function metropolisHastings(
   const iterations = options.iterations ?? 10000;
   const burnIn = options.burnIn ?? Math.floor(iterations * 0.2);
   const credibleLevel = options.credibleLevel ?? 0.95;
-  const rng = options.seed != null ? createRng(options.seed) : Math.random;
+  const rng = new SeededRng(options.seed ?? Math.floor(Math.random() * 2147483647));
 
   let current = initial;
   let currentLogDensity = logDensity(current);
+  // NaN guard: if initial log-density is NaN, treat as -Infinity
+  if (Number.isNaN(currentLogDensity)) currentLogDensity = -Infinity;
   let accepted = 0;
 
   const chain: number[] = [];
 
   for (let i = 0; i < iterations; i++) {
     // Propose new value (normal random walk)
-    const proposal = current + boxMuller(rng) * proposalStd;
-    const proposalLogDensity = logDensity(proposal);
+    const proposal = current + rng.nextNormal(0, proposalStd);
+    let proposalLogDensity = logDensity(proposal);
+
+    // NaN guard: if logDensity returns NaN, reject the proposal
+    if (Number.isNaN(proposalLogDensity)) {
+      proposalLogDensity = -Infinity;
+    }
 
     // Accept/reject
     const logAlpha = proposalLogDensity - currentLogDensity;
-    if (Math.log(rng()) < logAlpha) {
+    if (Math.log(rng.next()) < logAlpha) {
       current = proposal;
       currentLogDensity = proposalLogDensity;
       accepted++;
@@ -101,9 +127,19 @@ export function metropolisHastings(
   const lower = sorted[Math.floor((alpha / 2) * sorted.length)];
   const upper = sorted[Math.floor((1 - alpha / 2) * sorted.length)];
 
-  return {
+  const acceptanceRate = accepted / iterations;
+
+  // Acceptance rate warning
+  let warning: string | undefined;
+  if (acceptanceRate < 0.05) {
+    warning = `Very low acceptance rate (${(acceptanceRate * 100).toFixed(1)}%). Consider increasing proposalStd or reparameterizing.`;
+  } else if (acceptanceRate > 0.95) {
+    warning = `Very high acceptance rate (${(acceptanceRate * 100).toFixed(1)}%). Consider decreasing proposalStd for better mixing.`;
+  }
+
+  const result: MCMCResult = {
     chain,
-    acceptanceRate: accepted / iterations,
+    acceptanceRate,
     totalIterations: iterations,
     burnIn,
     posteriorMean,
@@ -111,13 +147,19 @@ export function metropolisHastings(
     credibleInterval: { lower, upper, level: credibleLevel },
     effectiveSampleSize: estimateESS(chain),
   };
+  if (warning) result.warning = warning;
+  return result;
 }
 
 /**
  * Metropolis-Hastings sampler for multi-dimensional distributions.
  *
  * @param logDensity - Unnormalized log-density function taking a parameter vector
+ * @param dimensions - Number of parameters
  * @param options - Configuration
+ * @returns MCMCResultND containing chains, acceptance rate, and posterior summaries
+ * @throws {Error} If dimensions is less than 1
+ * @throws {Error} If iterations or burnIn are invalid
  */
 export function metropolisHastingsND(
   logDensity: (x: number[]) => number,
@@ -133,7 +175,7 @@ export function metropolisHastingsND(
   const initial = options.initial ?? new Array<number>(dimensions).fill(0);
   const iterations = options.iterations ?? 10000;
   const burnIn = options.burnIn ?? Math.floor(iterations * 0.2);
-  const rng = options.seed != null ? createRng(options.seed) : Math.random;
+  const rng = new SeededRng(options.seed ?? Math.floor(Math.random() * 2147483647));
 
   const proposalStds =
     typeof options.proposalStd === "number"
@@ -142,17 +184,24 @@ export function metropolisHastingsND(
 
   let current = [...initial];
   let currentLogDensity = logDensity(current);
+  // NaN guard
+  if (Number.isNaN(currentLogDensity)) currentLogDensity = -Infinity;
   let accepted = 0;
 
   const chains: number[][] = [];
 
   for (let i = 0; i < iterations; i++) {
     // Propose
-    const proposal = current.map((v, j) => v + boxMuller(rng) * proposalStds[j]);
-    const proposalLogDensity = logDensity(proposal);
+    const proposal = current.map((v, j) => v + rng.nextNormal(0, proposalStds[j]));
+    let proposalLogDensity = logDensity(proposal);
+
+    // NaN guard
+    if (Number.isNaN(proposalLogDensity)) {
+      proposalLogDensity = -Infinity;
+    }
 
     const logAlpha = proposalLogDensity - currentLogDensity;
-    if (Math.log(rng()) < logAlpha) {
+    if (Math.log(rng.next()) < logAlpha) {
       current = proposal;
       currentLogDensity = proposalLogDensity;
       accepted++;
@@ -171,14 +220,26 @@ export function metropolisHastingsND(
     posteriorStds[j] = Math.sqrt(variance(col));
   }
 
-  return {
+  const acceptanceRate = accepted / iterations;
+
+  // Acceptance rate warning
+  let warning: string | undefined;
+  if (acceptanceRate < 0.05) {
+    warning = `Very low acceptance rate (${(acceptanceRate * 100).toFixed(1)}%). Consider increasing proposalStd or reparameterizing.`;
+  } else if (acceptanceRate > 0.95) {
+    warning = `Very high acceptance rate (${(acceptanceRate * 100).toFixed(1)}%). Consider decreasing proposalStd for better mixing.`;
+  }
+
+  const result: MCMCResultND = {
     chains,
-    acceptanceRate: accepted / iterations,
+    acceptanceRate,
     totalIterations: iterations,
     burnIn,
     posteriorMeans,
     posteriorStds,
   };
+  if (warning) result.warning = warning;
+  return result;
 }
 
 /**
@@ -188,6 +249,9 @@ export function metropolisHastingsND(
  * independent chains. R-hat < 1.1 suggests convergence.
  *
  * @param chains - Array of MCMC chains (each an array of samples)
+ * @returns The R-hat statistic (values near 1.0 indicate convergence)
+ * @throws {Error} If fewer than 2 chains are provided
+ * @throws {Error} If chains have different lengths
  */
 export function gelmanRubin(chains: number[][]): number {
   const m = chains.length;
@@ -225,6 +289,10 @@ export function gelmanRubin(chains: number[][]): number {
  *
  * Accounts for autocorrelation in the chain. Higher ESS means
  * less autocorrelation and more effective samples.
+ *
+ * @param chain - Array of MCMC samples
+ * @returns Estimated effective sample size (always >= 1)
+ * @throws {Error} If chain is empty
  */
 export function estimateESS(chain: number[]): number {
   const n = chain.length;
@@ -249,12 +317,4 @@ export function estimateESS(chain: number[]): number {
   }
 
   return Math.max(1, n / (1 + 2 * rhoSum));
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────
-
-function boxMuller(rng: () => number): number {
-  const u1 = rng();
-  const u2 = rng();
-  return Math.sqrt(-2 * Math.log(Math.max(u1, 1e-10))) * Math.cos(2 * Math.PI * u2);
 }

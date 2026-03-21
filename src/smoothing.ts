@@ -3,13 +3,23 @@ import { Dataset } from "./types";
 /**
  * Simple Moving Average (SMA).
  *
+ * Computes the unweighted mean of the previous `window` data points
+ * for each position in the series.
+ *
  * @param data - Input time series
  * @param window - Window size
+ * @returns Array of smoothed values (length = data.length - window + 1)
+ * @throws {Error} If dataset is empty
+ * @throws {Error} If window is not an integer between 1 and data length
+ * @throws {Error} If any data value is NaN or Infinity
  */
-export function simpleMovingAverage(data: Dataset, window: number): number[] {
+export function sma(data: Dataset, window: number): number[] {
   if (data.length === 0) throw new Error("Dataset must not be empty");
   if (window < 1 || window > data.length) throw new Error("Window must be between 1 and data length");
   if (!Number.isInteger(window)) throw new Error("Window must be an integer");
+  for (let i = 0; i < data.length; i++) {
+    if (!Number.isFinite(data[i])) throw new Error("Data must not contain NaN or Infinity");
+  }
 
   const result: number[] = [];
   let sum = 0;
@@ -26,12 +36,21 @@ export function simpleMovingAverage(data: Dataset, window: number): number[] {
 /**
  * Exponential Moving Average (EMA).
  *
+ * Applies exponentially decreasing weights to older observations.
+ *
  * @param data - Input time series
  * @param alpha - Smoothing factor (0 < alpha <= 1). Higher = more weight on recent values.
+ * @returns Array of smoothed values (same length as input)
+ * @throws {Error} If dataset is empty
+ * @throws {Error} If alpha is not in (0, 1]
+ * @throws {Error} If any data value is NaN or Infinity
  */
-export function exponentialMovingAverage(data: Dataset, alpha: number): number[] {
+export function ema(data: Dataset, alpha: number): number[] {
   if (data.length === 0) throw new Error("Dataset must not be empty");
   if (alpha <= 0 || alpha > 1) throw new Error("Alpha must be between 0 (exclusive) and 1 (inclusive)");
+  for (let i = 0; i < data.length; i++) {
+    if (!Number.isFinite(data[i])) throw new Error("Data must not contain NaN or Infinity");
+  }
 
   const result = new Array<number>(data.length);
   result[0] = data[0];
@@ -50,10 +69,17 @@ export function exponentialMovingAverage(data: Dataset, alpha: number): number[]
  *
  * @param data - Input time series
  * @param window - Window size
+ * @returns Array of smoothed values (length = data.length - window + 1)
+ * @throws {Error} If dataset is empty
+ * @throws {Error} If window is not between 1 and data length
+ * @throws {Error} If any data value is NaN or Infinity
  */
-export function weightedMovingAverage(data: Dataset, window: number): number[] {
+export function wma(data: Dataset, window: number): number[] {
   if (data.length === 0) throw new Error("Dataset must not be empty");
   if (window < 1 || window > data.length) throw new Error("Window must be between 1 and data length");
+  for (let i = 0; i < data.length; i++) {
+    if (!Number.isFinite(data[i])) throw new Error("Data must not contain NaN or Infinity");
+  }
 
   const weightSum = (window * (window + 1)) / 2;
   const result: number[] = [];
@@ -77,12 +103,36 @@ export function weightedMovingAverage(data: Dataset, window: number): number[] {
  * @param x - Independent variable
  * @param y - Dependent variable
  * @param span - Proportion of data to use for each local fit (default: 0.3)
+ * @returns Array of smoothed y-values corresponding to each x
+ * @throws {Error} If x and y have different lengths
+ * @throws {Error} If fewer than 3 observations
+ * @throws {Error} If span is not in (0, 1]
+ * @throws {Error} If all x values are identical (would cause division by zero)
+ * @throws {Error} If any input value is NaN or Infinity
+ *
+ * @example
+ * ```ts
+ * const x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+ * const y = [2.1, 3.9, 6.2, 7.8, 10.1, 12.0, 13.8, 16.2, 17.9, 20.1];
+ * const smoothed = loess(x, y, 0.5);
+ * // smoothed ≈ [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+ * ```
  */
 export function loess(x: Dataset, y: Dataset, span = 0.3): Dataset {
   if (x.length !== y.length) throw new Error("x and y must have the same length");
   const n = x.length;
   if (n < 3) throw new Error("Need at least 3 observations");
   if (span <= 0 || span > 1) throw new Error("Span must be between 0 (exclusive) and 1 (inclusive)");
+
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(x[i])) throw new Error("x must not contain NaN or Infinity");
+    if (!Number.isFinite(y[i])) throw new Error("y must not contain NaN or Infinity");
+  }
+
+  // Check that x values are not all identical
+  const xMin = Math.min(...x);
+  const xMax = Math.max(...x);
+  if (xMin === xMax) throw new Error("All x values are identical; cannot fit LOESS");
 
   const k = Math.max(2, Math.floor(span * n));
   const result = new Array<number>(n);
@@ -133,7 +183,20 @@ export function loess(x: Dataset, y: Dataset, span = 0.3): Dataset {
  *
  * @param xs - Knot x-coordinates (must be sorted and unique)
  * @param ys - Knot y-coordinates
- * @returns A function that evaluates the spline at any x
+ * @returns A function that evaluates the spline at any x value
+ * @throws {Error} If xs and ys have different lengths
+ * @throws {Error} If fewer than 3 knots
+ * @throws {Error} If xs are not strictly increasing
+ * @throws {Error} If any input value is NaN or Infinity
+ *
+ * @example
+ * ```ts
+ * const xs = [0, 1, 2, 3, 4];
+ * const ys = [0, 1, 0, 1, 0];
+ * const spline = cubicSpline(xs, ys);
+ * console.log(spline(0.5)); // interpolated value between knots
+ * console.log(spline(2));   // 0 (passes through knot)
+ * ```
  */
 export function cubicSpline(
   xs: Dataset,
@@ -142,6 +205,11 @@ export function cubicSpline(
   if (xs.length !== ys.length) throw new Error("xs and ys must have the same length");
   const n = xs.length;
   if (n < 3) throw new Error("Need at least 3 knots");
+
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(xs[i])) throw new Error("xs must not contain NaN or Infinity");
+    if (!Number.isFinite(ys[i])) throw new Error("ys must not contain NaN or Infinity");
+  }
 
   // Check sorted
   for (let i = 1; i < n; i++) {

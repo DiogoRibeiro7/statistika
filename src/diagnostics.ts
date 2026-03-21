@@ -1,7 +1,6 @@
 import { Dataset } from "./types";
 import { mean, variance } from "./utils/descriptive";
-import { Normal } from "./distributions/continuous/normal";
-import { solveLinearSystem } from "./utils/linalg";
+import { solveLinearSystem, invertMatrix, normalCdf } from "./utils/linalg";
 
 /**
  * Regression summary table with coefficient statistics.
@@ -28,12 +27,23 @@ export interface CoefficientRow {
 /**
  * Compute a full regression summary with coefficient statistics.
  *
- * Similar to R's summary(lm(...)) — provides coefficient table with
+ * Similar to R's summary(lm(...)) -- provides coefficient table with
  * standard errors, t-statistics, and p-values plus model-level stats.
  *
  * @param X - Design matrix (n x p), without intercept column
  * @param y - Response variable
  * @param featureNames - Optional names for features
+ * @returns A {@link RegressionSummary} containing coefficients, R-squared, F-statistic, and more
+ * @throws If X has inconsistent row lengths, contains NaN/Infinity values, or n <= number of columns
+ *
+ * @example
+ * ```ts
+ * const X = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]];
+ * const y = [2.1, 4.0, 5.9, 8.1, 10.0];
+ * const summary = regressionSummary(X, y, ["height", "weight"]);
+ * console.log(summary.rSquared);       // close to 1
+ * console.log(summary.coefficients);   // intercept + feature rows
+ * ```
  */
 export function regressionSummary(
   X: number[][],
@@ -41,8 +51,40 @@ export function regressionSummary(
   featureNames?: string[],
 ): RegressionSummary {
   const n = X.length;
+  if (n === 0) throw new Error("X must not be empty");
   const p = X[0].length;
   const cols = p + 1;
+
+  // Validate consistent row lengths
+  for (let i = 0; i < n; i++) {
+    if (X[i].length !== p) {
+      throw new Error(
+        `Inconsistent row length at row ${i}: expected ${p} columns but got ${X[i].length}`,
+      );
+    }
+  }
+
+  if (n <= cols) {
+    throw new Error(
+      `Need more observations than parameters: n=${n} must be > cols=${cols}`,
+    );
+  }
+
+  if (n !== y.length) {
+    throw new Error("X and y must have the same number of rows");
+  }
+
+  // NaN / Infinity guards
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(y[i])) {
+      throw new Error(`y[${i}] is not finite`);
+    }
+    for (let j = 0; j < p; j++) {
+      if (!Number.isFinite(X[i][j])) {
+        throw new Error(`X[${i}][${j}] is not finite`);
+      }
+    }
+  }
 
   const names = featureNames ?? Array.from({ length: p }, (_, i) => `x${i + 1}`);
 
@@ -83,14 +125,17 @@ export function regressionSummary(
   const adjustedRSquared = 1 - ((1 - rSquared) * (n - 1)) / (n - cols);
   const residualStdError = Math.sqrt(ssRes / (n - cols));
 
-  // Invert X^T X for standard errors
+  // Invert X^T X for standard errors (uses LAPACK when available)
   const XtXInv = invertMatrix(XtX);
+  if (XtXInv === null) {
+    throw new Error("X'X matrix is singular — features may be linearly dependent");
+  }
+
   const se = new Array<number>(cols);
   for (let j = 0; j < cols; j++) {
     se[j] = residualStdError * Math.sqrt(XtXInv[j][j]);
   }
 
-  const normal = new Normal();
   const coefficients: CoefficientRow[] = [];
 
   // Intercept
@@ -100,7 +145,7 @@ export function regressionSummary(
     estimate: beta[0],
     standardError: se[0],
     tStatistic: tInt,
-    pValue: 2 * (1 - normal.cdf(Math.abs(tInt))), // approximate using normal for large n
+    pValue: 2 * (1 - normalCdf(Math.abs(tInt))),
   });
 
   // Features
@@ -111,7 +156,7 @@ export function regressionSummary(
       estimate: beta[j + 1],
       standardError: se[j + 1],
       tStatistic: t,
-      pValue: 2 * (1 - normal.cdf(Math.abs(t))),
+      pValue: 2 * (1 - normalCdf(Math.abs(t))),
     });
   }
 
@@ -140,7 +185,7 @@ export interface ResidualDiagnostics {
   residuals: number[];
   standardizedResiduals: number[];
   durbinWatson: number;
-  shapiroWilkApprox: { statistic: number; normalityLikely: boolean };
+  jarqueBera: { statistic: number; normalityLikely: boolean };
 }
 
 /**
@@ -148,6 +193,9 @@ export interface ResidualDiagnostics {
  *
  * @param observed - Observed values
  * @param predicted - Predicted/fitted values
+ * @returns A {@link ResidualDiagnostics} object with residuals, standardized residuals,
+ *   Durbin-Watson statistic, and Jarque-Bera normality test
+ * @throws If observed and predicted have different lengths or fewer than 3 observations
  */
 export function residualDiagnostics(
   observed: Dataset,
@@ -158,6 +206,16 @@ export function residualDiagnostics(
   }
   const n = observed.length;
   if (n < 3) throw new Error("Need at least 3 observations");
+
+  // NaN / Infinity guards
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(observed[i])) {
+      throw new Error(`observed[${i}] is not finite`);
+    }
+    if (!Number.isFinite(predicted[i])) {
+      throw new Error(`predicted[${i}] is not finite`);
+    }
+  }
 
   const residuals = observed.map((y, i) => y - predicted[i]);
   const resMean = mean(residuals);
@@ -187,14 +245,14 @@ export function residualDiagnostics(
   }
   m3 /= n;
   m4 /= n;
-  // Jarque-Bera-like statistic
+  // Jarque-Bera statistic
   const jb = (n / 6) * (m3 ** 2 + (m4 - 3) ** 2 / 4);
 
   return {
     residuals,
     standardizedResiduals,
     durbinWatson,
-    shapiroWilkApprox: {
+    jarqueBera: {
       statistic: jb,
       normalityLikely: jb < 5.99, // chi-squared(2) at 0.05
     },
@@ -207,12 +265,24 @@ export function residualDiagnostics(
  * VIF > 5 suggests moderate multicollinearity, VIF > 10 is severe.
  *
  * @param X - Design matrix (n x p), without intercept
+ * @returns An array of VIF values, one per feature
+ * @throws If fewer than 2 features or fewer observations than features
  */
 export function vif(X: number[][]): number[] {
   const n = X.length;
+  if (n === 0) throw new Error("X must not be empty");
   const p = X[0].length;
   if (p < 2) throw new Error("Need at least 2 features for VIF");
   if (n <= p) throw new Error("Need more observations than features");
+
+  // NaN / Infinity guards
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < p; j++) {
+      if (!Number.isFinite(X[i][j])) {
+        throw new Error(`X[${i}][${j}] is not finite`);
+      }
+    }
+  }
 
   const vifs = new Array<number>(p);
 
@@ -221,7 +291,7 @@ export function vif(X: number[][]): number[] {
     const y = X.map((row) => row[j]);
     const otherX = X.map((row) => row.filter((_, k) => k !== j));
 
-    // Simple OLS: compute R² of x_j ~ other features
+    // Simple OLS: compute R-squared of x_j ~ other features
     const otherP = p - 1;
     const cols = otherP + 1;
     const XtX = Array.from({ length: cols }, () => new Array<number>(cols).fill(0));
@@ -255,37 +325,4 @@ export function vif(X: number[][]): number[] {
   }
 
   return vifs;
-}
-
-// ── Helper ──────────────────────────────────────────────────────────────
-
-function invertMatrix(matrix: number[][]): number[][] {
-  const n = matrix.length;
-  const aug = matrix.map((row, i) => {
-    const r = [...row];
-    for (let j = 0; j < n; j++) r.push(i === j ? 1 : 0);
-    return r;
-  });
-
-  for (let col = 0; col < n; col++) {
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) maxRow = row;
-    }
-    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-
-    const pivot = aug[col][col];
-    if (Math.abs(pivot) < 1e-12) {
-      throw new Error("Matrix is singular");
-    }
-
-    for (let j = 0; j < 2 * n; j++) aug[col][j] /= pivot;
-    for (let row = 0; row < n; row++) {
-      if (row === col) continue;
-      const factor = aug[row][col];
-      for (let j = 0; j < 2 * n; j++) aug[row][j] -= factor * aug[col][j];
-    }
-  }
-
-  return aug.map((row) => row.slice(n));
 }

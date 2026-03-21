@@ -1,7 +1,7 @@
 import { Dataset } from "./types";
 import { mean, variance } from "./utils/descriptive";
 import { autocorrelation, arima, difference, ARIMAResult } from "./time-series";
-import { Normal } from "./distributions/continuous/normal";
+import { normalCdf, normalQuantile } from "./utils/linalg";
 
 /**
  * Augmented Dickey-Fuller test for stationarity.
@@ -11,6 +11,8 @@ import { Normal } from "./distributions/continuous/normal";
  *
  * @param series - Time series data
  * @param maxLags - Maximum number of lags (default: floor(cbrt(n)))
+ * @returns An object with the test statistic, p-value, lag count, and whether the series is stationary at the 0.05 level
+ * @throws If the series has fewer than 10 observations or not enough observations for the specified lag
  */
 export function adfTest(
   series: Dataset,
@@ -19,10 +21,17 @@ export function adfTest(
   const n = series.length;
   if (n < 10) throw new Error("Need at least 10 observations for ADF test");
 
+  // NaN / Infinity guard
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(series[i])) {
+      throw new Error(`series[${i}] is not finite`);
+    }
+  }
+
   const lags = maxLags ?? Math.floor(Math.cbrt(n));
   const diffed = difference(series, 1);
 
-  // OLS regression: Δy_t = α + β*y_{t-1} + Σ γ_i*Δy_{t-i} + ε_t
+  // OLS regression: delta_y_t = alpha + beta*y_{t-1} + sum gamma_i*delta_y_{t-i} + eps_t
   const start = lags;
   const nObs = diffed.length - start;
 
@@ -41,7 +50,7 @@ export function adfTest(
     X.push(row);
   }
 
-  // OLS: β = (X'X)^{-1} X'y
+  // OLS: beta = (X'X)^{-1} X'y
   const cols = X[0].length;
   const XtX = Array.from({ length: cols }, () => new Array<number>(cols).fill(0));
   const Xty = new Array<number>(cols).fill(0);
@@ -55,8 +64,8 @@ export function adfTest(
     }
   }
 
-  // Solve
-  const beta = solveSystem(XtX, Xty);
+  // Solve using Gaussian elimination (tolerant of near-singular systems)
+  const beta = solveSystemTolerant(XtX, Xty);
 
   // Compute residuals and SE
   let sse = 0;
@@ -67,7 +76,7 @@ export function adfTest(
   }
 
   const s2 = sse / (nObs - cols);
-  const XtXinv = invertMatrix(XtX);
+  const XtXinv = invertMatrixTolerant(XtX);
   const seBeta = Math.sqrt(Math.max(0, s2 * XtXinv[1][1]));
 
   const statistic = seBeta > 0 ? beta[1] / seBeta : 0;
@@ -79,7 +88,7 @@ export function adfTest(
   else if (statistic < -2.86) pValue = 0.05;
   else if (statistic < -2.57) pValue = 0.10;
   else if (statistic < -1.94) pValue = 0.30;
-  else pValue = 0.50 + 0.5 * new Normal().cdf(statistic);
+  else pValue = 0.50 + 0.5 * normalCdf(statistic);
 
   return {
     statistic,
@@ -97,6 +106,16 @@ export function adfTest(
  *
  * @param series - Time series data
  * @param options - Configuration
+ * @returns The best-fit {@link ARIMAResult} augmented with the selected (p, d, q) order
+ * @throws If the series is too short for any valid ARIMA model or all candidate models fail
+ *
+ * @example
+ * ```ts
+ * const sales = [120, 135, 148, 160, 172, 185, 190, 205, 218, 230, 245, 260];
+ * const result = autoArima(sales, { maxP: 2, maxQ: 2 });
+ * console.log(result.selectedOrder); // e.g. { p: 1, d: 1, q: 1 }
+ * console.log(result.forecast(6));   // 6-step-ahead forecast
+ * ```
  */
 export function autoArima(
   series: Dataset,
@@ -106,6 +125,15 @@ export function autoArima(
     maxQ?: number;
   } = {},
 ): ARIMAResult & { selectedOrder: { p: number; d: number; q: number } } {
+  if (series.length < 10) throw new Error("Need at least 10 observations for autoArima");
+
+  // NaN / Infinity guard
+  for (let i = 0; i < series.length; i++) {
+    if (!Number.isFinite(series[i])) {
+      throw new Error(`series[${i}] is not finite`);
+    }
+  }
+
   const maxP = options.maxP ?? 3;
   const maxD = options.maxD ?? 2;
   const maxQ = options.maxQ ?? 3;
@@ -166,6 +194,8 @@ export function autoArima(
  * @param model - Fitted ARIMA result
  * @param steps - Number of steps ahead
  * @param confidence - Confidence level (default: 0.95)
+ * @returns An object containing point forecasts and lower/upper prediction interval bounds
+ * @throws If steps is not a positive integer or confidence is not in (0, 1)
  */
 export function forecastWithIntervals(
   model: ARIMAResult,
@@ -177,9 +207,15 @@ export function forecastWithIntervals(
   upper: number[];
   confidence: number;
 } {
+  if (!Number.isFinite(steps) || steps < 1) {
+    throw new Error("steps must be a positive integer");
+  }
+  if (!Number.isFinite(confidence) || confidence <= 0 || confidence >= 1) {
+    throw new Error("confidence must be in (0, 1)");
+  }
+
   const point = model.forecast(steps);
-  const normal = new Normal();
-  const z = normal.quantile(1 - (1 - confidence) / 2);
+  const z = normalQuantile(1 - (1 - confidence) / 2);
   const sigma = Math.sqrt(model.sigma2);
 
   const lower = new Array<number>(steps);
@@ -204,6 +240,8 @@ export function forecastWithIntervals(
  *
  * @param series - Time series data
  * @param period - Seasonal period (e.g., 12 for monthly, 4 for quarterly)
+ * @returns An object with trend (nullable where edges are undefined), seasonal, and residual arrays
+ * @throws If period is less than 2 or the series has fewer than 2 full periods
  */
 export function seasonalDecompose(
   series: Dataset,
@@ -212,6 +250,13 @@ export function seasonalDecompose(
   const n = series.length;
   if (period < 2) throw new Error("Period must be at least 2");
   if (n < 2 * period) throw new Error("Need at least 2 full periods of data");
+
+  // NaN / Infinity guard
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(series[i])) {
+      throw new Error(`series[${i}] is not finite`);
+    }
+  }
 
   // Step 1: Compute trend using centered moving average
   const trend = new Array<number | null>(n).fill(null);
@@ -269,11 +314,11 @@ export function seasonalDecompose(
   return { trend, seasonal, residual };
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────
+// ── Local tolerant linear algebra (for ADF where near-singularity is common) ──
 
-function solveSystem(A: number[][], b: number[]): number[] {
+function solveSystemTolerant(A: number[][], b: number[]): number[] {
   const n = A.length;
-  const aug = A.map((row, i) => [...row, b[i]]);
+  const aug = A.map((row, i) => [...row.map(v => v), b[i]]);
 
   for (let col = 0; col < n; col++) {
     let maxRow = col;
@@ -283,7 +328,7 @@ function solveSystem(A: number[][], b: number[]): number[] {
     [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
 
     const pivot = aug[col][col];
-    if (Math.abs(pivot) < 1e-12) continue;
+    if (Math.abs(pivot) < 1e-30) continue; // skip truly zero pivots
 
     for (let j = col; j <= n; j++) aug[col][j] /= pivot;
     for (let row = 0; row < n; row++) {
@@ -296,7 +341,7 @@ function solveSystem(A: number[][], b: number[]): number[] {
   return aug.map((row) => row[n]);
 }
 
-function invertMatrix(matrix: number[][]): number[][] {
+function invertMatrixTolerant(matrix: number[][]): number[][] {
   const n = matrix.length;
   const aug = matrix.map((row, i) => {
     const r = [...row];
@@ -312,7 +357,7 @@ function invertMatrix(matrix: number[][]): number[][] {
     [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
 
     const pivot = aug[col][col];
-    if (Math.abs(pivot) < 1e-12) continue;
+    if (Math.abs(pivot) < 1e-15) continue;
 
     for (let j = 0; j < 2 * n; j++) aug[col][j] /= pivot;
     for (let row = 0; row < n; row++) {

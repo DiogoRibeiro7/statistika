@@ -1,5 +1,3 @@
-import { Normal } from "./distributions/continuous/normal";
-
 /**
  * Result of a multiple testing correction procedure.
  */
@@ -24,9 +22,20 @@ export interface MultipleTestingResult {
  *
  * @param pValues - Array of p-values from individual tests
  * @param alpha - Significance level (default: 0.05)
+ * @returns MultipleTestingResult with adjusted p-values and rejection decisions
+ * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
+ * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = bonferroni([0.01, 0.04, 0.03, 0.005], 0.05);
+ * // result.adjustedPValues ≈ [0.04, 0.16, 0.12, 0.02]
+ * // result.rejected ≈ [true, false, false, true]
+ * ```
  */
 export function bonferroni(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);
+  validateAlpha(alpha);
   const m = pValues.length;
   const adjustedPValues = pValues.map((p) => Math.min(p * m, 1));
   return {
@@ -46,9 +55,13 @@ export function bonferroni(pValues: number[], alpha = 0.05): MultipleTestingResu
  *
  * @param pValues - Array of p-values from individual tests
  * @param alpha - Significance level (default: 0.05)
+ * @returns MultipleTestingResult with adjusted p-values and rejection decisions
+ * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
+ * @throws Error if alpha is not in (0, 1)
  */
 export function sidak(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);
+  validateAlpha(alpha);
   const m = pValues.length;
   const adjustedPValues = pValues.map((p) => Math.min(1 - Math.pow(1 - p, m), 1));
   return {
@@ -69,9 +82,19 @@ export function sidak(pValues: number[], alpha = 0.05): MultipleTestingResult {
  *
  * @param pValues - Array of p-values from individual tests
  * @param alpha - Significance level (default: 0.05)
+ * @returns MultipleTestingResult with adjusted p-values and rejection decisions
+ * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
+ * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = holm([0.01, 0.04, 0.03, 0.005], 0.05);
+ * // Step-down adjusted p-values with FWER control
+ * ```
  */
 export function holm(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);
+  validateAlpha(alpha);
   const m = pValues.length;
 
   // Create indexed array and sort by p-value
@@ -106,9 +129,13 @@ export function holm(pValues: number[], alpha = 0.05): MultipleTestingResult {
  *
  * @param pValues - Array of p-values from individual tests
  * @param alpha - Significance level (default: 0.05)
+ * @returns MultipleTestingResult with adjusted p-values and rejection decisions
+ * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
+ * @throws Error if alpha is not in (0, 1)
  */
 export function hochberg(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);
+  validateAlpha(alpha);
   const m = pValues.length;
 
   const indexed = pValues.map((p, i) => ({ p, i }));
@@ -142,9 +169,13 @@ export function hochberg(pValues: number[], alpha = 0.05): MultipleTestingResult
  *
  * @param pValues - Array of p-values from individual tests
  * @param alpha - Target FDR level (default: 0.05)
+ * @returns MultipleTestingResult with adjusted p-values and rejection decisions
+ * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
+ * @throws Error if alpha is not in (0, 1)
  */
 export function benjaminiHochberg(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);
+  validateAlpha(alpha);
   const m = pValues.length;
 
   const indexed = pValues.map((p, i) => ({ p, i }));
@@ -178,9 +209,13 @@ export function benjaminiHochberg(pValues: number[], alpha = 0.05): MultipleTest
  *
  * @param pValues - Array of p-values from individual tests
  * @param alpha - Target FDR level (default: 0.05)
+ * @returns MultipleTestingResult with adjusted p-values and rejection decisions
+ * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
+ * @throws Error if alpha is not in (0, 1)
  */
 export function benjaminiYekutieli(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);
+  validateAlpha(alpha);
   const m = pValues.length;
 
   // Harmonic number c(m) = sum(1/i for i=1..m)
@@ -209,11 +244,20 @@ export function benjaminiYekutieli(pValues: number[], alpha = 0.05): MultipleTes
   };
 }
 
+function validateAlpha(alpha: number): void {
+  if (alpha <= 0 || alpha >= 1 || Number.isNaN(alpha)) {
+    throw new Error(`alpha must be between 0 and 1 (exclusive), got ${alpha}`);
+  }
+}
+
 function validatePValues(pValues: number[]): void {
   if (pValues.length === 0) {
     throw new Error("p-values array must not be empty");
   }
   for (const p of pValues) {
+    if (Number.isNaN(p)) {
+      throw new Error("p-values must not contain NaN");
+    }
     if (p < 0 || p > 1) {
       throw new Error(`p-values must be between 0 and 1, got ${p}`);
     }

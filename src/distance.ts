@@ -1,8 +1,19 @@
 import { Dataset } from "./types";
 import { mean, variance } from "./utils/descriptive";
+import { invertMatrix } from "./utils/linalg";
 
 /**
  * Euclidean distance between two vectors.
+ *
+ * @param a - First vector
+ * @param b - Second vector
+ * @returns The L2 (Euclidean) distance between a and b
+ * @throws If vectors are empty or have different lengths
+ *
+ * @example
+ * ```ts
+ * euclidean([1, 2, 3], [4, 5, 6]); // ~5.196
+ * ```
  */
 export function euclidean(a: Dataset, b: Dataset): number {
   assertSameLength(a, b);
@@ -13,6 +24,11 @@ export function euclidean(a: Dataset, b: Dataset): number {
 
 /**
  * Manhattan (city-block / L1) distance between two vectors.
+ *
+ * @param a - First vector
+ * @param b - Second vector
+ * @returns The L1 (Manhattan) distance between a and b
+ * @throws If vectors are empty or have different lengths
  */
 export function manhattan(a: Dataset, b: Dataset): number {
   assertSameLength(a, b);
@@ -22,7 +38,12 @@ export function manhattan(a: Dataset, b: Dataset): number {
 }
 
 /**
- * Chebyshev (L∞) distance between two vectors.
+ * Chebyshev (L-infinity) distance between two vectors.
+ *
+ * @param a - First vector
+ * @param b - Second vector
+ * @returns The L-infinity (Chebyshev) distance between a and b
+ * @throws If vectors are empty or have different lengths
  */
 export function chebyshev(a: Dataset, b: Dataset): number {
   assertSameLength(a, b);
@@ -34,12 +55,19 @@ export function chebyshev(a: Dataset, b: Dataset): number {
 /**
  * Minkowski distance between two vectors.
  *
+ * @param a - First vector
+ * @param b - Second vector
  * @param p - The order of the Minkowski metric (p >= 1)
+ * @returns The Minkowski distance of order p between a and b
+ * @throws If vectors are empty, have different lengths, or p < 1
  */
 export function minkowski(a: Dataset, b: Dataset, p: number): number {
   assertSameLength(a, b);
   if (p < 1) throw new Error("Minkowski order p must be >= 1");
-  if (p === Infinity) return chebyshev(a, b);
+  if (!Number.isFinite(p)) {
+    if (p === Infinity) return chebyshev(a, b);
+    throw new Error("Minkowski order p must be finite or Infinity");
+  }
 
   let sum = 0;
   for (let i = 0; i < a.length; i++) sum += Math.abs(a[i] - b[i]) ** p;
@@ -51,6 +79,17 @@ export function minkowski(a: Dataset, b: Dataset, p: number): number {
  *
  * Returns a value between -1 and 1, where 1 means identical direction,
  * 0 means orthogonal, and -1 means opposite direction.
+ *
+ * @param a - First vector
+ * @param b - Second vector
+ * @returns The cosine similarity in the range [-1, 1]
+ * @throws If vectors are empty, have different lengths, or either is a zero vector
+ *
+ * @example
+ * ```ts
+ * cosineSimilarity([1, 0], [0, 1]); // 0 (orthogonal)
+ * cosineSimilarity([1, 2], [2, 4]); // 1 (same direction)
+ * ```
  */
 export function cosineSimilarity(a: Dataset, b: Dataset): number {
   assertSameLength(a, b);
@@ -69,6 +108,11 @@ export function cosineSimilarity(a: Dataset, b: Dataset): number {
 
 /**
  * Cosine distance between two vectors (1 - cosine similarity).
+ *
+ * @param a - First vector
+ * @param b - Second vector
+ * @returns The cosine distance in the range [0, 2]
+ * @throws If vectors are empty, have different lengths, or either is a zero vector
  */
 export function cosineDistance(a: Dataset, b: Dataset): number {
   return 1 - cosineSimilarity(a, b);
@@ -77,10 +121,12 @@ export function cosineDistance(a: Dataset, b: Dataset): number {
 /**
  * Jaccard index for two binary sets represented as arrays.
  *
- * Measures the overlap between two sets: |A ∩ B| / |A ∪ B|.
+ * Measures the overlap between two sets: |A intersection B| / |A union B|.
  *
  * @param a - First set of elements
  * @param b - Second set of elements
+ * @returns The Jaccard index in the range [0, 1]
+ * @throws Never (returns 1 for two empty sets)
  */
 export function jaccardIndex(a: number[], b: number[]): number {
   const setA = new Set(a);
@@ -96,6 +142,11 @@ export function jaccardIndex(a: number[], b: number[]): number {
 
 /**
  * Jaccard distance (1 - Jaccard index).
+ *
+ * @param a - First set of elements
+ * @param b - Second set of elements
+ * @returns The Jaccard distance in the range [0, 1]
+ * @throws Never
  */
 export function jaccardDistance(a: number[], b: number[]): number {
   return 1 - jaccardIndex(a, b);
@@ -105,16 +156,42 @@ export function jaccardDistance(a: number[], b: number[]): number {
  * Mahalanobis distance of a point from a distribution.
  *
  * Uses the inverse covariance matrix to account for correlations and
- * scale differences between dimensions.
+ * scale differences between dimensions. Uses LAPACK when available for
+ * the matrix inversion.
  *
  * @param point - The point to measure
  * @param data - Dataset as array of observation vectors (each row is an observation)
+ * @returns The Mahalanobis distance (non-negative scalar)
+ * @throws If data has fewer than 2 observations, observations have inconsistent dimensionality,
+ *   n <= p (more dimensions than observations), or the covariance matrix is singular
  */
 export function mahalanobis(point: Dataset, data: Dataset[]): number {
   if (data.length < 2) throw new Error("Need at least 2 observations");
   const p = point.length;
+  const n = data.length;
+
+  if (n <= p) {
+    throw new Error(
+      `Need more observations than dimensions: n=${n} must be > p=${p}`,
+    );
+  }
+
   if (data.some((row) => row.length !== p)) {
     throw new Error("All observations must have the same dimensionality as the point");
+  }
+
+  // NaN / Infinity guards
+  for (let j = 0; j < p; j++) {
+    if (!Number.isFinite(point[j])) {
+      throw new Error(`point[${j}] is not finite`);
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < p; j++) {
+      if (!Number.isFinite(data[i][j])) {
+        throw new Error(`data[${i}][${j}] is not finite`);
+      }
+    }
   }
 
   // Compute means
@@ -122,7 +199,7 @@ export function mahalanobis(point: Dataset, data: Dataset[]): number {
   for (const row of data) {
     for (let j = 0; j < p; j++) means[j] += row[j];
   }
-  for (let j = 0; j < p; j++) means[j] /= data.length;
+  for (let j = 0; j < p; j++) means[j] /= n;
 
   // Compute covariance matrix
   const cov = Array.from({ length: p }, () => new Array<number>(p).fill(0));
@@ -135,14 +212,17 @@ export function mahalanobis(point: Dataset, data: Dataset[]): number {
   }
   for (let i = 0; i < p; i++) {
     for (let j = 0; j < p; j++) {
-      cov[i][j] /= data.length - 1;
+      cov[i][j] /= n - 1;
     }
   }
 
-  // Invert covariance matrix (Gauss-Jordan for small matrices)
+  // Invert covariance matrix (uses LAPACK when available)
   const inv = invertMatrix(cov);
+  if (inv === null) {
+    throw new Error("Covariance matrix is singular and cannot be inverted");
+  }
 
-  // Compute (x - μ)' * Σ^{-1} * (x - μ)
+  // Compute (x - mu)' * Sigma^{-1} * (x - mu)
   const diff = point.map((v, i) => v - means[i]);
   let result = 0;
   for (let i = 0; i < p; i++) {
@@ -159,6 +239,8 @@ export function mahalanobis(point: Dataset, data: Dataset[]): number {
  *
  * @param vectors - Array of vectors
  * @param metric - Distance function (default: euclidean)
+ * @returns A symmetric n x n matrix where entry [i][j] is the distance between vectors[i] and vectors[j]
+ * @throws If any call to the metric function throws
  */
 export function distanceMatrix(
   vectors: Dataset[],
@@ -178,47 +260,11 @@ export function distanceMatrix(
   return matrix;
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────
+// -- Helpers -----------------------------------------------------------------
 
 function assertSameLength(a: Dataset, b: Dataset): void {
   if (a.length === 0) throw new Error("Vectors must not be empty");
   if (a.length !== b.length) {
     throw new Error(`Vectors must have the same length (got ${a.length} and ${b.length})`);
   }
-}
-
-function invertMatrix(matrix: number[][]): number[][] {
-  const n = matrix.length;
-  // Augment with identity
-  const aug = matrix.map((row, i) => {
-    const r = [...row];
-    for (let j = 0; j < n; j++) r.push(i === j ? 1 : 0);
-    return r;
-  });
-
-  for (let col = 0; col < n; col++) {
-    // Find pivot
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) maxRow = row;
-    }
-    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-
-    const pivot = aug[col][col];
-    if (Math.abs(pivot) < 1e-12) {
-      throw new Error("Covariance matrix is singular and cannot be inverted");
-    }
-
-    // Scale pivot row
-    for (let j = 0; j < 2 * n; j++) aug[col][j] /= pivot;
-
-    // Eliminate column
-    for (let row = 0; row < n; row++) {
-      if (row === col) continue;
-      const factor = aug[row][col];
-      for (let j = 0; j < 2 * n; j++) aug[row][j] -= factor * aug[col][j];
-    }
-  }
-
-  return aug.map((row) => row.slice(n));
 }

@@ -1,15 +1,15 @@
 import {
-  simpleMovingAverage,
-  exponentialMovingAverage,
-  weightedMovingAverage,
+  sma,
+  ema,
+  wma,
   loess,
   cubicSpline,
 } from "../src/smoothing";
 
 describe("Smoothing & Interpolation", () => {
-  describe("simpleMovingAverage", () => {
+  describe("sma", () => {
     it("computes SMA correctly", () => {
-      const result = simpleMovingAverage([1, 2, 3, 4, 5], 3);
+      const result = sma([1, 2, 3, 4, 5], 3);
       expect(result).toHaveLength(3);
       expect(result[0]).toBeCloseTo(2); // (1+2+3)/3
       expect(result[1]).toBeCloseTo(3); // (2+3+4)/3
@@ -18,24 +18,24 @@ describe("Smoothing & Interpolation", () => {
 
     it("returns original data for window=1", () => {
       const data = [1, 2, 3];
-      expect(simpleMovingAverage(data, 1)).toEqual(data);
+      expect(sma(data, 1)).toEqual(data);
     });
 
     it("throws on invalid window", () => {
-      expect(() => simpleMovingAverage([1, 2], 3)).toThrow("between 1");
-      expect(() => simpleMovingAverage([1, 2], 0)).toThrow("between 1");
+      expect(() => sma([1, 2], 3)).toThrow("between 1");
+      expect(() => sma([1, 2], 0)).toThrow("between 1");
     });
   });
 
-  describe("exponentialMovingAverage", () => {
+  describe("ema", () => {
     it("starts with first value", () => {
-      const result = exponentialMovingAverage([10, 20, 30], 0.5);
+      const result = ema([10, 20, 30], 0.5);
       expect(result[0]).toBe(10);
     });
 
     it("smooths data", () => {
       const data = [1, 10, 1, 10, 1, 10];
-      const result = exponentialMovingAverage(data, 0.3);
+      const result = ema(data, 0.3);
       // EMA should be smoother than raw data
       const rawRange = Math.max(...data) - Math.min(...data);
       const emaRange = Math.max(...result) - Math.min(...result);
@@ -44,18 +44,18 @@ describe("Smoothing & Interpolation", () => {
 
     it("alpha=1 returns original data", () => {
       const data = [1, 2, 3];
-      expect(exponentialMovingAverage(data, 1)).toEqual(data);
+      expect(ema(data, 1)).toEqual(data);
     });
 
     it("throws on invalid alpha", () => {
-      expect(() => exponentialMovingAverage([1], 0)).toThrow("between 0");
-      expect(() => exponentialMovingAverage([1], 1.5)).toThrow("between 0");
+      expect(() => ema([1], 0)).toThrow("between 0");
+      expect(() => ema([1], 1.5)).toThrow("between 0");
     });
   });
 
-  describe("weightedMovingAverage", () => {
+  describe("wma", () => {
     it("computes WMA with linearly increasing weights", () => {
-      const result = weightedMovingAverage([1, 2, 3, 4, 5], 3);
+      const result = wma([1, 2, 3, 4, 5], 3);
       expect(result).toHaveLength(3);
       // WMA(1,2,3) with weights 1,2,3: (1*1 + 2*2 + 3*3)/(1+2+3) = 14/6
       expect(result[0]).toBeCloseTo(14 / 6);

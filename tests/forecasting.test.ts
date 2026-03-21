@@ -10,8 +10,9 @@ describe("Forecasting", () => {
   // Trending series (non-stationary)
   const trending = Array.from({ length: 100 }, (_, i) => i * 0.5 + Math.sin(i * 0.3) * 2);
 
-  // Stationary series
-  const stationary = Array.from({ length: 100 }, (_, i) => Math.sin(i * 0.5) + Math.cos(i * 0.3));
+  // Stationary series (AR(1) with phi=0.5, clearly mean-reverting)
+  const stationary: number[] = [0];
+  for (let i = 1; i < 200; i++) stationary.push(0.5 * stationary[i - 1] + Math.sin(i) * 2);
 
   describe("adfTest", () => {
     it("detects non-stationarity in trending series", () => {
@@ -21,7 +22,7 @@ describe("Forecasting", () => {
     });
 
     it("detects stationarity in stationary series", () => {
-      const result = adfTest(stationary);
+      const result = adfTest(stationary, 1);
       expect(result.isStationary).toBe(true);
     });
 

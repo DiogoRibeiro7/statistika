@@ -1,15 +1,14 @@
 import { Dataset } from "./types";
 import { mean } from "./utils/descriptive";
-import { solveLinearSystem } from "./utils/linalg";
-import { Normal } from "./distributions/continuous/normal";
+import { solveLinearSystem, invertMatrix, normalCdf, normalQuantile } from "./utils/linalg";
 
 /**
  * Link function for GLM.
  */
 export interface LinkFunction {
-  /** Link function g(μ). */
+  /** Link function g(mu). */
   link(mu: number): number;
-  /** Inverse link g^{-1}(η). */
+  /** Inverse link g^{-1}(eta). */
   inverse(eta: number): number;
   /** Derivative of inverse link. */
   derivative(eta: number): number;
@@ -21,13 +20,13 @@ export interface LinkFunction {
 export interface GLMFamily {
   name: string;
   link: LinkFunction;
-  /** Variance function V(μ). */
+  /** Variance function V(mu). */
   variance(mu: number): number;
   /** Log-likelihood contribution for one observation. */
   logLikelihood(y: number, mu: number): number;
 }
 
-// ── Link Functions ──────────────────────────────────────────────────────
+// -- Link Functions ----------------------------------------------------------
 
 export const identityLink: LinkFunction = {
   link: (mu) => mu,
@@ -51,9 +50,12 @@ export const logitLink: LinkFunction = {
 };
 
 export const probitLink: LinkFunction = {
-  link: (mu) => new Normal().quantile(mu),
-  inverse: (eta) => new Normal().cdf(eta),
-  derivative: (eta) => new Normal().pdf(eta),
+  link: (mu) => normalQuantile(mu),
+  inverse: (eta) => normalCdf(eta),
+  derivative: (eta) => {
+    // Standard normal PDF: (1/sqrt(2*pi)) * exp(-0.5 * eta^2)
+    return (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * eta * eta);
+  },
 };
 
 export const inverseLink: LinkFunction = {
@@ -62,7 +64,7 @@ export const inverseLink: LinkFunction = {
   derivative: (eta) => -1 / (eta * eta),
 };
 
-// ── GLM Families ────────────────────────────────────────────────────────
+// -- GLM Families ------------------------------------------------------------
 
 export const gaussian: GLMFamily = {
   name: "gaussian",
@@ -134,6 +136,19 @@ export interface GLMResult {
  * @param y - Response variable
  * @param family - GLM family (gaussian, binomial, poisson, gamma)
  * @param options - Configuration
+ * @returns A {@link GLMResult} with coefficients, standard errors, z-values, p-values,
+ *   log-likelihood, deviance, AIC, iteration count, and a predict function
+ * @throws If X and y have mismatched lengths, X has inconsistent row lengths,
+ *   inputs contain NaN/Infinity, or there are not enough observations
+ *
+ * @example
+ * ```ts
+ * const X = [[1], [2], [3], [4], [5]];
+ * const y = [0, 0, 1, 1, 1];
+ * const result = glm(X, y, binomial);
+ * console.log(result.coefficients); // [intercept, slope]
+ * console.log(result.predict([3])); // probability near 0.5
+ * ```
  */
 export function glm(
   X: number[][],
@@ -145,9 +160,31 @@ export function glm(
   } = {},
 ): GLMResult {
   const n = X.length;
+  if (n === 0) throw new Error("X must not be empty");
   const p = X[0].length;
   if (n !== y.length) throw new Error("X and y must have the same length");
   if (n <= p + 1) throw new Error("Need more observations than parameters");
+
+  // Validate consistent row lengths
+  for (let i = 0; i < n; i++) {
+    if (X[i].length !== p) {
+      throw new Error(
+        `Inconsistent row length at row ${i}: expected ${p} columns but got ${X[i].length}`,
+      );
+    }
+  }
+
+  // NaN / Infinity guards
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(y[i])) {
+      throw new Error(`y[${i}] is not finite`);
+    }
+    for (let j = 0; j < p; j++) {
+      if (!Number.isFinite(X[i][j])) {
+        throw new Error(`X[${i}][${j}] is not finite`);
+      }
+    }
+  }
 
   const maxIter = options.maxIterations ?? 25;
   const tol = options.tol ?? 1e-8;
@@ -161,7 +198,7 @@ export function glm(
 
   let iter = 0;
   for (; iter < maxIter; iter++) {
-    // Compute linear predictor η = Xβ
+    // Compute linear predictor eta = X*beta
     const eta = new Array<number>(n);
     const mu = new Array<number>(n);
     for (let i = 0; i < n; i++) {
@@ -180,7 +217,7 @@ export function glm(
       z[i] = eta[i] + (y[i] - mu[i]) / Math.max(dmu, 1e-10);
     }
 
-    // Weighted least squares: solve (X^T W X) β = X^T W z
+    // Weighted least squares: solve (X^T W X) beta = X^T W z
     const XtWX = Array.from({ length: cols }, () => new Array<number>(cols).fill(0));
     const XtWz = new Array<number>(cols).fill(0);
 
@@ -230,7 +267,7 @@ export function glm(
     deviance += 2 * (saturated - family.logLikelihood(y[i], mu[i]));
   }
 
-  // Standard errors via (X^T W X)^{-1}
+  // Standard errors via (X^T W X)^{-1} (uses LAPACK when available)
   const W = new Array<number>(n);
   for (let i = 0; i < n; i++) {
     const dmu = family.link.derivative(eta[i]);
@@ -252,12 +289,11 @@ export function glm(
   const standardErrors = new Array<number>(cols);
   const zValues = new Array<number>(cols);
   const pValues = new Array<number>(cols);
-  const normal = new Normal();
 
   for (let j = 0; j < cols; j++) {
-    standardErrors[j] = Math.sqrt(Math.max(0, covMatrix[j][j]));
+    standardErrors[j] = Math.sqrt(Math.max(0, covMatrix ? covMatrix[j][j] : 0));
     zValues[j] = standardErrors[j] > 0 ? beta[j] / standardErrors[j] : 0;
-    pValues[j] = 2 * (1 - normal.cdf(Math.abs(zValues[j])));
+    pValues[j] = 2 * (1 - normalCdf(Math.abs(zValues[j])));
   }
 
   const aic = -2 * ll + 2 * cols;
@@ -278,33 +314,4 @@ export function glm(
       return family.link.inverse(eta);
     },
   };
-}
-
-function invertMatrix(matrix: number[][]): number[][] {
-  const n = matrix.length;
-  const aug = matrix.map((row, i) => {
-    const r = [...row];
-    for (let j = 0; j < n; j++) r.push(i === j ? 1 : 0);
-    return r;
-  });
-
-  for (let col = 0; col < n; col++) {
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) maxRow = row;
-    }
-    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-
-    const pivot = aug[col][col];
-    if (Math.abs(pivot) < 1e-12) return Array.from({ length: n }, () => new Array(n).fill(0));
-
-    for (let j = 0; j < 2 * n; j++) aug[col][j] /= pivot;
-    for (let row = 0; row < n; row++) {
-      if (row === col) continue;
-      const factor = aug[row][col];
-      for (let j = 0; j < 2 * n; j++) aug[row][j] -= factor * aug[col][j];
-    }
-  }
-
-  return aug.map((row) => row.slice(n));
 }

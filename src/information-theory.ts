@@ -7,8 +7,19 @@ import { Dataset } from "./types";
  *
  * @param probabilities - Array of probabilities (must sum to ~1)
  * @param base - Logarithm base (default: 2 for bits)
+ * @returns The entropy value in the units determined by the base (bits for base 2, nats for base e)
+ * @throws Error if distribution is empty, contains negative values, or does not sum to ~1
+ * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * entropy([0.5, 0.5]);       // 1.0 (1 bit for fair coin)
+ * entropy([0.25, 0.25, 0.25, 0.25]); // 2.0 (2 bits for uniform over 4)
+ * entropy([0.5, 0.5], Math.E); // ~0.693 (in nats)
+ * ```
  */
 export function entropy(probabilities: Dataset, base = 2): number {
+  validateBase(base);
   validateDistribution(probabilities);
   let h = 0;
   for (const p of probabilities) {
@@ -24,9 +35,13 @@ export function entropy(probabilities: Dataset, base = 2): number {
  *
  * @param data - Array of categorical values (represented as numbers)
  * @param base - Logarithm base (default: 2 for bits)
+ * @returns The empirical entropy of the data
+ * @throws Error if dataset is empty
+ * @throws Error if base is not greater than 0 or equals 1
  */
 export function entropyFromData(data: Dataset, base = 2): number {
   if (data.length === 0) throw new Error("Dataset must not be empty");
+  validateBase(base);
   const probs = empiricalDistribution(data);
   return entropy(probs, base);
 }
@@ -39,12 +54,16 @@ export function entropyFromData(data: Dataset, base = 2): number {
  * @param dataX - First variable observations
  * @param dataY - Second variable observations
  * @param base - Logarithm base (default: 2)
+ * @returns The joint entropy H(X, Y)
+ * @throws Error if datasets have different lengths or are empty
+ * @throws Error if base is not greater than 0 or equals 1
  */
 export function jointEntropy(dataX: Dataset, dataY: Dataset, base = 2): number {
   if (dataX.length !== dataY.length) {
     throw new Error("Both datasets must have the same length");
   }
   if (dataX.length === 0) throw new Error("Datasets must not be empty");
+  validateBase(base);
 
   const jointCounts = new Map<string, number>();
   for (let i = 0; i < dataX.length; i++) {
@@ -65,6 +84,9 @@ export function jointEntropy(dataX: Dataset, dataY: Dataset, base = 2): number {
  * @param dataX - Conditioning variable
  * @param dataY - Target variable
  * @param base - Logarithm base (default: 2)
+ * @returns The conditional entropy H(Y|X)
+ * @throws Error if datasets have different lengths or are empty
+ * @throws Error if base is not greater than 0 or equals 1
  */
 export function conditionalEntropy(dataX: Dataset, dataY: Dataset, base = 2): number {
   return jointEntropy(dataX, dataY, base) - entropyFromData(dataX, base);
@@ -80,6 +102,9 @@ export function conditionalEntropy(dataX: Dataset, dataY: Dataset, base = 2): nu
  * @param dataX - First variable observations
  * @param dataY - Second variable observations
  * @param base - Logarithm base (default: 2)
+ * @returns The mutual information I(X; Y), always non-negative
+ * @throws Error if datasets have different lengths or are empty
+ * @throws Error if base is not greater than 0 or equals 1
  */
 export function mutualInformation(dataX: Dataset, dataY: Dataset, base = 2): number {
   const hx = entropyFromData(dataX, base);
@@ -99,6 +124,9 @@ export function mutualInformation(dataX: Dataset, dataY: Dataset, base = 2): num
  * @param dataX - First variable observations
  * @param dataY - Second variable observations
  * @param base - Logarithm base (default: 2)
+ * @returns The normalized mutual information in [0, 1]
+ * @throws Error if datasets have different lengths or are empty
+ * @throws Error if base is not greater than 0 or equals 1
  */
 export function normalizedMutualInformation(dataX: Dataset, dataY: Dataset, base = 2): number {
   const hx = entropyFromData(dataX, base);
@@ -119,9 +147,21 @@ export function normalizedMutualInformation(dataX: Dataset, dataY: Dataset, base
  * @param p - The "true" distribution
  * @param q - The reference/model distribution
  * @param base - Logarithm base (default: 2)
+ * @returns The KL divergence D_KL(P || Q), always non-negative
+ * @throws Error if distributions have different lengths
+ * @throws Error if either distribution is invalid (empty, negative, or doesn't sum to ~1)
+ * @throws Error if q(x) = 0 for any x where p(x) > 0
+ * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * klDivergence([0.5, 0.5], [0.5, 0.5]); // 0 (identical distributions)
+ * klDivergence([0.9, 0.1], [0.5, 0.5]); // ~0.531 bits
+ * ```
  */
 export function klDivergence(p: Dataset, q: Dataset, base = 2): number {
   if (p.length !== q.length) throw new Error("Distributions must have the same length");
+  validateBase(base);
   validateDistribution(p);
   validateDistribution(q);
 
@@ -147,9 +187,14 @@ export function klDivergence(p: Dataset, q: Dataset, base = 2): number {
  * @param p - First distribution
  * @param q - Second distribution
  * @param base - Logarithm base (default: 2)
+ * @returns The Jensen-Shannon divergence in [0, 1] for base 2
+ * @throws Error if distributions have different lengths
+ * @throws Error if either distribution is invalid (empty, negative, or doesn't sum to ~1)
+ * @throws Error if base is not greater than 0 or equals 1
  */
 export function jsDivergence(p: Dataset, q: Dataset, base = 2): number {
   if (p.length !== q.length) throw new Error("Distributions must have the same length");
+  validateBase(base);
   validateDistribution(p);
   validateDistribution(q);
 
@@ -168,9 +213,15 @@ export function jsDivergence(p: Dataset, q: Dataset, base = 2): number {
  * @param p - The true distribution
  * @param q - The model distribution
  * @param base - Logarithm base (default: 2)
+ * @returns The cross entropy H(P, Q)
+ * @throws Error if distributions have different lengths
+ * @throws Error if either distribution is invalid (empty, negative, or doesn't sum to ~1)
+ * @throws Error if q(x) = 0 for any x where p(x) > 0
+ * @throws Error if base is not greater than 0 or equals 1
  */
 export function crossEntropy(p: Dataset, q: Dataset, base = 2): number {
   if (p.length !== q.length) throw new Error("Distributions must have the same length");
+  validateBase(base);
   validateDistribution(p);
   validateDistribution(q);
 
@@ -203,5 +254,11 @@ function validateDistribution(probs: number[]): void {
   const sum = probs.reduce((a, b) => a + b, 0);
   if (Math.abs(sum - 1) > 1e-6) {
     throw new Error(`Probabilities must sum to 1, got ${sum}`);
+  }
+}
+
+function validateBase(base: number): void {
+  if (base <= 0 || base === 1 || Number.isNaN(base)) {
+    throw new Error(`Logarithm base must be > 0 and != 1, got ${base}`);
   }
 }

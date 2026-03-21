@@ -16,6 +16,11 @@ export interface MissingDataSummary {
 
 /**
  * Analyze missing data patterns in a dataset.
+ *
+ * Values that are null, undefined, or NaN are treated as missing.
+ *
+ * @param data - Dataset to analyze
+ * @returns A summary of missing data including counts, proportion, and indices
  */
 export function analyzeMissing(data: MaybeDataset): MissingDataSummary {
   const missingIndices: number[] = [];
@@ -38,9 +43,12 @@ export function analyzeMissing(data: MaybeDataset): MissingDataSummary {
  *
  * Removes any observation that has missing values. For multivariate data,
  * removes entire rows if any column is missing.
+ * Values that are null, undefined, or NaN are treated as missing.
  *
  * @param columns - Array of datasets (columns), all of equal length
  * @returns Filtered columns with only complete rows
+ * @throws {Error} If no columns are provided
+ * @throws {Error} If columns have different lengths
  */
 export function listwiseDeletion(...columns: MaybeDataset[]): number[][] {
   if (columns.length === 0) throw new Error("Must provide at least one column");
@@ -71,10 +79,12 @@ export function listwiseDeletion(...columns: MaybeDataset[]): number[][] {
  * For computing pairwise statistics (e.g., correlations), uses all
  * available observations for each pair of variables. Returns indices
  * of complete pairs.
+ * Values that are null, undefined, or NaN are treated as missing.
  *
  * @param a - First dataset
  * @param b - Second dataset
  * @returns Object with filtered arrays and the indices used
+ * @throws {Error} If datasets have different lengths
  */
 export function pairwiseDeletion(
   a: MaybeDataset,
@@ -107,8 +117,17 @@ export function pairwiseDeletion(
  *
  * Replaces missing values with the mean of the observed values.
  * Simple but can distort variance and correlations.
+ * Values that are null, undefined, or NaN are treated as missing.
  *
  * @param data - Dataset with possible missing values
+ * @returns A new array with missing values replaced by the mean of observed values
+ * @throws {Error} If there are no observed (non-missing) values
+ *
+ * @example
+ * ```ts
+ * meanImputation([1, null, 3, undefined, 5]);
+ * // => [1, 3, 3, 3, 5]
+ * ```
  */
 export function meanImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
@@ -124,8 +143,11 @@ export function meanImputation(data: MaybeDataset): number[] {
  *
  * Replaces missing values with the median of the observed values.
  * More robust to outliers than mean imputation.
+ * Values that are null, undefined, or NaN are treated as missing.
  *
  * @param data - Dataset with possible missing values
+ * @returns A new array with missing values replaced by the median of observed values
+ * @throws {Error} If there are no observed (non-missing) values
  */
 export function medianImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
@@ -141,8 +163,11 @@ export function medianImputation(data: MaybeDataset): number[] {
  *
  * Replaces missing values with the most frequent observed value.
  * Suitable for categorical/discrete data.
+ * Values that are null, undefined, or NaN are treated as missing.
  *
  * @param data - Dataset with possible missing values
+ * @returns A new array with missing values replaced by the mode of observed values
+ * @throws {Error} If there are no observed (non-missing) values
  */
 export function modeImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
@@ -172,8 +197,18 @@ export function modeImputation(data: MaybeDataset): number[] {
  *
  * Fills missing values by linearly interpolating between the nearest
  * observed neighbors. Best for ordered/time-series data.
+ * Values that are null, undefined, or NaN are treated as missing.
  *
  * @param data - Dataset with possible missing values
+ * @returns A new array with missing values filled by linear interpolation.
+ *   Leading/trailing missing values are filled with the nearest observed value.
+ * @throws {Error} If there are no observed values for interpolation
+ *
+ * @example
+ * ```ts
+ * linearInterpolation([1, null, null, 4, null, 6]);
+ * // => [1, 2, 3, 4, 5, 6]
+ * ```
  */
 export function linearInterpolation(data: MaybeDataset): number[] {
   if (data.length === 0) return [];
@@ -225,11 +260,23 @@ export function linearInterpolation(data: MaybeDataset): number[] {
  * Forward-fill (last observation carried forward).
  *
  * Fills missing values with the most recent observed value.
+ * Values that are null, undefined, or NaN are treated as missing.
  *
  * @param data - Dataset with possible missing values
+ * @returns A new array with missing values replaced by the last observed value.
+ *   Leading missing values are filled with the first observed value.
+ * @throws {Error} If all values in the dataset are missing
  */
 export function forwardFill(data: MaybeDataset): number[] {
   if (data.length === 0) return [];
+
+  // Check if there are any observed values at all
+  const hasObserved = data.some(
+    (v) => v != null && !Number.isNaN(v as number),
+  );
+  if (!hasObserved) {
+    throw new Error("Cannot forward-fill: all values are missing");
+  }
 
   const result = new Array<number>(data.length);
   let lastObserved: number | null = null;
@@ -247,14 +294,12 @@ export function forwardFill(data: MaybeDataset): number[] {
   }
 
   // Fill any leading NaNs with the first observed value
-  if (lastObserved !== null) {
-    const firstObserved = data.find(
-      (v): v is number => v != null && !Number.isNaN(v),
-    )!;
-    for (let i = 0; i < result.length; i++) {
-      if (Number.isNaN(result[i])) result[i] = firstObserved;
-      else break;
-    }
+  const firstObserved = data.find(
+    (v): v is number => v != null && !Number.isNaN(v),
+  )!;
+  for (let i = 0; i < result.length; i++) {
+    if (Number.isNaN(result[i])) result[i] = firstObserved;
+    else break;
   }
 
   return result;

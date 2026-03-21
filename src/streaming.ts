@@ -3,6 +3,17 @@
  *
  * Computes mean, variance, and standard deviation in a single pass
  * without storing all data points. Numerically stable.
+ *
+ * @example
+ * ```ts
+ * const stats = new OnlineStats();
+ * stats.push(10);
+ * stats.push(20);
+ * stats.push(30);
+ * stats.mean;     // 20
+ * stats.variance; // 100
+ * stats.stdDev;   // 10
+ * ```
  */
 export class OnlineStats {
   private _count = 0;
@@ -11,48 +22,83 @@ export class OnlineStats {
   private _min = Infinity;
   private _max = -Infinity;
 
-  /** Number of observations seen so far. */
+  /**
+   * Number of observations seen so far.
+   * @returns The current count
+   */
   get count(): number {
     return this._count;
   }
 
-  /** Running mean. */
+  /**
+   * Running mean.
+   * @returns The current mean of all observations
+   * @throws {Error} If no observations have been added
+   */
   get mean(): number {
     if (this._count === 0) throw new Error("No observations");
     return this._mean;
   }
 
-  /** Running sample variance. */
+  /**
+   * Running sample variance.
+   * @returns The current sample variance (using Bessel's correction)
+   * @throws {Error} If fewer than 2 observations have been added
+   */
   get variance(): number {
     if (this._count < 2) throw new Error("Need at least 2 observations");
     return this._m2 / (this._count - 1);
   }
 
-  /** Running population variance. */
+  /**
+   * Running population variance.
+   * @returns The current population variance
+   * @throws {Error} If no observations have been added
+   */
   get populationVariance(): number {
     if (this._count === 0) throw new Error("No observations");
     return this._m2 / this._count;
   }
 
-  /** Running sample standard deviation. */
+  /**
+   * Running sample standard deviation.
+   * @returns The current sample standard deviation
+   * @throws {Error} If fewer than 2 observations have been added
+   */
   get stdDev(): number {
     return Math.sqrt(this.variance);
   }
 
-  /** Minimum value seen. */
+  /**
+   * Minimum value seen.
+   * @returns The minimum value across all observations
+   * @throws {Error} If no observations have been added
+   */
   get min(): number {
     if (this._count === 0) throw new Error("No observations");
     return this._min;
   }
 
-  /** Maximum value seen. */
+  /**
+   * Maximum value seen.
+   * @returns The maximum value across all observations
+   * @throws {Error} If no observations have been added
+   */
   get max(): number {
     if (this._count === 0) throw new Error("No observations");
     return this._max;
   }
 
-  /** Add a single observation. */
+  /**
+   * Add a single observation.
+   * @param value - The numeric value to add (must not be NaN)
+   * @returns void
+   * @throws {Error} If value is NaN
+   */
   push(value: number): void {
+    if (Number.isNaN(value)) {
+      throw new Error("Cannot push NaN value into OnlineStats");
+    }
     this._count++;
     const delta = value - this._mean;
     this._mean += delta / this._count;
@@ -62,12 +108,21 @@ export class OnlineStats {
     if (value > this._max) this._max = value;
   }
 
-  /** Add multiple observations. */
+  /**
+   * Add multiple observations.
+   * @param values - Array of numeric values to add
+   * @returns void
+   * @throws {Error} If any value is NaN
+   */
   pushAll(values: number[]): void {
     for (const v of values) this.push(v);
   }
 
-  /** Merge another OnlineStats instance into this one. */
+  /**
+   * Merge another OnlineStats instance into this one.
+   * @param other - The OnlineStats instance to merge
+   * @returns void
+   */
   merge(other: OnlineStats): void {
     if (other._count === 0) return;
     if (this._count === 0) {
@@ -89,7 +144,10 @@ export class OnlineStats {
     this._max = Math.max(this._max, other._max);
   }
 
-  /** Reset all state. */
+  /**
+   * Reset all state.
+   * @returns void
+   */
   reset(): void {
     this._count = 0;
     this._mean = 0;
@@ -112,17 +170,29 @@ export class OnlineCovariance {
   private _m2x = 0;
   private _m2y = 0;
 
+  /**
+   * Number of observation pairs seen so far.
+   * @returns The current count
+   */
   get count(): number {
     return this._count;
   }
 
-  /** Running sample covariance. */
+  /**
+   * Running sample covariance.
+   * @returns The current sample covariance
+   * @throws {Error} If fewer than 2 observation pairs have been added
+   */
   get covariance(): number {
     if (this._count < 2) throw new Error("Need at least 2 observations");
     return this._c / (this._count - 1);
   }
 
-  /** Running Pearson correlation coefficient. */
+  /**
+   * Running Pearson correlation coefficient.
+   * @returns The current Pearson correlation coefficient, or 0 if variance is zero
+   * @throws {Error} If fewer than 2 observation pairs have been added
+   */
   get correlation(): number {
     if (this._count < 2) throw new Error("Need at least 2 observations");
     const denom = Math.sqrt(this._m2x * this._m2y);
@@ -130,18 +200,37 @@ export class OnlineCovariance {
     return this._c / denom;
   }
 
+  /**
+   * Running mean of the X stream.
+   * @returns The current mean of X values
+   * @throws {Error} If no observations have been added
+   */
   get meanX(): number {
     if (this._count === 0) throw new Error("No observations");
     return this._meanX;
   }
 
+  /**
+   * Running mean of the Y stream.
+   * @returns The current mean of Y values
+   * @throws {Error} If no observations have been added
+   */
   get meanY(): number {
     if (this._count === 0) throw new Error("No observations");
     return this._meanY;
   }
 
-  /** Add a pair of observations. */
+  /**
+   * Add a pair of observations.
+   * @param x - The X value (must not be NaN)
+   * @param y - The Y value (must not be NaN)
+   * @returns void
+   * @throws {Error} If x or y is NaN
+   */
   push(x: number, y: number): void {
+    if (Number.isNaN(x) || Number.isNaN(y)) {
+      throw new Error("Cannot push NaN values into OnlineCovariance");
+    }
     this._count++;
     const dx = x - this._meanX;
     const dy = y - this._meanY;
@@ -154,13 +243,23 @@ export class OnlineCovariance {
     this._m2y += dy * dy2;
   }
 
-  /** Add multiple pairs. */
+  /**
+   * Add multiple pairs.
+   * @param xs - Array of X values
+   * @param ys - Array of Y values
+   * @returns void
+   * @throws {Error} If arrays have different lengths
+   * @throws {Error} If any value is NaN
+   */
   pushAll(xs: number[], ys: number[]): void {
     if (xs.length !== ys.length) throw new Error("Arrays must have same length");
     for (let i = 0; i < xs.length; i++) this.push(xs[i], ys[i]);
   }
 
-  /** Reset all state. */
+  /**
+   * Reset all state.
+   * @returns void
+   */
   reset(): void {
     this._count = 0;
     this._meanX = 0;
@@ -176,6 +275,7 @@ export class OnlineCovariance {
  *
  * Estimates a quantile (e.g., median) from a stream without storing
  * all data points. Uses piecewise parabolic interpolation.
+ * For fewer than 5 observations, falls back to a simple sort-based estimate.
  */
 export class OnlineQuantile {
   private readonly p: number;
@@ -187,6 +287,7 @@ export class OnlineQuantile {
 
   /**
    * @param quantile - The quantile to estimate (0 to 1, e.g., 0.5 for median)
+   * @throws {Error} If quantile is not between 0 and 1 (exclusive)
    */
   constructor(quantile = 0.5) {
     if (quantile <= 0 || quantile >= 1) {
@@ -196,14 +297,28 @@ export class OnlineQuantile {
     this.np = [0, 2 * quantile, 4 * quantile, 2 + 2 * quantile, 4];
   }
 
+  /**
+   * Number of observations seen so far.
+   * @returns The current count
+   */
   get count(): number {
     return this._count;
   }
 
-  /** Current quantile estimate. */
+  /**
+   * Current quantile estimate.
+   *
+   * For count < 5 the estimate is computed via a simple sort of the
+   * collected values rather than the P² algorithm, since P² requires
+   * at least 5 markers to be initialized.
+   *
+   * @returns The estimated quantile value
+   * @throws {Error} If no observations have been added
+   */
   get estimate(): number {
+    if (this._count === 0) throw new Error("No observations");
     if (this._count < 5) {
-      // Not enough for P², use simple sort
+      // Not enough for P², use simple sort-based fallback
       const sorted = this.q.slice(0, this._count).sort((a, b) => a - b);
       const idx = Math.floor(this.p * (sorted.length - 1));
       return sorted[idx];
@@ -211,8 +326,16 @@ export class OnlineQuantile {
     return this.q[2]; // The middle marker is the estimate
   }
 
-  /** Add an observation. */
+  /**
+   * Add an observation.
+   * @param value - The numeric value to add (must not be NaN)
+   * @returns void
+   * @throws {Error} If value is NaN
+   */
   push(value: number): void {
+    if (Number.isNaN(value)) {
+      throw new Error("Cannot push NaN value into OnlineQuantile");
+    }
     this._count++;
 
     if (this._count <= 5) {
@@ -273,7 +396,12 @@ export class OnlineQuantile {
     }
   }
 
-  /** Add multiple observations. */
+  /**
+   * Add multiple observations.
+   * @param values - Array of numeric values to add
+   * @returns void
+   * @throws {Error} If any value is NaN
+   */
   pushAll(values: number[]): void {
     for (const v of values) this.push(v);
   }

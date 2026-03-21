@@ -1,4 +1,5 @@
-import { Normal } from "./distributions/continuous/normal";
+import { normalCdf } from "./utils/linalg";
+import { regularizedGammaP } from "./utils/math";
 
 /**
  * Contingency table utilities and categorical data analysis.
@@ -23,12 +24,42 @@ export interface ContingencyTableSummary {
 
 /**
  * Analyze a contingency table: compute margins and expected counts.
+ *
+ * @param observed - 2D array of observed cell counts
+ * @returns ContingencyTableSummary with observed, expected, marginals, and dimensions
+ * @throws Error if the table is empty or has no columns
+ * @throws Error if rows have inconsistent column counts
+ * @throws Error if any cell count is negative or NaN
+ *
+ * @example
+ * ```ts
+ * const ct = contingencyTable([[10, 20], [30, 40]]);
+ * // ct.expected[0][0] === (30 * 40) / 100 === 12
+ * // ct.grandTotal === 100
+ * ```
  */
 export function contingencyTable(observed: number[][]): ContingencyTableSummary {
   const nRows = observed.length;
   if (nRows === 0) throw new Error("Table must not be empty");
   const nCols = observed[0].length;
   if (nCols === 0) throw new Error("Table must have at least 1 column");
+
+  for (let i = 0; i < nRows; i++) {
+    if (observed[i].length !== nCols) {
+      throw new Error(
+        `All rows must have the same number of columns: row 0 has ${nCols}, but row ${i} has ${observed[i].length}`,
+      );
+    }
+    for (let j = 0; j < nCols; j++) {
+      const v = observed[i][j];
+      if (Number.isNaN(v)) {
+        throw new Error(`Cell count must not be NaN (at row ${i}, col ${j})`);
+      }
+      if (v < 0) {
+        throw new Error(`Cell count must not be negative, got ${v} (at row ${i}, col ${j})`);
+      }
+    }
+  }
 
   const rowTotals = observed.map((row) => row.reduce((a, b) => a + b, 0));
   const colTotals = new Array<number>(nCols).fill(0);
@@ -54,6 +85,8 @@ export function contingencyTable(observed: number[][]): ContingencyTableSummary 
  *
  * @param table - 2x2 contingency table [[a,b],[c,d]]
  * @param alpha - Significance level (default: 0.05)
+ * @returns Object with test statistic, p-value, and rejection decision
+ * @throws Error if the table is not exactly 2x2
  */
 export function mcnemarsTest(
   table: number[][],
@@ -72,9 +105,8 @@ export function mcnemarsTest(
 
   // Chi-squared version (with continuity correction)
   const statistic = (Math.abs(b - c) - 1) ** 2 / (b + c);
-  // p-value from chi-squared(1) approximation
-  const normal = new Normal();
-  const pValue = 2 * (1 - normal.cdf(Math.sqrt(statistic)));
+  // p-value from chi-squared(1) survival function
+  const pValue = chiSquaredSurvival(statistic, 1);
 
   return { statistic, pValue, rejected: pValue < alpha };
 }
@@ -84,8 +116,11 @@ export function mcnemarsTest(
  *
  * Tests for a common odds ratio across multiple strata.
  *
- * @param tables - Array of 2×2 contingency tables, one per stratum
+ * @param tables - Array of 2x2 contingency tables, one per stratum
  * @param alpha - Significance level (default: 0.05)
+ * @returns Object with test statistic, p-value, common odds ratio, and rejection decision
+ * @throws Error if no tables are provided
+ * @throws Error if any table is not exactly 2x2
  */
 export function cochranMantelHaenszel(
   tables: number[][][],
@@ -118,8 +153,7 @@ export function cochranMantelHaenszel(
   }
 
   const statistic = numerator ** 2 / denominator;
-  const normal = new Normal();
-  const pValue = 2 * (1 - normal.cdf(Math.sqrt(statistic)));
+  const pValue = chiSquaredSurvival(statistic, 1);
   const commonOddsRatio = orDen > 0 ? orNum / orDen : Infinity;
 
   return { statistic, pValue, commonOddsRatio, rejected: pValue < alpha };
@@ -133,6 +167,8 @@ export function cochranMantelHaenszel(
  *
  * @param observed - Contingency table of observed counts
  * @param alpha - Significance level (default: 0.05)
+ * @returns Object with G statistic, p-value, degrees of freedom, and rejection decision
+ * @throws Error if the table is empty, has inconsistent row lengths, or contains negative counts
  */
 export function gTest(
   observed: number[][],
@@ -150,7 +186,6 @@ export function gTest(
     }
   }
 
-  // Approximate p-value using normal for df=1, chi-squared approximation for larger
   const pValue = chiSquaredSurvival(g, df);
 
   return { statistic: g, pValue, degreesOfFreedom: df, rejected: pValue < alpha };
@@ -161,6 +196,10 @@ export function gTest(
  *
  * Identifies which cells deviate most from expected. Values > 2 or < -2
  * indicate significant deviation.
+ *
+ * @param observed - Contingency table of observed counts
+ * @returns 2D array of standardized residuals (O - E) / sqrt(E)
+ * @throws Error if the table is empty, has inconsistent row lengths, or contains negative counts
  */
 export function standardizedResiduals(observed: number[][]): number[][] {
   const ct = contingencyTable(observed);
@@ -178,6 +217,10 @@ export function standardizedResiduals(observed: number[][]): number[][] {
  *
  * Accounts for the margins, making them approximately standard normal
  * under independence.
+ *
+ * @param observed - Contingency table of observed counts
+ * @returns 2D array of adjusted standardized residuals
+ * @throws Error if the table is empty, has inconsistent row lengths, or contains negative counts
  */
 export function adjustedResiduals(observed: number[][]): number[][] {
   const ct = contingencyTable(observed);
@@ -196,16 +239,12 @@ export function adjustedResiduals(observed: number[][]): number[][] {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
+/**
+ * Chi-squared survival function: P(X > x) for X ~ chi-squared(df).
+ * Uses the regularized lower incomplete gamma function for accuracy.
+ */
 function chiSquaredSurvival(x: number, df: number): number {
-  // Use regularized incomplete gamma function approximation
-  // For df=1, use normal approximation
-  if (df === 1) {
-    const normal = new Normal();
-    return 2 * (1 - normal.cdf(Math.sqrt(x)));
-  }
-  // Wilson-Hilferty approximation for chi-squared CDF
-  const z = Math.pow(x / df, 1 / 3) - (1 - 2 / (9 * df));
-  const se = Math.sqrt(2 / (9 * df));
-  const normal = new Normal();
-  return 1 - normal.cdf(z / se);
+  if (x <= 0) return 1;
+  // P(X <= x) = regularizedGammaP(df/2, x/2), so survival = 1 - P
+  return 1 - regularizedGammaP(df / 2, x / 2);
 }

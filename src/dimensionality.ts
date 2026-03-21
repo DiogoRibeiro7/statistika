@@ -11,7 +11,7 @@ export interface TSNEResult {
   embedding: number[][];
   /** Final KL divergence. */
   klDivergence: number;
-  /** Number of iterations. */
+  /** Number of iterations actually performed. */
   iterations: number;
 }
 
@@ -19,11 +19,14 @@ export interface TSNEResult {
  * t-SNE for nonlinear dimensionality reduction.
  *
  * Reduces high-dimensional data to 2D while preserving local structure.
- * Uses Barnes-Hut approximation is not implemented here; this is the
- * exact O(n²) algorithm suitable for small-to-medium datasets.
+ * Uses the exact O(n^2) algorithm suitable for small-to-medium datasets.
+ * Includes early stopping if KL divergence stops improving.
  *
  * @param data - Data matrix (n observations x p features)
  * @param options - Configuration
+ * @returns TSNEResult containing the 2D embedding, final KL divergence, and iteration count
+ * @throws {Error} If fewer than 4 observations
+ * @throws {Error} If any data value is NaN or Infinity
  */
 export function tsne(
   data: number[][],
@@ -36,6 +39,15 @@ export function tsne(
 ): TSNEResult {
   const n = data.length;
   if (n < 4) throw new Error("Need at least 4 observations");
+
+  // NaN/Infinity guard
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < data[i].length; j++) {
+      if (!Number.isFinite(data[i][j])) {
+        throw new Error("Data must not contain NaN or Infinity");
+      }
+    }
+  }
 
   const perplexity = options.perplexity ?? Math.min(30, Math.floor(n / 3));
   const learningRate = options.learningRate ?? 200;
@@ -64,6 +76,11 @@ export function tsne(
   const momentumSwitch = 250;
 
   let klDiv = 0;
+  let prevKlDiv = Infinity;
+  let noImprovementCount = 0;
+  const earlyStopPatience = 50;
+  const earlyStopTolerance = 1e-7;
+  let actualIterations = iterations;
 
   for (let iter = 0; iter < iterations; iter++) {
     // Compute Q (Student-t with 1 degree of freedom)
@@ -124,8 +141,8 @@ export function tsne(
       Y[i][1] -= meanY[1];
     }
 
-    // KL divergence
-    if (iter === iterations - 1) {
+    // KL divergence (compute periodically for early stopping, and on last iteration)
+    if (iter % 10 === 0 || iter === iterations - 1) {
       klDiv = 0;
       for (let i = 0; i < n; i++) {
         for (let j = 0; j < n; j++) {
@@ -134,10 +151,24 @@ export function tsne(
           }
         }
       }
+
+      // Early stopping check
+      if (iter > 0) {
+        if (prevKlDiv - klDiv < earlyStopTolerance) {
+          noImprovementCount++;
+        } else {
+          noImprovementCount = 0;
+        }
+        if (noImprovementCount >= earlyStopPatience / 10) {
+          actualIterations = iter + 1;
+          break;
+        }
+      }
+      prevKlDiv = klDiv;
     }
   }
 
-  return { embedding: Y, klDivergence: klDiv, iterations };
+  return { embedding: Y, klDivergence: klDiv, iterations: actualIterations };
 }
 
 /**
@@ -148,11 +179,33 @@ export function tsne(
  *
  * @param data - Data matrix (n x p)
  * @param labels - Cluster labels for each observation
+ * @returns Mean silhouette score across all observations (in [-1, 1])
+ * @throws {Error} If data and labels have different lengths
+ * @throws {Error} If fewer than 2 observations
+ * @throws {Error} If fewer than 2 distinct clusters
+ * @throws {Error} If any data value is NaN or Infinity
+ *
+ * @example
+ * ```ts
+ * const data = [[0, 0], [1, 0], [0, 1], [10, 10], [11, 10], [10, 11]];
+ * const labels = [0, 0, 0, 1, 1, 1];
+ * const score = silhouetteScore(data, labels);
+ * console.log(score); // close to 1.0 (well-separated clusters)
+ * ```
  */
 export function silhouetteScore(data: number[][], labels: number[]): number {
   const n = data.length;
   if (n !== labels.length) throw new Error("Data and labels must have same length");
   if (n < 2) throw new Error("Need at least 2 observations");
+
+  // NaN/Infinity guard
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < data[i].length; j++) {
+      if (!Number.isFinite(data[i][j])) {
+        throw new Error("Data must not contain NaN or Infinity");
+      }
+    }
+  }
 
   const uniqueLabels = [...new Set(labels)];
   if (uniqueLabels.length < 2) throw new Error("Need at least 2 clusters");
@@ -200,10 +253,25 @@ export function silhouetteScore(data: number[][], labels: number[]): number {
 
 /**
  * Silhouette scores per observation.
+ *
+ * @param data - Data matrix (n x p)
+ * @param labels - Cluster labels for each observation
+ * @returns Array of silhouette scores, one per observation (each in [-1, 1])
+ * @throws {Error} If data and labels have different lengths
+ * @throws {Error} If any data value is NaN or Infinity
  */
 export function silhouetteScores(data: number[][], labels: number[]): number[] {
   const n = data.length;
   if (n !== labels.length) throw new Error("Data and labels must have same length");
+
+  // NaN/Infinity guard
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < data[i].length; j++) {
+      if (!Number.isFinite(data[i][j])) {
+        throw new Error("Data must not contain NaN or Infinity");
+      }
+    }
+  }
 
   const scores = new Array<number>(n);
 
@@ -250,12 +318,24 @@ export function silhouetteScores(data: number[][], labels: number[]): number[] {
  *
  * @param data - Data matrix (n x p)
  * @param labels - Cluster labels
+ * @returns The Davies-Bouldin index (non-negative; lower is better)
+ * @throws {Error} If fewer than 2 clusters
+ * @throws {Error} If any data value is NaN or Infinity
  */
 export function daviesBouldinIndex(data: number[][], labels: number[]): number {
   const n = data.length;
   const uniqueLabels = [...new Set(labels)];
   const k = uniqueLabels.length;
   if (k < 2) throw new Error("Need at least 2 clusters");
+
+  // NaN/Infinity guard
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < data[i].length; j++) {
+      if (!Number.isFinite(data[i][j])) {
+        throw new Error("Data must not contain NaN or Infinity");
+      }
+    }
+  }
 
   // Compute cluster centroids and scatter
   const centroids = new Map<number, number[]>();
@@ -301,6 +381,20 @@ export function daviesBouldinIndex(data: number[][], labels: number[]): number {
  *
  * @param labels1 - First set of cluster labels
  * @param labels2 - Second set of cluster labels
+ * @returns The Adjusted Rand Index (in [-1, 1]; 1 = perfect agreement, 0 = random)
+ * @throws {Error} If label arrays have different lengths
+ * @throws {Error} If fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const truth  = [0, 0, 0, 1, 1, 1];
+ * const pred   = [0, 0, 1, 1, 1, 1];
+ * const ari = adjustedRandIndex(truth, pred);
+ * console.log(ari); // 0.444... (partial agreement)
+ *
+ * const perfect = adjustedRandIndex(truth, truth);
+ * console.log(perfect); // 1.0
+ * ```
  */
 export function adjustedRandIndex(labels1: number[], labels2: number[]): number {
   const n = labels1.length;

@@ -22,10 +22,26 @@ export interface CrossValidationResult {
  * Splits data into k folds, trains on k-1 folds, and evaluates on the
  * held-out fold. Reports mean squared error by default.
  *
- * @param X - Feature matrix (n x p)
+ * @param X - Feature matrix (n x p). All rows must have the same length.
  * @param y - Response variable
  * @param fitPredict - Function that takes (trainX, trainY, testX) and returns predictions
  * @param options - Configuration
+ * @returns Cross-validation results including per-fold scores, mean, and standard deviation
+ * @throws {Error} If X and y have different lengths
+ * @throws {Error} If k is less than 2 or exceeds the number of observations
+ * @throws {Error} If rows of X have inconsistent lengths
+ *
+ * @example
+ * ```ts
+ * const X = [[1], [2], [3], [4], [5], [6]];
+ * const y = [2, 4, 6, 8, 10, 12];
+ * const result = kFoldCV(X, y, (trX, trY, teX) => {
+ *   // simple mean predictor
+ *   const m = trY.reduce((a, b) => a + b, 0) / trY.length;
+ *   return teX.map(() => m);
+ * }, { k: 3 });
+ * // result.meanScore — average MSE across 3 folds
+ * ```
  */
 export function kFoldCV(
   X: number[][],
@@ -39,6 +55,18 @@ export function kFoldCV(
 ): CrossValidationResult {
   const n = X.length;
   if (n !== y.length) throw new Error("X and y must have the same length");
+
+  // Validate consistent row lengths
+  if (n > 0) {
+    const p = X[0].length;
+    for (let i = 1; i < n; i++) {
+      if (X[i].length !== p) {
+        throw new Error(
+          `Inconsistent row lengths in X: row 0 has ${p} columns but row ${i} has ${X[i].length} columns`,
+        );
+      }
+    }
+  }
 
   const k = options.k ?? 5;
   if (k < 2) throw new Error("k must be at least 2");
@@ -91,6 +119,8 @@ export function kFoldCV(
  * @param y - Response variable
  * @param fitPredict - Function that takes (trainX, trainY, testX) and returns predictions
  * @param scorer - Scoring function (default: MSE)
+ * @returns Cross-validation results with n folds
+ * @throws {Error} If X and y have different lengths
  */
 export function loocv(
   X: number[][],
@@ -108,6 +138,8 @@ export function loocv(
  *
  * @param data - Input dataset
  * @param statistic - Function computing the statistic of interest
+ * @returns Object containing the full-sample estimate, bias, standard error, and pseudo-values
+ * @throws {Error} If data has fewer than 2 observations
  */
 export function jackknife(
   data: Dataset,
@@ -149,11 +181,16 @@ export function jackknife(
  * Stratified random sampling.
  *
  * Samples from data while maintaining the proportion of each stratum.
+ * If rounding causes the total allocated samples to exceed `sampleSize`,
+ * excess samples are trimmed from the largest stratum.
  *
  * @param data - Dataset values
  * @param strata - Stratum label for each observation
  * @param sampleSize - Total number of samples to draw
  * @param seed - Optional random seed
+ * @returns Object containing the sampled values and their original indices
+ * @throws {Error} If data and strata have different lengths
+ * @throws {Error} If sampleSize is not between 1 and the dataset size
  */
 export function stratifiedSample(
   data: Dataset,
@@ -179,11 +216,30 @@ export function stratifiedSample(
   }
 
   const n = data.length;
-  const sample: number[] = [];
-  const indices: number[] = [];
 
-  for (const [, groupIndices] of groups) {
-    const groupSampleSize = Math.round((groupIndices.length / n) * sampleSize);
+  // Compute per-group sample sizes via rounding, then fix any overshoot
+  const groupEntries = [...groups.entries()];
+  const groupSizes = groupEntries.map(([, indices]) =>
+    Math.round((indices.length / n) * sampleSize),
+  );
+
+  let totalAllocated = groupSizes.reduce((a, b) => a + b, 0);
+  // Trim excess from the largest groups (by allocated size) until we match sampleSize
+  while (totalAllocated > sampleSize) {
+    let maxIdx = 0;
+    for (let i = 1; i < groupSizes.length; i++) {
+      if (groupSizes[i] > groupSizes[maxIdx]) maxIdx = i;
+    }
+    groupSizes[maxIdx]--;
+    totalAllocated--;
+  }
+
+  const sample: number[] = [];
+  const resultIndices: number[] = [];
+
+  for (let g = 0; g < groupEntries.length; g++) {
+    const [, groupIndices] = groupEntries[g];
+    const groupSampleSize = groupSizes[g];
     // Shuffle group indices
     const shuffled = [...groupIndices];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -191,18 +247,23 @@ export function stratifiedSample(
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     for (let i = 0; i < Math.min(groupSampleSize, shuffled.length); i++) {
-      indices.push(shuffled[i]);
+      resultIndices.push(shuffled[i]);
       sample.push(data[shuffled[i]]);
     }
   }
 
-  return { sample, indices };
+  return { sample, indices: resultIndices };
 }
 
 // ── Scoring Functions ───────────────────────────────────────────────────
 
 /**
  * Mean Squared Error.
+ *
+ * @param actual - Actual values
+ * @param predicted - Predicted values
+ * @returns The mean squared error between actual and predicted
+ * @throws {Error} If arrays have different lengths
  */
 export function mse(actual: Dataset, predicted: Dataset): number {
   if (actual.length !== predicted.length) throw new Error("Arrays must have same length");
@@ -213,6 +274,11 @@ export function mse(actual: Dataset, predicted: Dataset): number {
 
 /**
  * Root Mean Squared Error.
+ *
+ * @param actual - Actual values
+ * @param predicted - Predicted values
+ * @returns The root mean squared error between actual and predicted
+ * @throws {Error} If arrays have different lengths
  */
 export function rmse(actual: Dataset, predicted: Dataset): number {
   return Math.sqrt(mse(actual, predicted));
@@ -220,6 +286,11 @@ export function rmse(actual: Dataset, predicted: Dataset): number {
 
 /**
  * Mean Absolute Error.
+ *
+ * @param actual - Actual values
+ * @param predicted - Predicted values
+ * @returns The mean absolute error between actual and predicted
+ * @throws {Error} If arrays have different lengths
  */
 export function mae(actual: Dataset, predicted: Dataset): number {
   if (actual.length !== predicted.length) throw new Error("Arrays must have same length");
@@ -230,6 +301,11 @@ export function mae(actual: Dataset, predicted: Dataset): number {
 
 /**
  * R² (coefficient of determination).
+ *
+ * @param actual - Actual values
+ * @param predicted - Predicted values
+ * @returns The R² score (1.0 for perfect prediction, 0.0 for mean-level prediction)
+ * @throws {Error} If arrays have different lengths
  */
 export function r2Score(actual: Dataset, predicted: Dataset): number {
   if (actual.length !== predicted.length) throw new Error("Arrays must have same length");

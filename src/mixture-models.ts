@@ -31,9 +31,22 @@ export interface GMMResult {
 /**
  * Fit a 1D Gaussian Mixture Model using the EM algorithm.
  *
- * @param data - Input dataset
+ * @param data - Input dataset (must not contain NaN or Infinity values)
  * @param k - Number of mixture components
  * @param options - Configuration
+ * @returns The fitted GMM including weights, means, variances, responsibilities, and model selection criteria
+ * @throws {Error} If there are fewer observations than components
+ * @throws {Error} If k is less than 1
+ * @throws {Error} If data contains NaN or Infinity values
+ *
+ * @example
+ * ```ts
+ * // Fit a 2-component mixture to bimodal data
+ * const data = [1.0, 1.2, 1.1, 5.0, 5.1, 4.9];
+ * const result = gaussianMixture(data, 2, { seed: 42 });
+ * // result.means  — approximately [1.1, 5.0]
+ * // result.labels — cluster assignment for each observation
+ * ```
  */
 export function gaussianMixture(
   data: Dataset,
@@ -47,6 +60,13 @@ export function gaussianMixture(
   const n = data.length;
   if (n < k) throw new Error("Need at least k observations");
   if (k < 1) throw new Error("k must be at least 1");
+
+  // NaN / Infinity guard
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(data[i])) {
+      throw new Error(`Data contains non-finite value at index ${i}`);
+    }
+  }
 
   const maxIterations = options.maxIterations ?? 100;
   const tol = options.tol ?? 1e-6;
@@ -115,6 +135,14 @@ export function gaussianMixture(
       newLogLik += Math.log(Math.max(density, 1e-300));
     }
 
+    // Convergence check: if log-likelihood is NaN, break early
+    if (Number.isNaN(newLogLik)) {
+      console.warn(
+        `gaussianMixture: log-likelihood became NaN at iteration ${iter + 1}; stopping early`,
+      );
+      break;
+    }
+
     if (Math.abs(newLogLik - logLik) < tol) {
       logLik = newLogLik;
       iter++;
@@ -160,6 +188,9 @@ export function gaussianMixture(
  * @param data - Input dataset
  * @param maxK - Maximum number of components to try
  * @param options - Configuration passed to gaussianMixture
+ * @returns Object containing the best k, all fitted results, and BIC values
+ * @throws {Error} If maxK is less than 1
+ * @throws {Error} If data contains NaN or Infinity values
  */
 export function selectComponents(
   data: Dataset,

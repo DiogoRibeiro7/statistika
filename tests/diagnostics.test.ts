@@ -55,8 +55,8 @@ describe("Diagnostics", () => {
 
     it("provides normality assessment", () => {
       const diag = residualDiagnostics(y, predicted);
-      expect(typeof diag.shapiroWilkApprox.normalityLikely).toBe("boolean");
-      expect(diag.shapiroWilkApprox.statistic).toBeGreaterThanOrEqual(0);
+      expect(typeof diag.jarqueBera.normalityLikely).toBe("boolean");
+      expect(diag.jarqueBera.statistic).toBeGreaterThanOrEqual(0);
     });
 
     it("throws on mismatched lengths", () => {
