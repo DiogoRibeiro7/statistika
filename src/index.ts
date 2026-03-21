@@ -12,3 +12,4 @@ export * from "./bayesian";
 export * from "./cox-regression";
 export * from "./nonparametric";
 export * from "./multivariate";
+export * from "./multiple-testing";
