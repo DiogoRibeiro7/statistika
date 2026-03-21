@@ -2,17 +2,25 @@
   "name": "node_stats",
   "version": "1.0.0",
   "description": "Comprehensive statistical library for Node.js — distributions, hypothesis tests, regression models, correlation, and special math functions with optional native Fortran acceleration",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/cjs/index.d.ts"
+    }
+  },
   "files": [
     "dist",
     "native",
     "binding.gyp"
   ],
   "scripts": {
-    "build": "npm run build:native && tsc",
+    "build": "npm run build:native && npm run build:ts",
     "build:native": "node scripts/build-native.js",
-    "build:ts": "tsc",
+    "build:ts": "tsc -p tsconfig.json && tsc -p tsconfig.esm.json && node -e \"require('fs').writeFileSync('dist/esm/package.json','{\\\"type\\\":\\\"module\\\"}\\n')\" && node scripts/fix-esm-imports.js",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/ tests/",

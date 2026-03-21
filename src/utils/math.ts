@@ -1,3 +1,5 @@
+import { nativeAddon } from "./native-addon";
+
 // Try to load the native Fortran addon; fall back to pure-TS implementations.
 interface NativeSpecial {
   gammaLn(x: number): number;
@@ -12,13 +14,7 @@ interface NativeSpecial {
   regularizedBeta(x: number, a: number, b: number): number;
 }
 
-let native: NativeSpecial | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  native = require("../../build/Release/fortran_special.node") as NativeSpecial;
-} catch {
-  // Native addon not available — pure TypeScript fallback will be used.
-}
+const native: NativeSpecial | null = nativeAddon as NativeSpecial | null;
 
 // ==========================================================================
 // Pure-TypeScript fallback implementations

@@ -6,6 +6,8 @@
  * Otherwise, pure TypeScript fallbacks are used automatically.
  */
 
+import { nativeAddon } from "./native-addon";
+
 // ── Native addon interface ──────────────────────────────────────────────
 
 interface NativeLinalg {
@@ -23,16 +25,17 @@ interface NativeLinalg {
 
 let native: NativeLinalg | null = null;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const addon = require("../../build/Release/fortran_special.node");
-  // Verify that linalg functions are available (not just special functions).
-  // The stub build sets info = -999 to signal no real LAPACK is linked.
-  const probe = addon.solve([[1, 0], [0, 1]], [1, 1], 2);
-  if (probe && probe.info === 0) {
-    native = addon as NativeLinalg;
+  if (nativeAddon) {
+    // Verify that linalg functions are available (not just special functions).
+    // The stub build sets info = -999 to signal no real LAPACK is linked.
+    const addon = nativeAddon as unknown as NativeLinalg;
+    const probe = addon.solve([[1, 0], [0, 1]], [1, 1], 2);
+    if (probe && probe.info === 0) {
+      native = addon;
+    }
   }
 } catch {
-  // Native addon not available — pure TypeScript fallback will be used.
+  // LAPACK probe failed — pure TypeScript fallback will be used.
 }
 
 /** Whether native LAPACK acceleration is active. */
