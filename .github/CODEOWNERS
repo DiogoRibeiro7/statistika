@@ -1,0 +1,29 @@
+# CODEOWNERS — auto-assign reviewers on pull requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+* @DiogoRibeiro7
+
+# Core library source
+/src/ @DiogoRibeiro7
+
+# Distributions
+/src/distributions/ @DiogoRibeiro7
+
+# Forecasting & time series
+/src/forecasting.ts @DiogoRibeiro7
+/src/time-series.ts @DiogoRibeiro7
+
+# Native Fortran/LAPACK bindings
+/native/ @DiogoRibeiro7
+/binding.gyp @DiogoRibeiro7
+
+# CI/CD and GitHub configuration
+/.github/ @DiogoRibeiro7
+
+# Tests
+/tests/ @DiogoRibeiro7
+
+# Build & config
+/package.json @DiogoRibeiro7
+/tsconfig*.json @DiogoRibeiro7
