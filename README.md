@@ -5,14 +5,30 @@
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A518-green.svg)](https://nodejs.org/)
 [![Jest](https://img.shields.io/badge/Tests-Jest-red.svg)](https://jestjs.io/)
 
-A comprehensive statistical modeling and probability distribution library for Node.js, written in TypeScript with optional native Fortran acceleration for special mathematical functions.
+A comprehensive statistical modeling and probability distribution library for Node.js, written in TypeScript with optional native Fortran acceleration.
 
 ## Features
 
 - **23 probability distributions** with PDF/PMF, CDF, quantile, survival function, and random sampling
-- **Hypothesis testing** — t-tests, chi-squared, ANOVA, Kolmogorov-Smirnov
-- **Descriptive statistics** — mean, median, variance, standard deviation
-- **Linear regression** with R-squared and prediction
+- **Hypothesis testing** — t-tests, chi-squared, ANOVA, KS, Mann-Whitney U, Wilcoxon, Fisher's exact
+- **Regression models** — linear, multiple, polynomial, logistic, robust, quantile, Cox PH
+- **Generalized Linear Models** — Gaussian, Binomial, Poisson, and Gamma families with link functions
+- **Bayesian inference** — conjugate models, Metropolis-Hastings MCMC, Bayes factors
+- **Time series & forecasting** — ARIMA, auto-ARIMA, seasonal decomposition, ADF test
+- **Machine learning** — PCA, factor analysis, k-means, hierarchical clustering, t-SNE, GMM
+- **Survival analysis** — Kaplan-Meier, Nelson-Aalen, log-rank test, Cox regression
+- **Nonparametric methods** — KDE, bootstrap CI, permutation tests
+- **Resampling & cross-validation** — k-fold CV, LOOCV, jackknife, stratified sampling
+- **Robust statistics** — MAD, trimmed/winsorized mean, Huber M-estimate, outlier detection
+- **Information theory** — entropy, mutual information, KL/JS divergence
+- **Distance & similarity** — Euclidean, Manhattan, Mahalanobis, cosine, Jaccard
+- **Missing data** — imputation (mean, median, mode, interpolation), pattern analysis
+- **Streaming statistics** — online mean/variance, covariance, quantile estimation
+- **Multiple testing corrections** — Bonferroni, Holm, Benjamini-Hochberg, and more
+- **Descriptive statistics** — mean, median, variance, standard deviation, correlation
+- **Confidence intervals** — mean, proportion, regression, paired/two-sample
+- **Effect sizes** — Cohen's d, Hedges' g, eta-squared, Cramér's V, odds ratio
+- **Power analysis** — sample size and power for t-tests, ANOVA, chi-squared, proportions
 - **Special math functions** — gamma, beta, erf, regularized incomplete functions
 - **Native Fortran acceleration** via N-API with automatic TypeScript fallback
 - **Fully typed** — strict TypeScript with exported interfaces
@@ -20,7 +36,7 @@ A comprehensive statistical modeling and probability distribution library for No
 ## Installation
 
 ```bash
-npm install node_stats
+yarn add node_stats
 ```
 
 ### Optional: Native Fortran acceleration
@@ -28,7 +44,7 @@ npm install node_stats
 For best performance on special math functions, install with native compilation (requires `gfortran` and build tools):
 
 ```bash
-npm run build
+yarn build
 ```
 
 If `gfortran` is not available, the library falls back to pure TypeScript implementations automatically.
@@ -36,7 +52,7 @@ If `gfortran` is not available, the library falls back to pure TypeScript implem
 ### TypeScript-only build
 
 ```bash
-npm run build:ts
+yarn build:ts
 ```
 
 ## Quick start
@@ -263,6 +279,19 @@ console.log(fit.predict([3])); // P(y=1) — close to 0
 console.log(fit.predict([8])); // P(y=1) — close to 1
 ```
 
+### Generalized Linear Models
+
+```typescript
+import { glm, poisson, gaussian, binomial, gamma } from "node_stats";
+
+// Poisson regression for count data
+const X = [[1], [2], [3], [4], [5]];
+const counts = [2, 5, 8, 15, 30];
+const fit = glm(X, counts, poisson());
+console.log(fit.coefficients); // log-linear coefficients
+console.log(fit.predict([3])); // predicted count
+```
+
 ## Correlation
 
 ```typescript
@@ -286,6 +315,452 @@ const tau = kendallCorrelation(x, y);
 console.log(tau.coefficient); // 1.0
 ```
 
+## Confidence intervals
+
+```typescript
+import { meanCI, proportionCI, linearRegressionCI } from "node_stats";
+
+// CI for population mean
+const ci = meanCI([2.3, 1.8, 3.1, 2.7, 2.5], 0.95);
+console.log(ci.lower, ci.upper);
+
+// Wilson score CI for proportion
+const pci = proportionCI(45, 200, 0.95);
+console.log(pci.lower, pci.upper);
+
+// CI for regression coefficients
+const rci = linearRegressionCI([1, 2, 3, 4, 5], [2, 4, 5, 8, 10]);
+console.log(rci.slope); // { lower, upper }
+```
+
+## Effect sizes
+
+```typescript
+import { cohensD, hedgesG, etaSquared, cramersV, oddsRatio } from "node_stats";
+
+// Cohen's d for two groups
+const d = cohensD([1, 2, 3], [4, 5, 6]);
+console.log(d.d, d.interpretation); // effect size + "small"/"medium"/"large"
+
+// Cramér's V for contingency tables
+const v = cramersV([[10, 20], [30, 40]]);
+
+// Odds ratio with CI
+const or = oddsRatio([[15, 85], [30, 70]]);
+console.log(or.oddsRatio, or.ci);
+```
+
+## Power analysis
+
+```typescript
+import { tTestSampleSize, tTestPower, anovaSampleSize } from "node_stats";
+
+// How many subjects for a medium effect at 80% power?
+const n = tTestSampleSize(0.5, 0.8, 0.05, 2);
+console.log(n); // required sample size per group
+
+// Power of a test with n=30
+const power = tTestPower(0.5, 30, 0.05, 2);
+console.log(power); // achieved power
+```
+
+## Survival analysis
+
+```typescript
+import { kaplanMeier, nelsonAalen, logRankTest, coxRegression } from "node_stats";
+
+const obs = [
+  { time: 1, event: true },
+  { time: 3, event: false }, // censored
+  { time: 4, event: true },
+  { time: 6, event: true },
+];
+
+// Kaplan-Meier survival curve
+const km = kaplanMeier(obs);
+console.log(km.survivalFunction); // [{ time, survival, ci }]
+console.log(km.medianSurvival);
+
+// Log-rank test comparing two groups
+const lr = logRankTest(group1, group2);
+console.log(lr.pValue);
+```
+
+## Time series & forecasting
+
+```typescript
+import {
+  autocorrelation, arima, difference,
+  autoArima, forecastWithIntervals, seasonalDecompose, adfTest,
+} from "node_stats";
+
+// ACF/PACF
+const acf = autocorrelation(series, 10);
+
+// ARIMA model
+const model = arima(series, 1, 1, 1);
+console.log(model.arCoefficients, model.maCoefficients);
+
+// Auto-ARIMA: automatic model selection by AIC
+const best = autoArima(series, { maxP: 3, maxD: 2, maxQ: 3 });
+console.log(best.order); // [p, d, q]
+
+// Forecasting with prediction intervals
+const fc = forecastWithIntervals(best, 10, 0.95);
+console.log(fc.forecasts, fc.lower, fc.upper);
+
+// Seasonal decomposition
+const decomp = seasonalDecompose(series, 12);
+console.log(decomp.trend, decomp.seasonal, decomp.residual);
+
+// Augmented Dickey-Fuller stationarity test
+const adf = adfTest(series);
+console.log(adf.statistic, adf.pValue);
+```
+
+## Bayesian inference
+
+```typescript
+import {
+  betaBinomial, normalNormal, gammaPoisson,
+  metropolisHastings, bayesFactor,
+} from "node_stats";
+
+// Beta-Binomial conjugate model
+const posterior = betaBinomial(45, 500);
+console.log(posterior.posteriorMean);     // 0.0908...
+console.log(posterior.credibleInterval); // [0.068, 0.117]
+
+// Metropolis-Hastings MCMC
+const mcmc = metropolisHastings(logPosteriorFn, {
+  nSamples: 10000, burnIn: 2000, proposalStd: 1,
+});
+console.log(mcmc.mean, mcmc.std, mcmc.acceptanceRate);
+```
+
+## MCMC sampling
+
+```typescript
+import {
+  metropolisHastingsND, gelmanRubin, estimateESS,
+} from "node_stats";
+
+// Multi-dimensional MCMC
+const result = metropolisHastingsND(logDensity, 2, {
+  nSamples: 50000, burnIn: 5000,
+});
+console.log(result.means, result.acceptanceRate);
+
+// Convergence diagnostics
+const rhat = gelmanRubin([chain1, chain2]);
+console.log(rhat); // should be < 1.1
+
+const ess = estimateESS(chain);
+console.log(ess); // effective sample size
+```
+
+## Machine learning
+
+### Principal Component Analysis
+
+```typescript
+import { pca } from "node_stats";
+
+const data = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
+const result = pca(data, { nComponents: 2 });
+console.log(result.components);         // principal components
+console.log(result.explainedVariance);  // variance explained
+console.log(result.projected);          // projected data
+```
+
+### Clustering
+
+```typescript
+import { kMeans, hierarchicalClustering } from "node_stats";
+
+// K-means with k-means++ initialization
+const km = kMeans(data, 3);
+console.log(km.labels);    // cluster assignments
+console.log(km.centroids); // cluster centers
+
+// Agglomerative clustering
+const hc = hierarchicalClustering(data, 3, { linkage: "complete" });
+console.log(hc.labels);
+```
+
+### Dimensionality reduction & cluster validation
+
+```typescript
+import { tsne, silhouetteScore, daviesBouldinIndex, adjustedRandIndex } from "node_stats";
+
+// t-SNE for 2D visualization
+const embedded = tsne(highDimData, { perplexity: 30 });
+console.log(embedded.coordinates); // 2D coordinates
+
+// Evaluate clustering quality
+const sil = silhouetteScore(data, labels);      // [-1, 1], higher is better
+const dbi = daviesBouldinIndex(data, labels);    // lower is better
+const ari = adjustedRandIndex(labels1, labels2); // agreement between clusterings
+```
+
+### Gaussian Mixture Models
+
+```typescript
+import { gaussianMixture, selectComponents } from "node_stats";
+
+const result = gaussianMixture(data, 3);
+console.log(result.means);       // component means
+console.log(result.weights);     // mixing weights
+console.log(result.assignments); // cluster labels
+
+// Automatic component selection via BIC
+const best = selectComponents(data, 5);
+console.log(best.k); // optimal number of components
+```
+
+## Generalized Linear Models
+
+```typescript
+import {
+  glm, gaussian, binomial, poisson, gamma,
+  identityLink, logLink, logitLink, probitLink,
+} from "node_stats";
+
+// Poisson regression
+const fit = glm(X, y, poisson());
+console.log(fit.coefficients);
+console.log(fit.deviance);
+console.log(fit.aic);
+```
+
+## Nonparametric methods
+
+```typescript
+import { kernelDensity, bootstrapCI, permutationTest } from "node_stats";
+
+// Kernel density estimation
+const kde = kernelDensity(data);
+console.log(kde.estimate(2.5)); // density at x=2.5
+
+// Bootstrap confidence interval
+const ci = bootstrapCI(data, mean, { nResamples: 10000, method: "bca" });
+console.log(ci.lower, ci.upper);
+
+// Permutation test
+const pt = permutationTest(group1, group2, { nPermutations: 10000 });
+console.log(pt.pValue);
+```
+
+## Resampling & cross-validation
+
+```typescript
+import { kFoldCV, loocv, jackknife, stratifiedSample, mse, r2Score } from "node_stats";
+
+// K-fold cross-validation
+const scores = kFoldCV(X, y, fitPredictFn, { k: 5, scorer: mse });
+console.log(scores.mean, scores.scores);
+
+// Leave-one-out cross-validation
+const loo = loocv(X, y, fitPredictFn, mse);
+console.log(loo.mean);
+
+// Jackknife bias and SE estimation
+const jk = jackknife(data, mean);
+console.log(jk.estimate, jk.bias, jk.standardError);
+```
+
+## Robust statistics
+
+```typescript
+import {
+  mad, trimmedMean, winsorizedMean, huberMean,
+  detectOutliers, iqr, biweightMidvariance,
+} from "node_stats";
+
+const data = [1, 2, 3, 4, 5, 100]; // contains outlier
+
+mad(data);            // Median Absolute Deviation
+trimmedMean(data);    // mean after trimming extremes
+winsorizedMean(data); // mean after Winsorizing
+huberMean(data);      // Huber M-estimate
+detectOutliers(data); // { outliers: [100], indices: [5], bounds }
+```
+
+## Multiple testing corrections
+
+```typescript
+import { bonferroni, holm, benjaminiHochberg } from "node_stats";
+
+const pValues = [0.01, 0.04, 0.03, 0.20, 0.005];
+
+// Family-wise error rate control
+const bonf = bonferroni(pValues, 0.05);
+console.log(bonf.rejected); // [true, false, false, false, true]
+
+// Step-down procedure (more powerful)
+const holmResult = holm(pValues, 0.05);
+
+// False discovery rate control
+const bh = benjaminiHochberg(pValues, 0.05);
+console.log(bh.rejected);
+```
+
+## Information theory
+
+```typescript
+import {
+  entropy, mutualInformation, klDivergence, jsDivergence,
+} from "node_stats";
+
+// Shannon entropy
+entropy([0.5, 0.5]);      // 1.0 (max entropy for binary)
+entropy([0.9, 0.1]);      // 0.469...
+
+// Mutual information between variables
+mutualInformation(dataX, dataY);
+
+// KL and JS divergence
+klDivergence([0.5, 0.5], [0.9, 0.1]);
+jsDivergence([0.5, 0.5], [0.9, 0.1]); // symmetric
+```
+
+## Distance & similarity
+
+```typescript
+import {
+  euclidean, manhattan, cosineDistance,
+  mahalanobis, distanceMatrix,
+} from "node_stats";
+
+euclidean([1, 0], [0, 1]);     // 1.414...
+manhattan([1, 0], [0, 1]);     // 2
+cosineDistance([1, 0], [0, 1]); // 1.0
+
+// Mahalanobis distance from a dataset
+mahalanobis([2, 3], dataset);
+
+// Pairwise distance matrix
+const dm = distanceMatrix(vectors, euclidean);
+```
+
+## Missing data handling
+
+```typescript
+import {
+  analyzeMissing, meanImputation, medianImputation,
+  linearInterpolation, listwiseDeletion,
+} from "node_stats";
+
+const data = [1, null, 3, undefined, 5, NaN, 7];
+
+// Analyze missing patterns
+const report = analyzeMissing(data);
+console.log(report.missingCount, report.missingRate);
+
+// Imputation
+meanImputation(data);           // replace with mean
+medianImputation(data);         // replace with median
+linearInterpolation(data);      // interpolate between neighbors
+```
+
+## Streaming statistics
+
+```typescript
+import { OnlineStats, OnlineCovariance, OnlineQuantile } from "node_stats";
+
+// Online mean/variance (Welford's algorithm)
+const stats = new OnlineStats();
+stats.push(1.5);
+stats.push(2.3);
+stats.push(3.7);
+console.log(stats.mean, stats.variance, stats.count);
+
+// Online covariance/correlation
+const cov = new OnlineCovariance();
+cov.push(1, 2);
+cov.push(2, 4);
+console.log(cov.correlation);
+
+// Online quantile estimation (P² algorithm)
+const q = new OnlineQuantile(0.5); // median
+for (const x of largeStream) q.push(x);
+console.log(q.quantile);
+```
+
+## Smoothing & interpolation
+
+```typescript
+import { loess, cubicSpline, sma, ema } from "node_stats";
+
+// LOESS smoothing
+const smoothed = loess(x, y, 0.3);
+console.log(smoothed); // smoothed y values
+
+// Cubic spline interpolation
+const spline = cubicSpline(x, y);
+console.log(spline(2.5)); // interpolated value
+
+// Moving averages
+sma(data, 5);    // simple moving average
+ema(data, 0.3);  // exponential moving average
+```
+
+## Categorical data analysis
+
+```typescript
+import {
+  contingencyTable, mcnemarsTest, cochranMantelHaenszel, gTest,
+} from "node_stats";
+
+// Contingency table with expected counts
+const ct = contingencyTable([[10, 20], [30, 40]]);
+console.log(ct.expected);
+
+// McNemar's test for paired categorical data
+mcnemarsTest([[50, 10], [5, 35]]);
+
+// G-test (log-likelihood ratio)
+gTest([[10, 20, 30], [15, 25, 35]]);
+```
+
+## Regression diagnostics
+
+```typescript
+import { regressionSummary, residualDiagnostics, vif } from "node_stats";
+
+// Full regression summary (similar to R's summary(lm()))
+const summary = regressionSummary(X, y);
+console.log(summary.coefficients); // estimates, SE, t, p-value
+console.log(summary.rSquared);
+console.log(summary.fStatistic);
+
+// Residual diagnostics
+const diag = residualDiagnostics(observed, predicted);
+console.log(diag.durbinWatson);  // autocorrelation
+console.log(diag.jarqueBera);    // normality
+
+// Variance Inflation Factor
+const vifs = vif(X);
+console.log(vifs); // values > 10 indicate multicollinearity
+```
+
+## Random number generation
+
+```typescript
+import { SeededRng, haltonSequence, latinHypercube } from "node_stats";
+
+// Reproducible pseudo-random numbers
+const rng = new SeededRng(42);
+console.log(rng.next());      // [0, 1)
+console.log(rng.nextInt(100)); // integer in [0, 99]
+
+// Low-discrepancy sequences
+const seq = haltonSequence(2, 100); // base-2 Halton, 100 points
+
+// Latin Hypercube Sampling
+const lhs = latinHypercube(3, 50); // 3 dimensions, 50 samples
+```
+
 ## Special math functions
 
 These are accelerated by native Fortran when available, with pure TypeScript fallbacks.
@@ -307,25 +782,31 @@ erf(1);                // 0.8427...
 
 ```bash
 # Install dependencies
-npm install
+yarn install
 
 # Build everything (Fortran + TypeScript)
-npm run build
+yarn build
 
 # Build TypeScript only
-npm run build:ts
+yarn build:ts
 
 # Run tests
-npm test
+yarn test
 
 # Run tests with coverage
-npm run test:coverage
+yarn test:coverage
 
 # Lint
-npm run lint
+yarn lint
 
 # Format
-npm run format
+yarn format
+
+# Generate API documentation
+yarn docs
+
+# Run benchmarks
+yarn bench
 ```
 
 ## License
