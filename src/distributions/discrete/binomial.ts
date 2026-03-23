@@ -2,9 +2,30 @@ import { BaseDiscrete } from "../base";
 import { logFactorial, regularizedBeta } from "../../utils/math";
 import { RandomFn } from "../../types";
 
+/**
+ * Binomial distribution.
+ *
+ * Models the number of successes in n independent Bernoulli trials,
+ * each with success probability p.
+ *
+ * P(X = k) = C(n, k) * p^k * (1 - p)^(n - k), for k = 0, 1, ..., n
+ *
+ * @example
+ * ```ts
+ * const dist = new Binomial(10, 0.3);
+ * dist.mean();     // 3
+ * dist.pmf(3);     // P(X = 3)
+ * dist.cdf(5);     // P(X <= 5)
+ * ```
+ */
 export class Binomial extends BaseDiscrete {
   readonly name: string;
 
+  /**
+   * @param n - Number of trials (positive integer). Defaults to 1.
+   * @param p - Probability of success per trial, must be in [0, 1]. Defaults to 0.5.
+   * @param rng - Optional random number generator.
+   */
   constructor(
     public readonly n: number = 1,
     public readonly p: number = 0.5,
@@ -16,14 +37,26 @@ export class Binomial extends BaseDiscrete {
     this.name = `Binomial(${n}, ${p})`;
   }
 
+  /** Returns the mean: E[X] = np. */
   mean(): number {
     return this.n * this.p;
   }
 
+  /** Returns the variance: Var(X) = np(1 - p). */
   variance(): number {
     return this.n * this.p * (1 - this.p);
   }
 
+  /**
+   * Probability mass function.
+   *
+   * P(X = k) = C(n, k) * p^k * (1 - p)^(n - k)
+   *
+   * Computed in log-space for numerical stability.
+   *
+   * @param k - The number of successes (integer in [0, n]).
+   * @returns The probability P(X = k).
+   */
   pmf(k: number): number {
     if (!Number.isInteger(k) || k < 0 || k > this.n) return 0;
     if (this.p === 0) return k === 0 ? 1 : 0;
@@ -37,6 +70,14 @@ export class Binomial extends BaseDiscrete {
     return Math.exp(logPmf);
   }
 
+  /**
+   * Cumulative distribution function.
+   *
+   * P(X <= k) = I_{1-p}(n - k, k + 1), where I is the regularized incomplete beta function.
+   *
+   * @param k - The value at which to evaluate the CDF.
+   * @returns The cumulative probability P(X <= k).
+   */
   cdf(k: number): number {
     if (k < 0) return 0;
     if (k >= this.n) return 1;
@@ -45,6 +86,14 @@ export class Binomial extends BaseDiscrete {
     return regularizedBeta(1 - this.p, this.n - kFloor, kFloor + 1);
   }
 
+  /**
+   * Quantile function (inverse CDF).
+   *
+   * Returns the smallest integer k such that P(X <= k) >= prob.
+   *
+   * @param prob - The probability, must be in [0, 1].
+   * @returns The quantile value.
+   */
   quantile(prob: number): number {
     if (prob < 0 || prob > 1) throw new Error("p must be in [0, 1]");
     if (prob === 0) return 0;
@@ -58,6 +107,11 @@ export class Binomial extends BaseDiscrete {
     return this.n;
   }
 
+  /**
+   * Draws a single random sample by simulating n independent Bernoulli trials.
+   *
+   * @returns The number of successes in n trials.
+   */
   sample(): number {
     let successes = 0;
     for (let i = 0; i < this.n; i++) {

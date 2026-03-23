@@ -11,7 +11,25 @@ function tPValue(t: number, df: number): number {
   return regularizedBeta(x, df / 2, 0.5);
 }
 
-/** One-sample t-test: tests whether the population mean equals mu0. */
+/**
+ * Performs a one-sample t-test.
+ *
+ * Tests the null hypothesis that the population mean of `data` equals `mu0`.
+ * Uses the t-distribution to compute a two-tailed p-value.
+ *
+ * @param data - Array of numeric observations (at least 2 required)
+ * @param mu0 - Hypothesized population mean (default 0)
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns A {@link HypothesisTestResult} containing the t-statistic, two-tailed p-value,
+ *   degrees of freedom (n - 1), and whether the null hypothesis is rejected
+ * @throws {Error} If `data` contains fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const result = oneSampleTTest([2.3, 1.9, 2.5, 2.1, 2.8], 2.0);
+ * console.log(result.pValue, result.rejected);
+ * ```
+ */
 export function oneSampleTTest(
   data: Dataset,
   mu0: number = 0,
@@ -27,7 +45,26 @@ export function oneSampleTTest(
   return { statistic: t, pValue, degreesOfFreedom: df, rejected: pValue < alpha };
 }
 
-/** Two-sample t-test (equal variances assumed). */
+/**
+ * Performs a two-sample (independent) t-test assuming equal variances.
+ *
+ * Tests the null hypothesis that the population means of two independent
+ * groups are equal. Uses a pooled variance estimate and the t-distribution
+ * to compute a two-tailed p-value.
+ *
+ * @param data1 - First sample of numeric observations (at least 2 required)
+ * @param data2 - Second sample of numeric observations (at least 2 required)
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns A {@link HypothesisTestResult} containing the t-statistic, two-tailed p-value,
+ *   degrees of freedom (n1 + n2 - 2), and whether the null hypothesis is rejected
+ * @throws {Error} If either sample contains fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const result = twoSampleTTest([5.1, 4.9, 5.3], [4.2, 4.0, 3.8]);
+ * console.log(result.statistic, result.pValue);
+ * ```
+ */
 export function twoSampleTTest(
   data1: Dataset,
   data2: Dataset,
@@ -49,7 +86,26 @@ export function twoSampleTTest(
   return { statistic: t, pValue, degreesOfFreedom: df, rejected: pValue < alpha };
 }
 
-/** Welch's t-test (unequal variances). */
+/**
+ * Performs Welch's t-test for two samples with potentially unequal variances.
+ *
+ * Tests the null hypothesis that the population means of two independent
+ * groups are equal without assuming equal variances. Uses the
+ * Welch-Satterthwaite approximation for degrees of freedom.
+ *
+ * @param data1 - First sample of numeric observations (at least 2 required)
+ * @param data2 - Second sample of numeric observations (at least 2 required)
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns A {@link HypothesisTestResult} containing the t-statistic, two-tailed p-value,
+ *   Welch-Satterthwaite degrees of freedom, and whether the null hypothesis is rejected
+ * @throws {Error} If either sample contains fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const result = welchTTest([10, 12, 14, 16], [8, 9, 10]);
+ * console.log(result.pValue, result.degreesOfFreedom);
+ * ```
+ */
 export function welchTTest(
   data1: Dataset,
   data2: Dataset,
@@ -75,7 +131,29 @@ export function welchTTest(
   return { statistic: t, pValue, degreesOfFreedom: df, rejected: pValue < alpha };
 }
 
-/** Paired t-test: tests whether the mean difference is zero. */
+/**
+ * Performs a paired (dependent) t-test.
+ *
+ * Tests the null hypothesis that the mean difference between paired
+ * observations is zero. Computes pairwise differences and delegates
+ * to {@link oneSampleTTest} with mu0 = 0.
+ *
+ * @param data1 - First set of paired observations
+ * @param data2 - Second set of paired observations (must be same length as data1)
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns A {@link HypothesisTestResult} containing the t-statistic, two-tailed p-value,
+ *   degrees of freedom (n - 1), and whether the null hypothesis is rejected
+ * @throws {Error} If the two samples have different lengths
+ * @throws {Error} If the samples contain fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const before = [200, 190, 210, 205];
+ * const after = [180, 175, 195, 190];
+ * const result = pairedTTest(before, after);
+ * console.log(result.rejected); // true if significant difference
+ * ```
+ */
 export function pairedTTest(
   data1: Dataset,
   data2: Dataset,

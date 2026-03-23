@@ -2,9 +2,34 @@ import { BaseContinuous } from "../base";
 import { gammaLn, regularizedGammaP, quantileBisect } from "../../utils/math";
 import { RandomFn } from "../../types";
 
+/**
+ * Gamma distribution parameterized by `shape` (alpha) and `rate` (beta).
+ *
+ * The PDF is:
+ *
+ *   f(x) = (rate^shape / Gamma(shape)) * x^(shape-1) * exp(-rate * x)
+ *
+ * for x > 0. The scale parameterization uses scale = 1/rate.
+ *
+ * Support: [0, +Infinity) (or (0, +Infinity) when shape < 1)
+ *
+ * @example
+ * ```ts
+ * const dist = new GammaDistribution(2, 1);
+ * dist.mean();    // 2
+ * dist.pdf(1);    // exp(-1) ~ 0.3679
+ * ```
+ */
 export class GammaDistribution extends BaseContinuous {
   readonly name: string;
 
+  /**
+   * Creates a Gamma distribution.
+   * @param shape - Shape parameter alpha (must be > 0). Defaults to 1.
+   * @param rate - Rate parameter beta (must be > 0). Defaults to 1.
+   * @param rng - Optional random number generator.
+   * @throws If `shape` or `rate` is not positive.
+   */
   constructor(
     public readonly shape: number = 1,
     public readonly rate: number = 1,
@@ -16,14 +41,30 @@ export class GammaDistribution extends BaseContinuous {
     this.name = `Gamma(${shape}, ${rate})`;
   }
 
+  /**
+   * Returns the mean: `shape / rate`.
+   */
   mean(): number {
     return this.shape / this.rate;
   }
 
+  /**
+   * Returns the variance: `shape / rate^2`.
+   */
   variance(): number {
     return this.shape / this.rate ** 2;
   }
 
+  /**
+   * Evaluates the PDF at `x`.
+   *
+   * f(x) = (rate^shape / Gamma(shape)) * x^(shape-1) * exp(-rate * x)
+   *
+   * Computed in log-space for numerical stability.
+   *
+   * @param x - The point at which to evaluate the density.
+   * @returns The density f(x).
+   */
   pdf(x: number): number {
     if (x < 0) return 0;
     if (x === 0) {
@@ -39,11 +80,25 @@ export class GammaDistribution extends BaseContinuous {
     return Math.exp(logPdf);
   }
 
+  /**
+   * Evaluates the CDF at `x` using the regularized lower incomplete gamma function.
+   *
+   * F(x) = P(shape, rate * x) = gammaP(shape, rate * x)
+   *
+   * @param x - The point at which to evaluate the CDF.
+   * @returns P(X <= x) in [0, 1].
+   */
   cdf(x: number): number {
     if (x <= 0) return 0;
     return regularizedGammaP(this.shape, this.rate * x);
   }
 
+  /**
+   * Computes the quantile (inverse CDF) via bisection search.
+   * @param p - A probability in [0, 1].
+   * @returns The value x such that P(X <= x) = p.
+   * @throws If `p` is outside [0, 1].
+   */
   quantile(p: number): number {
     if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
     if (p === 0) return 0;
@@ -55,6 +110,11 @@ export class GammaDistribution extends BaseContinuous {
     return quantileBisect((x) => this.cdf(x), p, 0, upper);
   }
 
+  /**
+   * Draws a random sample using the Marsaglia-Tsang method (shape >= 1)
+   * with a shape-shifting technique for shape < 1.
+   * @returns A random variate from this Gamma distribution.
+   */
   sample(): number {
     // Marsaglia-Tsang method for shape >= 1, shift for shape < 1
     if (this.shape < 1) {

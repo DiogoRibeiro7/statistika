@@ -10,8 +10,27 @@ function chiSqPValue(x: number, df: number): number {
 }
 
 /**
- * Chi-squared goodness-of-fit test.
- * Tests whether observed frequencies match expected frequencies.
+ * Performs a chi-squared goodness-of-fit test.
+ *
+ * Tests the null hypothesis that the observed frequency distribution
+ * matches the expected frequency distribution. The test statistic is
+ * sum((O_i - E_i)^2 / E_i), which follows a chi-squared distribution
+ * with (k - 1) degrees of freedom under the null.
+ *
+ * @param observed - Array of observed frequencies (at least 2 categories)
+ * @param expected - Array of expected frequencies (must be positive; same length as `observed`)
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns A {@link HypothesisTestResult} containing the chi-squared statistic,
+ *   upper-tail p-value, degrees of freedom (k - 1), and whether the null is rejected
+ * @throws {Error} If `observed` and `expected` have different lengths
+ * @throws {Error} If fewer than 2 categories are provided
+ * @throws {Error} If any expected frequency is non-positive
+ *
+ * @example
+ * ```ts
+ * const result = chiSquaredGoodnessOfFit([50, 30, 20], [40, 40, 20]);
+ * console.log(result.pValue, result.rejected);
+ * ```
  */
 export function chiSquaredGoodnessOfFit(
   observed: number[],
@@ -35,8 +54,27 @@ export function chiSquaredGoodnessOfFit(
 }
 
 /**
- * Chi-squared test of independence on a contingency table.
- * Input: 2D array where table[i][j] is the count for row i, column j.
+ * Performs a chi-squared test of independence on a contingency table.
+ *
+ * Tests the null hypothesis that the row and column variables are
+ * independent. Expected frequencies are computed from marginal totals
+ * as E_ij = (row_i_total * col_j_total) / grand_total.
+ *
+ * @param table - A 2D contingency table where `table[i][j]` is the count
+ *   for row i, column j (at least 2 rows and 2 columns required)
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns A {@link HypothesisTestResult} containing the chi-squared statistic,
+ *   upper-tail p-value, degrees of freedom ((rows - 1) * (cols - 1)),
+ *   and whether the null hypothesis is rejected
+ * @throws {Error} If the table has fewer than 2 rows or 2 columns
+ * @throws {Error} If the grand total is zero
+ *
+ * @example
+ * ```ts
+ * const table = [[10, 20, 30], [6, 9, 17]];
+ * const result = chiSquaredIndependence(table);
+ * console.log(result.statistic, result.pValue);
+ * ```
  */
 export function chiSquaredIndependence(
   table: number[][],

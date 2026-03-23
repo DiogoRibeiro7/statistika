@@ -54,13 +54,39 @@ function fPValue(f: number, d1: number, d2: number): number {
 }
 
 /**
- * Two-way ANOVA with interaction.
+ * Performs a two-way analysis of variance (ANOVA) with interaction.
  *
- * Expects a balanced or unbalanced design specified as a flat array of observations
- * with their factor levels.
+ * Tests three null hypotheses simultaneously:
+ * 1. Factor A has no main effect on the response.
+ * 2. Factor B has no main effect on the response.
+ * 3. There is no interaction effect between factors A and B.
  *
- * @param data - Array of { a, b, value } where a and b are factor level indices
- * @param alpha - Significance level
+ * Supports both balanced and unbalanced designs. Each cell (combination
+ * of factor levels) must contain at least one observation, and replication
+ * within cells is required for the error term.
+ *
+ * @param data - Array of observations, each with factor level indices `a` and `b`
+ *   and a numeric `value`. Both factors must have at least 2 levels.
+ * @param alpha - Significance level for all three tests (default 0.05)
+ * @returns A {@link TwoWayAnovaResult} containing F-statistics, p-values,
+ *   degrees of freedom, sums of squares, and mean squares for factor A,
+ *   factor B, the interaction (A x B), and residual/total components
+ * @throws {Error} If fewer than 4 observations are provided
+ * @throws {Error} If either factor has fewer than 2 levels
+ * @throws {Error} If any cell has zero observations
+ * @throws {Error} If there are insufficient degrees of freedom for the error term
+ *
+ * @example
+ * ```ts
+ * const data = [
+ *   { a: 0, b: 0, value: 10 }, { a: 0, b: 0, value: 12 },
+ *   { a: 0, b: 1, value: 14 }, { a: 0, b: 1, value: 15 },
+ *   { a: 1, b: 0, value: 20 }, { a: 1, b: 0, value: 22 },
+ *   { a: 1, b: 1, value: 18 }, { a: 1, b: 1, value: 19 },
+ * ];
+ * const result = twoWayAnova(data);
+ * console.log(result.factorA.pValue, result.interaction.rejected);
+ * ```
  */
 export function twoWayAnova(
   data: Array<{ a: number; b: number; value: number }>,

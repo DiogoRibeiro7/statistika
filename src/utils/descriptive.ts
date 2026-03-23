@@ -1,10 +1,29 @@
 import { Dataset, DescriptiveStats } from "../types";
 
+/**
+ * Computes the arithmetic mean (average) of a dataset.
+ *
+ * @param data - Array of numeric values.
+ * @returns The arithmetic mean of the values.
+ * @throws {Error} If the dataset is empty.
+ * @example
+ * mean([1, 2, 3, 4, 5]); // 3
+ */
 export function mean(data: Dataset): number {
   if (data.length === 0) throw new Error("Dataset must not be empty");
   return data.reduce((sum, v) => sum + v, 0) / data.length;
 }
 
+/**
+ * Computes the median of a dataset. For even-length datasets, returns the
+ * average of the two middle values.
+ *
+ * @param data - Array of numeric values.
+ * @returns The median value.
+ * @throws {Error} If the dataset is empty.
+ * @example
+ * median([3, 1, 2]); // 2
+ */
 export function median(data: Dataset): number {
   if (data.length === 0) throw new Error("Dataset must not be empty");
   const sorted = [...data].sort((a, b) => a - b);
@@ -14,6 +33,17 @@ export function median(data: Dataset): number {
     : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+/**
+ * Computes the variance of a dataset. By default uses Bessel's correction
+ * (sample variance, dividing by n-1). Set `sample` to false for population variance.
+ *
+ * @param data - Array of numeric values.
+ * @param sample - If true (default), computes sample variance s²; if false, population variance σ².
+ * @returns The variance.
+ * @throws {Error} If the dataset has fewer than 2 elements.
+ * @example
+ * variance([2, 4, 4, 4, 5, 5, 7, 9]); // ~4.571 (sample)
+ */
 export function variance(data: Dataset, sample = true): number {
   if (data.length < 2) throw new Error("Dataset must have at least 2 elements");
   const m = mean(data);
@@ -21,13 +51,27 @@ export function variance(data: Dataset, sample = true): number {
   return sumSq / (sample ? data.length - 1 : data.length);
 }
 
+/**
+ * Computes the standard deviation of a dataset (square root of the variance).
+ *
+ * @param data - Array of numeric values.
+ * @param sample - If true (default), computes sample standard deviation s; if false, population σ.
+ * @returns The standard deviation.
+ * @throws {Error} If the dataset has fewer than 2 elements.
+ */
 export function stdDev(data: Dataset, sample = true): number {
   return Math.sqrt(variance(data, sample));
 }
 
 /**
- * Compute the sample skewness (adjusted Fisher-Pearson) of a dataset.
- * Uses the bias-corrected formula: [n/((n-1)(n-2))] * sum[((xi - mean)/s)^3]
+ * Computes the adjusted Fisher-Pearson sample skewness of a dataset.
+ * Uses the bias-corrected formula: [n/((n-1)(n-2))] * Σ[((xᵢ - x̄)/s)³].
+ *
+ * @param data - Array of numeric values.
+ * @returns The sample skewness (0 for symmetric distributions).
+ * @throws {Error} If the dataset has fewer than 3 elements.
+ * @example
+ * skewness([2, 8, 0, 4, 1, 9, 9, 0]); // positive skew
  */
 export function skewness(data: Dataset): number {
   const n = data.length;
@@ -40,8 +84,12 @@ export function skewness(data: Dataset): number {
 }
 
 /**
- * Compute the excess kurtosis of a dataset.
- * Uses the bias-corrected formula with the -3(n-1)^2/((n-2)(n-3)) adjustment.
+ * Computes the excess kurtosis of a dataset using the bias-corrected formula.
+ * Applies the -3(n-1)²/((n-2)(n-3)) adjustment so that a normal distribution has kurtosis 0.
+ *
+ * @param data - Array of numeric values.
+ * @returns The excess kurtosis (0 for normal distributions, positive for heavy-tailed).
+ * @throws {Error} If the dataset has fewer than 4 elements.
  */
 export function kurtosis(data: Dataset): number {
   const n = data.length;
@@ -57,8 +105,16 @@ export function kurtosis(data: Dataset): number {
 }
 
 /**
- * Compute the p-th percentile of a dataset using linear interpolation.
- * @param p Percentile value between 0 and 100.
+ * Computes the p-th percentile of a dataset using linear interpolation
+ * between adjacent ranks.
+ *
+ * @param data - Array of numeric values.
+ * @param p - Percentile value between 0 and 100 (inclusive).
+ * @returns The interpolated percentile value.
+ * @throws {Error} If the dataset is empty.
+ * @throws {Error} If p is not in [0, 100].
+ * @example
+ * percentile([15, 20, 35, 40, 50], 50); // 35 (median)
  */
 export function percentile(data: Dataset, p: number): number {
   if (data.length === 0) throw new Error("Dataset must not be empty");
@@ -72,6 +128,17 @@ export function percentile(data: Dataset, p: number): number {
   return sorted[lower] + frac * (sorted[lower + 1] - sorted[lower]);
 }
 
+/**
+ * Computes a summary of descriptive statistics for a dataset, including
+ * count, mean, median, variance, standard deviation, min, and max.
+ *
+ * @param data - Array of numeric values.
+ * @returns A {@link DescriptiveStats} object with all summary statistics.
+ * @throws {Error} If the dataset is empty or has fewer than 2 elements.
+ * @example
+ * describe([1, 2, 3, 4, 5]);
+ * // { count: 5, mean: 3, median: 3, variance: 2.5, stdDev: ~1.58, min: 1, max: 5 }
+ */
 export function describe(data: Dataset): DescriptiveStats {
   return {
     count: data.length,

@@ -178,61 +178,135 @@ function tsRegularizedBeta(x: number, a: number, b: number): number {
 // falls back to pure TypeScript.
 // ==========================================================================
 
-/** Natural log of the gamma function. */
+/**
+ * Computes the natural logarithm of the gamma function: ln(Γ(x)).
+ * Uses the Lanczos approximation. Delegates to native Fortran when available.
+ *
+ * @param x - Input value. Returns NaN for non-positive integers.
+ * @returns ln(Γ(x)).
+ * @example
+ * gammaLn(5); // ln(24) ≈ 3.178
+ */
 export function gammaLn(x: number): number {
   if (native) return native.gammaLn(x);
   return tsGammaLn(x);
 }
 
-/** Gamma function. */
+/**
+ * Computes the gamma function Γ(x) = exp(gammaLn(x)).
+ * Delegates to native Fortran when available.
+ *
+ * @param x - Input value. Returns NaN for non-positive integers.
+ * @returns Γ(x).
+ * @example
+ * gamma(5); // 24 (i.e., 4!)
+ */
 export function gamma(x: number): number {
   if (native) return native.gamma(x);
   return tsGamma(x);
 }
 
-/** Log of the factorial: ln(n!) */
+/**
+ * Computes the natural logarithm of the factorial: ln(n!).
+ * Equivalent to gammaLn(n + 1). Useful for avoiding overflow with large n.
+ *
+ * @param n - A non-negative integer.
+ * @returns ln(n!).
+ * @throws {Error} If n is negative or not an integer.
+ */
 export function logFactorial(n: number): number {
   if (native) return native.logFactorial(n);
   return tsLogFactorial(n);
 }
 
-/** Factorial n! (for n <= 170 to avoid Infinity). */
+/**
+ * Computes n! (factorial). Returns Infinity for n > 170 due to floating-point limits.
+ *
+ * @param n - A non-negative integer.
+ * @returns n!.
+ * @throws {Error} If n is negative or not an integer.
+ * @example
+ * factorial(5); // 120
+ */
 export function factorial(n: number): number {
   if (native) return native.factorial(n);
   return tsFactorial(n);
 }
 
-/** Binomial coefficient C(n, k). */
+/**
+ * Computes the binomial coefficient C(n, k) = n! / (k!(n-k)!).
+ * Uses logarithmic computation to avoid intermediate overflow.
+ *
+ * @param n - Total number of items (non-negative integer).
+ * @param k - Number of items to choose (0 <= k <= n).
+ * @returns C(n, k), or 0 if k < 0 or k > n.
+ * @example
+ * binomialCoeff(10, 3); // 120
+ */
 export function binomialCoeff(n: number, k: number): number {
   if (native) return native.binomialCoeff(n, k);
   return tsBinomialCoeff(n, k);
 }
 
-/** Beta function B(a, b). */
+/**
+ * Computes the beta function B(a, b) = Γ(a)Γ(b) / Γ(a+b).
+ *
+ * @param a - First shape parameter (positive).
+ * @param b - Second shape parameter (positive).
+ * @returns B(a, b).
+ */
 export function betaFn(a: number, b: number): number {
   if (native) return native.betaFn(a, b);
   return tsBetaFn(a, b);
 }
 
-/** Error function erf(x). */
+/**
+ * Computes the error function erf(x) = (2/√π) ∫₀ˣ e^(-t²) dt.
+ * Uses the Abramowitz & Stegun rational approximation as fallback.
+ *
+ * @param x - Input value.
+ * @returns erf(x), in the range [-1, 1].
+ */
 export function erf(x: number): number {
   if (native) return native.erf(x);
   return tsErf(x);
 }
 
-/** Complementary error function erfc(x) = 1 - erf(x). */
+/**
+ * Computes the complementary error function erfc(x) = 1 - erf(x).
+ *
+ * @param x - Input value.
+ * @returns erfc(x), in the range [0, 2].
+ */
 export function erfc(x: number): number {
   if (native) return native.erfc(x);
   return tsErfc(x);
 }
 
-/** Lower regularized incomplete gamma function P(s, x). */
+/**
+ * Computes the lower regularized incomplete gamma function P(s, x) = γ(s,x) / Γ(s).
+ * Uses series expansion for x < s+1, and continued fraction otherwise.
+ *
+ * @param s - Shape parameter (positive).
+ * @param x - Upper integration limit (non-negative).
+ * @returns P(s, x) in the range [0, 1].
+ * @throws {Error} If x is negative.
+ */
 export function regularizedGammaP(s: number, x: number): number {
   if (native) return native.regularizedGammaP(s, x);
   return tsRegularizedGammaP(s, x);
 }
 
-/** Regularized incomplete beta function I_x(a, b). */
+/**
+ * Computes the regularized incomplete beta function Iₓ(a, b).
+ * Uses a continued fraction expansion with symmetry transformation for numerical stability.
+ *
+ * @param x - Evaluation point in [0, 1].
+ * @param a - First shape parameter (positive).
+ * @param b - Second shape parameter (positive).
+ * @returns Iₓ(a, b) in the range [0, 1].
+ * @throws {Error} If x is not in [0, 1].
+ */
 export function regularizedBeta(x: number, a: number, b: number): number {
   if (native) return native.regularizedBeta(x, a, b);
   return tsRegularizedBeta(x, a, b);
@@ -242,7 +316,18 @@ export function regularizedBeta(x: number, a: number, b: number): number {
 // Quantile helper (pure TS — no Fortran needed)
 // ==========================================================================
 
-/** Generic quantile by bisection on the CDF. */
+/**
+ * Computes a quantile value by bisection search on a CDF function.
+ * Finds x such that cdf(x) ≈ p to within the specified tolerance.
+ *
+ * @param cdf - Cumulative distribution function to invert.
+ * @param p - Probability value in [0, 1].
+ * @param lower - Lower bound of the search interval.
+ * @param upper - Upper bound of the search interval.
+ * @param tolerance - Convergence tolerance (default 1e-12).
+ * @returns The quantile value x where cdf(x) ≈ p.
+ * @throws {Error} If p is not in [0, 1].
+ */
 export function quantileBisect(
   cdf: (x: number) => number,
   p: number,
@@ -268,7 +353,11 @@ export function quantileBisect(
   return (lo + hi) / 2;
 }
 
-/** Returns true if the native Fortran addon is loaded. */
+/**
+ * Checks whether the native Fortran addon for special math functions is loaded.
+ *
+ * @returns True if the native addon is available, false if using pure TypeScript fallbacks.
+ */
 export function isNativeAvailable(): boolean {
   return native !== null;
 }
