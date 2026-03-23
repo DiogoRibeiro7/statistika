@@ -7,7 +7,13 @@ import { normalQuantile } from "./utils/linalg";
 
 // ---- Conjugate Prior Models ----
 
-/** Result of a Beta-Binomial conjugate update. */
+/**
+ * Result of a Beta-Binomial conjugate update.
+ *
+ * Contains the prior and posterior parameters of the Beta distribution,
+ * along with summary statistics (mean, variance, credible interval)
+ * and the posterior predictive probability of success.
+ */
 export interface BetaBinomialResult {
   /** Prior alpha */
   priorAlpha: number;
@@ -34,10 +40,25 @@ export interface BetaBinomialResult {
  * Likelihood: X | p ~ Binomial(n, p)
  * Posterior: p | X ~ Beta(alpha + successes, beta + failures)
  *
- * @param successes - Number of successes observed
- * @param trials - Number of trials
- * @param priorAlpha - Prior Beta alpha (default 1 = uniform)
- * @param priorBeta - Prior Beta beta (default 1 = uniform)
+ * The posterior mean is E[p | data] = (alpha + successes) / (alpha + beta + trials),
+ * and the posterior variance is Var[p | data] = (a' * b') / ((a' + b')^2 * (a' + b' + 1))
+ * where a' = alpha + successes, b' = beta + failures.
+ *
+ * @param successes - Number of successes observed (non-negative integer <= trials)
+ * @param trials - Number of trials (non-negative integer)
+ * @param priorAlpha - Prior Beta alpha parameter (default 1, giving a uniform prior)
+ * @param priorBeta - Prior Beta beta parameter (default 1, giving a uniform prior)
+ * @returns A {@link BetaBinomialResult} with posterior parameters and summary statistics
+ * @throws {Error} If successes < 0, trials < 0, or successes > trials
+ * @throws {Error} If prior parameters are not positive
+ *
+ * @example
+ * ```ts
+ * // Observe 7 successes in 10 trials with a uniform prior
+ * const result = betaBinomial(7, 10);
+ * console.log(result.posteriorMean); // 0.667 (= 8/12)
+ * console.log(result.credibleInterval); // approximately [0.39, 0.94]
+ * ```
  */
 export function betaBinomial(
   successes: number,
@@ -76,7 +97,12 @@ export function betaBinomial(
   };
 }
 
-/** Result of a Normal-Normal conjugate update. */
+/**
+ * Result of a Normal-Normal conjugate update.
+ *
+ * Contains the prior and posterior parameters of the Normal distribution
+ * for the unknown mean, along with a 95% credible interval.
+ */
 export interface NormalNormalResult {
   /** Prior mean */
   priorMean: number;
@@ -97,10 +123,22 @@ export interface NormalNormalResult {
  * Likelihood: X_i | mu ~ N(mu, sigma^2)   (sigma known)
  * Posterior: mu | X ~ N(mu_n, sigma_n^2)
  *
- * @param data - Observed data points
- * @param knownVariance - Known data variance (sigma^2)
- * @param priorMean - Prior mean (mu0)
- * @param priorVariance - Prior variance (sigma0^2)
+ * The posterior precision is tau_n = 1/sigma0^2 + n/sigma^2,
+ * and the posterior mean is mu_n = (mu0/sigma0^2 + n*x_bar/sigma^2) / tau_n.
+ *
+ * @param data - Observed data points (must be non-empty)
+ * @param knownVariance - Known data variance sigma^2 (must be positive)
+ * @param priorMean - Prior mean mu0 (default 0)
+ * @param priorVariance - Prior variance sigma0^2 (default 1000, a diffuse prior)
+ * @returns A {@link NormalNormalResult} with posterior mean, variance, and 95% credible interval
+ * @throws {Error} If data is empty
+ * @throws {Error} If knownVariance or priorVariance is not positive
+ *
+ * @example
+ * ```ts
+ * const result = normalNormal([5.1, 4.9, 5.0, 5.2], 0.25);
+ * console.log(result.posteriorMean); // close to 5.05
+ * ```
  */
 export function normalNormal(
   data: number[],
@@ -134,7 +172,12 @@ export function normalNormal(
   };
 }
 
-/** Result of a Gamma-Poisson conjugate update. */
+/**
+ * Result of a Gamma-Poisson conjugate update.
+ *
+ * Contains the prior and posterior parameters of the Gamma distribution
+ * for the Poisson rate parameter lambda, along with summary statistics.
+ */
 export interface GammaPoissonResult {
   /** Prior shape (alpha) */
   priorAlpha: number;
@@ -153,15 +196,28 @@ export interface GammaPoissonResult {
 }
 
 /**
- * Gamma-Poisson conjugate model.
+ * Gamma-Poisson conjugate model for Poisson count data.
  *
  * Prior: lambda ~ Gamma(alpha, beta)
  * Likelihood: X_i | lambda ~ Poisson(lambda)
  * Posterior: lambda | X ~ Gamma(alpha + sum(x), beta + n)
  *
- * @param data - Observed count data
- * @param priorAlpha - Prior shape (default 1)
- * @param priorBeta - Prior rate (default 1)
+ * The posterior mean is E[lambda | data] = (alpha + sum(x)) / (beta + n),
+ * and the posterior variance is (alpha + sum(x)) / (beta + n)^2.
+ *
+ * @param data - Observed count data (non-negative integers, must be non-empty)
+ * @param priorAlpha - Prior shape parameter (default 1, must be positive)
+ * @param priorBeta - Prior rate parameter (default 1, must be positive)
+ * @returns A {@link GammaPoissonResult} with posterior parameters and summary statistics
+ * @throws {Error} If data is empty
+ * @throws {Error} If prior parameters are not positive
+ * @throws {Error} If any data value is not a non-negative integer
+ *
+ * @example
+ * ```ts
+ * const result = gammaPoisson([3, 5, 2, 4, 6]);
+ * console.log(result.posteriorMean); // (1 + 20) / (1 + 5) = 3.5
+ * ```
  */
 export function gammaPoisson(
   data: number[],
@@ -206,7 +262,12 @@ export function gammaPoisson(
 
 // ---- MCMC: Metropolis-Hastings ----
 
-/** Options for the Metropolis-Hastings sampler. */
+/**
+ * Options for the Metropolis-Hastings MCMC sampler.
+ *
+ * Controls the number of samples, burn-in period, thinning interval,
+ * proposal distribution width, initial value, and random number generator.
+ */
 export interface MHOptions {
   /** Number of samples to draw */
   nSamples: number;
@@ -222,7 +283,12 @@ export interface MHOptions {
   random?: () => number;
 }
 
-/** Result of MCMC sampling. */
+/**
+ * Result of MCMC sampling.
+ *
+ * Contains the posterior samples, acceptance rate, and summary statistics
+ * including the posterior mean, standard deviation, and 95% credible interval.
+ */
 export interface MCMCResult {
   /** Posterior samples */
   samples: number[];
@@ -239,8 +305,26 @@ export interface MCMCResult {
 /**
  * Metropolis-Hastings MCMC sampler for a univariate distribution.
  *
- * @param logPosterior - Log-posterior density function (up to a constant)
- * @param options - Sampler options
+ * Draws samples from a target distribution specified by its log-posterior
+ * density (up to a normalizing constant). Uses a symmetric Normal random-walk
+ * proposal: x* = x_t + N(0, proposalStd^2). The acceptance probability is
+ * alpha = min(1, exp(logPosterior(x*) - logPosterior(x_t))).
+ *
+ * @param logPosterior - Log-posterior density function (up to an additive constant)
+ * @param options - Sampler configuration options (see {@link MHOptions})
+ * @returns A {@link MCMCResult} with posterior samples and summary statistics
+ * @throws {Error} If nSamples < 1, thin < 1, or proposalStd <= 0
+ *
+ * @example
+ * ```ts
+ * // Sample from a standard normal distribution
+ * const result = metropolisHastings(
+ *   (x) => -0.5 * x * x,
+ *   { nSamples: 10000, proposalStd: 1.0 }
+ * );
+ * console.log(result.mean);           // close to 0
+ * console.log(result.acceptanceRate); // ideally around 0.23-0.44
+ * ```
  */
 export function metropolisHastings(
   logPosterior: (x: number) => number,
@@ -313,7 +397,12 @@ export function metropolisHastings(
 
 // ---- Bayes Factor ----
 
-/** Result of a Bayes factor computation. */
+/**
+ * Result of a Bayes factor computation.
+ *
+ * The Bayes factor B_10 quantifies evidence for model 1 over model 0.
+ * Values > 1 favor model 1; values < 1 favor model 0.
+ */
 export interface BayesFactorResult {
   /** Bayes factor B_10 (model 1 vs model 0) */
   bayesFactor: number;
@@ -326,10 +415,24 @@ export interface BayesFactorResult {
 /**
  * Compute Bayes factor via marginal likelihood estimates.
  *
- * Uses the harmonic mean estimator from MCMC samples.
+ * Uses the harmonic mean estimator from MCMC samples:
+ *   p(D|M) approx 1 / mean(1/L_i)
+ * where L_i are the likelihood values at each MCMC sample. The Bayes factor
+ * is B_10 = p(D|M1) / p(D|M2).
  *
- * @param logLikelihood1 - Log-likelihood values from model 1 MCMC chain
- * @param logLikelihood2 - Log-likelihood values from model 2 MCMC chain
+ * Note: the harmonic mean estimator can have high variance; use with caution.
+ *
+ * @param logLikelihood1 - Log-likelihood values from model 1 MCMC chain (must be non-empty)
+ * @param logLikelihood2 - Log-likelihood values from model 2 MCMC chain (must be non-empty)
+ * @returns A {@link BayesFactorResult} with the Bayes factor, log Bayes factor, and interpretation
+ * @throws {Error} If either log-likelihood array is empty
+ *
+ * @example
+ * ```ts
+ * const bf = bayesFactor(model1LogLikelihoods, model2LogLikelihoods);
+ * console.log(bf.bayesFactor);    // e.g., 15.3
+ * console.log(bf.interpretation); // "Strong"
+ * ```
  */
 export function bayesFactor(
   logLikelihood1: number[],

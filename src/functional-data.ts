@@ -13,7 +13,13 @@ import { mean } from "./utils/descriptive";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
-/** A functional observation represented by its basis coefficients. */
+/**
+ * A functional observation represented by its basis coefficients.
+ *
+ * Stores a function as a linear combination of basis functions:
+ * f(t) = sum(c_i * phi_i(t)), enabling algebraic operations in
+ * the coefficient space.
+ */
 export interface FunctionalObject {
   /** Basis system used. */
   basis: BasisSystem;
@@ -23,35 +29,62 @@ export interface FunctionalObject {
   evaluate: (t: number) => number;
 }
 
+/**
+ * A system of basis functions defined on a domain [a, b].
+ *
+ * Provides a common interface for polynomial, Fourier, and B-spline
+ * basis systems used in functional data analysis.
+ */
 export interface BasisSystem {
+  /** Type identifier for the basis system. */
   type: "bspline" | "fourier" | "polynomial";
-  /** Number of basis functions. */
+  /** Number of basis functions in the system. */
   nBasis: number;
-  /** Domain [a, b]. */
+  /** Domain [a, b] on which the basis functions are defined. */
   domain: [number, number];
-  /** Evaluate all basis functions at t, returns vector of length nBasis. */
+  /** Evaluate all basis functions at point t, returns a vector of length nBasis. */
   evaluate: (t: number) => number[];
 }
 
+/**
+ * Results from Functional Principal Component Analysis.
+ *
+ * Contains eigenvalues, eigenfunctions (as coefficient vectors in the
+ * chosen basis), scores for each observation on each component, and
+ * variance explained summaries.
+ */
 export interface FPCAResult {
-  /** Eigenvalues (proportion of variance explained by each component). */
+  /** Eigenvalues of the coefficient covariance matrix (ordered largest first). */
   eigenvalues: number[];
-  /** Eigenfunctions (functional PCs): each is an array of coefficients. */
+  /** Eigenfunctions (functional PCs): each is an array of basis coefficients. */
   eigenfunctions: number[][];
-  /** Scores: scores[i][j] = score of observation i on component j. */
+  /** Scores: scores[i][j] = projection of curve i onto component j. */
   scores: number[][];
-  /** Proportion of variance explained by each component. */
+  /** Proportion of total variance explained by each component. */
   varianceExplained: number[];
   /** Cumulative proportion of variance explained. */
   cumulativeVariance: number[];
-  /** Mean function coefficients. */
+  /** Coefficients of the mean function in the chosen basis. */
   meanCoefficients: number[];
 }
 
 // ── Basis Systems ─────────────────────────────────────────────────────────
 
 /**
- * Create a polynomial basis system of degree p (p+1 basis functions).
+ * Create a polynomial basis system of degree p.
+ *
+ * The basis consists of p+1 functions: {1, s, s^2, ..., s^p} where
+ * s = (t - a) / (b - a) maps the domain [a, b] to [0, 1].
+ *
+ * @param degree - Maximum polynomial degree (>= 0)
+ * @param domain - Domain [a, b] for the basis functions (default: [0, 1])
+ * @returns A {@link BasisSystem} with degree+1 polynomial basis functions
+ *
+ * @example
+ * ```ts
+ * const basis = polynomialBasis(3, [0, 10]);
+ * const values = basis.evaluate(5); // [1, 0.5, 0.25, 0.125]
+ * ```
  */
 export function polynomialBasis(degree: number, domain: [number, number] = [0, 1]): BasisSystem {
   return {
@@ -71,7 +104,22 @@ export function polynomialBasis(degree: number, domain: [number, number] = [0, 1
 
 /**
  * Create a Fourier basis system with nBasis functions.
- * nBasis should be odd: 1 constant + (nBasis−1)/2 pairs of sin/cos.
+ *
+ * The basis consists of: 1 constant + (nBasis-1)/2 pairs of sin/cos:
+ * {1, sin(2*pi*k*s), cos(2*pi*k*s)} for k = 1, 2, ..., where
+ * s = (t - a) / (b - a). nBasis is rounded down to the nearest odd number.
+ *
+ * @param nBasis - Desired number of basis functions (must be >= 1; actual count
+ *   is the largest odd number <= nBasis)
+ * @param domain - Domain [a, b] defining the period (default: [0, 1])
+ * @returns A {@link BasisSystem} with Fourier basis functions
+ * @throws {Error} If nBasis is less than 1
+ *
+ * @example
+ * ```ts
+ * const basis = fourierBasis(5, [0, 2*Math.PI]);
+ * // 5 functions: 1, sin(t), cos(t), sin(2t), cos(2t)
+ * ```
  */
 export function fourierBasis(nBasis: number, domain: [number, number] = [0, 1]): BasisSystem {
   if (nBasis < 1) throw new Error("nBasis must be at least 1");

@@ -3,19 +3,49 @@ import { gamma } from "../../utils/math";
 import { RandomFn } from "../../types";
 
 /**
- * Fréchet distribution (Type II extreme value distribution).
+ * Frechet distribution (Type II extreme value distribution).
  *
  * Models the distribution of the maximum of samples from heavy-tailed
- * distributions (e.g., Pareto, Cauchy).
+ * distributions (e.g., Pareto, Cauchy). The Frechet distribution is used
+ * in extreme value theory to model maxima with polynomial tail decay.
+ *
+ * PDF: f(x; alpha, s, m) = (alpha/s) * ((x-m)/s)^(-1-alpha) * exp(-((x-m)/s)^(-alpha))
+ *
+ * Support: x > m
  *
  * Parameters:
- *   alpha — shape (> 0), also called the tail index
- *   s     — scale (> 0)
- *   m     — location
+ *   alpha -- shape (> 0), also called the tail index
+ *   s     -- scale (> 0)
+ *   m     -- location
+ *
+ * @example
+ * ```ts
+ * const dist = new Frechet(2, 1, 0);
+ * dist.mean();       // m + s * Gamma(1 - 1/alpha)
+ * dist.pdf(1.5);     // density at x = 1.5
+ * dist.cdf(2);       // P(X <= 2)
+ * dist.quantile(0.9); // 90th percentile
+ * dist.sample();     // random variate > m
+ * ```
  */
 export class Frechet extends BaseContinuous {
   readonly name: string;
 
+  /**
+   * Creates a new Frechet distribution.
+   *
+   * @param alpha - Shape parameter / tail index (must be > 0). Defaults to 1.
+   * @param s - Scale parameter (must be > 0). Defaults to 1.
+   * @param m - Location parameter. Defaults to 0.
+   * @param rng - Optional random number generator returning values in [0, 1).
+   * @throws {Error} If alpha is not positive.
+   * @throws {Error} If s is not positive.
+   *
+   * @example
+   * ```ts
+   * const dist = new Frechet(3, 2, 0);
+   * ```
+   */
   constructor(
     public readonly alpha: number = 1,
     public readonly s: number = 1,
@@ -28,11 +58,26 @@ export class Frechet extends BaseContinuous {
     this.name = `Frechet(${alpha}, ${s}, ${m})`;
   }
 
+  /**
+   * Returns the mean of the Frechet distribution.
+   *
+   * Formula: E[X] = m + s * Gamma(1 - 1/alpha), defined only for alpha > 1.
+   *
+   * @returns The expected value, or Infinity if alpha <= 1.
+   */
   mean(): number {
     if (this.alpha <= 1) return Infinity;
     return this.m + this.s * gamma(1 - 1 / this.alpha);
   }
 
+  /**
+   * Returns the variance of the Frechet distribution.
+   *
+   * Formula: Var(X) = s^2 * (Gamma(1 - 2/alpha) - Gamma(1 - 1/alpha)^2),
+   * defined only for alpha > 2.
+   *
+   * @returns The variance, or Infinity if alpha <= 2.
+   */
   variance(): number {
     if (this.alpha <= 2) return Infinity;
     const g1 = gamma(1 - 1 / this.alpha);
@@ -40,6 +85,21 @@ export class Frechet extends BaseContinuous {
     return this.s ** 2 * (g2 - g1 ** 2);
   }
 
+  /**
+   * Evaluates the probability density function (PDF) at x.
+   *
+   * PDF: f(x) = (alpha/s) * ((x-m)/s)^(-1-alpha) * exp(-((x-m)/s)^(-alpha))
+   *
+   * @param x - The point at which to evaluate the density.
+   * @returns The probability density f(x) >= 0. Returns 0 for x <= m.
+   *
+   * @example
+   * ```ts
+   * const dist = new Frechet(2, 1, 0);
+   * dist.pdf(1); // density at x = 1
+   * dist.pdf(0); // 0 (below support)
+   * ```
+   */
   pdf(x: number): number {
     if (x <= this.m) return 0;
     const z = (x - this.m) / this.s;
@@ -50,12 +110,36 @@ export class Frechet extends BaseContinuous {
     );
   }
 
+  /**
+   * Evaluates the cumulative distribution function (CDF) at x.
+   *
+   * CDF: F(x) = exp(-((x-m)/s)^(-alpha))
+   *
+   * @param x - The point at which to evaluate the CDF.
+   * @returns P(X <= x), a probability in [0, 1]. Returns 0 for x <= m.
+   */
   cdf(x: number): number {
     if (x <= this.m) return 0;
     const z = (x - this.m) / this.s;
     return Math.exp(-Math.pow(z, -this.alpha));
   }
 
+  /**
+   * Computes the quantile (inverse CDF) for a given probability.
+   *
+   * Formula: Q(p) = m + s * (-ln(p))^(-1/alpha)
+   *
+   * @param p - A probability in [0, 1].
+   * @returns The quantile value x > m.
+   * @throws {Error} If p is not in [0, 1].
+   *
+   * @example
+   * ```ts
+   * const dist = new Frechet(2, 1, 0);
+   * dist.quantile(0.5);  // median
+   * dist.quantile(0.99); // 99th percentile
+   * ```
+   */
   quantile(p: number): number {
     if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
     if (p === 0) return this.m;
@@ -63,6 +147,13 @@ export class Frechet extends BaseContinuous {
     return this.m + this.s * Math.pow(-Math.log(p), -1 / this.alpha);
   }
 
+  /**
+   * Draws a single random sample from the Frechet distribution.
+   *
+   * Uses the inverse CDF method.
+   *
+   * @returns A random variate x > m.
+   */
   sample(): number {
     return this.quantile(this.rng());
   }

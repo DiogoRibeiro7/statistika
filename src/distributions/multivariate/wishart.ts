@@ -2,16 +2,33 @@
  * Wishart distribution.
  *
  * A distribution over symmetric positive-definite matrices,
- * parameterized by degrees of freedom ν and a scale matrix V.
+ * parameterized by degrees of freedom nu and a scale matrix V.
  * The Wishart is the conjugate prior for the precision matrix
  * (inverse covariance) of a multivariate normal distribution.
+ *
+ * PDF: f(X; nu, V) = |X|^{(nu-p-1)/2} exp(-tr(V^{-1}X)/2) / (2^{nu*p/2} |V|^{nu/2} Gamma_p(nu/2))
+ *
+ * where p is the dimension, and Gamma_p is the multivariate gamma function.
+ *
+ * @example
+ * ```ts
+ * const dist = new Wishart(5, [[1, 0], [0, 1]]);
+ * dist.mean();     // [[5, 0], [0, 5]]
+ * dist.sample();   // random 2x2 positive-definite matrix
+ * ```
  */
 
 import { gammaLn } from "../../utils/math";
 import { RandomFn } from "../../types";
 
 /**
- * Cholesky decomposition of a symmetric positive-definite matrix.
+ * Computes the Cholesky decomposition of a symmetric positive-definite matrix.
+ *
+ * Returns the lower triangular matrix L such that A = L * L^T.
+ *
+ * @param A - A symmetric positive-definite matrix.
+ * @returns The lower triangular Cholesky factor L.
+ * @throws {Error} If the matrix is not positive definite.
  */
 function cholesky(A: number[][]): number[][] {
   const n = A.length;
@@ -34,8 +51,13 @@ function cholesky(A: number[][]): number[][] {
 }
 
 /**
- * Log of the multivariate gamma function:
- * Γ_p(a) = π^{p(p-1)/4} Π_{j=1}^{p} Γ(a + (1-j)/2)
+ * Computes the log of the multivariate gamma function.
+ *
+ * Formula: log Gamma_p(a) = p(p-1)/4 * log(pi) + sum_{j=1}^{p} log Gamma(a + (1-j)/2)
+ *
+ * @param a - The argument (must be > (p-1)/2 for the function to be defined).
+ * @param p - The dimension.
+ * @returns The log of the multivariate gamma function Gamma_p(a).
  */
 function logMultivariateGamma(a: number, p: number): number {
   let result = (p * (p - 1) / 4) * Math.log(Math.PI);
@@ -45,6 +67,13 @@ function logMultivariateGamma(a: number, p: number): number {
   return result;
 }
 
+/**
+ * Represents a Wishart distribution over p x p symmetric positive-definite matrices.
+ *
+ * The Wishart distribution with nu degrees of freedom and scale matrix V
+ * arises as the distribution of the sample covariance matrix from nu
+ * independent draws of a p-dimensional multivariate normal with covariance V.
+ */
 export class Wishart {
   readonly name: string;
   readonly dim: number;
@@ -53,9 +82,20 @@ export class Wishart {
   private rng: RandomFn;
 
   /**
-   * @param df - Degrees of freedom (must be >= dim)
-   * @param scale - Scale matrix V (p × p, symmetric positive-definite)
-   * @param rng - Optional random number generator (defaults to Math.random).
+   * Creates a new Wishart distribution.
+   *
+   * @param df - Degrees of freedom (must be >= dim).
+   * @param scale - Scale matrix V (p x p, symmetric positive-definite).
+   * @param rng - Optional random number generator; defaults to Math.random.
+   * @throws {Error} If dimension is less than 1.
+   * @throws {Error} If scale matrix is not square.
+   * @throws {Error} If degrees of freedom is less than the dimension.
+   * @throws {Error} If scale matrix is not positive definite.
+   *
+   * @example
+   * ```ts
+   * const dist = new Wishart(10, [[2, 1], [1, 2]]);
+   * ```
    */
   constructor(
     public readonly df: number,
@@ -78,8 +118,8 @@ export class Wishart {
     for (let i = 0; i < p; i++) logDetV += 2 * Math.log(this.L[i][i]);
 
     // Normalization constant:
-    // log C = (ν/2) log|V| + (νp/2) log 2 + log Γ_p(ν/2)
-    // log pdf = -C + ((ν-p-1)/2) log|X| - (1/2) tr(V^{-1} X)
+    // log C = (nu/2) log|V| + (nu*p/2) log 2 + log Gamma_p(nu/2)
+    // log pdf = -C + ((nu-p-1)/2) log|X| - (1/2) tr(V^{-1} X)
     this.logNormConst =
       (df / 2) * logDetV +
       (df * p / 2) * Math.log(2) +
@@ -87,7 +127,17 @@ export class Wishart {
   }
 
   /**
-   * Mean: E[X] = ν * V
+   * Computes the mean matrix of the distribution.
+   *
+   * Formula: E[X] = nu * V
+   *
+   * @returns A p x p matrix equal to df times the scale matrix.
+   *
+   * @example
+   * ```ts
+   * const dist = new Wishart(5, [[1, 0], [0, 1]]);
+   * dist.mean(); // [[5, 0], [0, 5]]
+   * ```
    */
   mean(): number[][] {
     const p = this.dim;
@@ -101,7 +151,22 @@ export class Wishart {
   }
 
   /**
-   * Log PDF at a symmetric positive-definite matrix X.
+   * Computes the log probability density function at a symmetric positive-definite matrix X.
+   *
+   * Formula: log f(X) = ((nu - p - 1) / 2) * log|X| - (1/2) * tr(V^{-1} X) - log C
+   *
+   * where log C is the log normalization constant involving |V|, nu, and Gamma_p.
+   * The trace term tr(V^{-1} X) is computed efficiently using the Cholesky factor of V.
+   *
+   * @param X - A p x p symmetric positive-definite matrix.
+   * @returns The log-density at X. Returns -Infinity if X is not positive definite.
+   * @throws {Error} If X has incorrect dimensions.
+   *
+   * @example
+   * ```ts
+   * const dist = new Wishart(5, [[1, 0], [0, 1]]);
+   * dist.logPdf([[5, 0], [0, 5]]); // log-density at the mean
+   * ```
    */
   logPdf(X: number[][]): number {
     const p = this.dim;
@@ -145,19 +210,39 @@ export class Wishart {
   }
 
   /**
-   * PDF at a symmetric positive-definite matrix X.
+   * Computes the probability density function at a symmetric positive-definite matrix X.
+   *
+   * @param X - A p x p symmetric positive-definite matrix.
+   * @returns The density at X. Returns 0 if X is not positive definite.
+   * @throws {Error} If X has incorrect dimensions.
+   *
+   * @example
+   * ```ts
+   * const dist = new Wishart(5, [[1, 0], [0, 1]]);
+   * dist.pdf([[5, 0], [0, 5]]); // density at the mean
+   * ```
    */
   pdf(X: number[][]): number {
     return Math.exp(this.logPdf(X));
   }
 
   /**
-   * Draw a sample using the Bartlett decomposition.
+   * Draws a single random sample using the Bartlett decomposition.
    *
-   * If A is a lower triangular matrix where:
-   *   A[i][i] ~ sqrt(Chi2(ν - i)) for i = 0..p-1
-   *   A[i][j] ~ N(0,1) for i > j
-   * Then X = L * A * A^T * L^T ~ Wishart(ν, V)
+   * Constructs a lower triangular matrix A where:
+   *   - A[i][i] ~ sqrt(Chi-squared(nu - i)) for i = 0, ..., p-1
+   *   - A[i][j] ~ N(0, 1) for i > j
+   *
+   * Then X = L * A * A^T * L^T ~ Wishart(nu, V), where L is the Cholesky
+   * factor of the scale matrix V.
+   *
+   * @returns A random p x p symmetric positive-definite matrix.
+   *
+   * @example
+   * ```ts
+   * const dist = new Wishart(5, [[1, 0], [0, 1]]);
+   * const matrix = dist.sample(); // random 2x2 positive-definite matrix
+   * ```
    */
   sample(): number[][] {
     const p = this.dim;
@@ -203,7 +288,16 @@ export class Wishart {
   }
 
   /**
-   * Draw n samples.
+   * Draws n independent samples from the distribution.
+   *
+   * @param n - Number of samples to draw.
+   * @returns An array of n random p x p symmetric positive-definite matrices.
+   *
+   * @example
+   * ```ts
+   * const dist = new Wishart(5, [[1, 0], [0, 1]]);
+   * const samples = dist.sampleN(100); // 100 random matrices
+   * ```
    */
   sampleN(n: number): number[][][] {
     const samples: number[][][] = new Array(n);
@@ -212,12 +306,29 @@ export class Wishart {
   }
 }
 
-/** Sample from Chi-squared(df) = Gamma(df/2, 1/2) * 2 = Gamma(df/2, 1) * 2 */
+/**
+ * Samples from the Chi-squared(df) distribution.
+ *
+ * Uses the identity: Chi-squared(df) = 2 * Gamma(df/2, 1).
+ *
+ * @param df - Degrees of freedom.
+ * @param rng - Random number generator.
+ * @returns A random variate from Chi-squared(df).
+ */
 function sampleChiSquared(df: number, rng: RandomFn): number {
   return 2 * sampleGamma(df / 2, rng);
 }
 
-/** Marsaglia-Tsang method for Gamma(shape, 1). */
+/**
+ * Samples from the Gamma(shape, 1) distribution using the Marsaglia-Tsang method.
+ *
+ * For shape < 1, uses the identity: Gamma(shape) = Gamma(shape+1) * U^{1/shape}
+ * where U ~ Uniform(0,1).
+ *
+ * @param shape - The shape parameter (must be positive).
+ * @param rng - Random number generator.
+ * @returns A random variate from Gamma(shape, 1).
+ */
 function sampleGamma(shape: number, rng: RandomFn): number {
   if (shape < 1) {
     return sampleGamma(shape + 1, rng) * Math.pow(rng(), 1 / shape);

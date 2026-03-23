@@ -2,9 +2,46 @@ import { BaseDiscrete } from "../base";
 import { logFactorial } from "../../utils/math";
 import { RandomFn } from "../../types";
 
+/**
+ * Hypergeometric distribution modeling the number of successes in draws
+ * without replacement from a finite population.
+ *
+ * Given a population of N items containing K successes, and drawing n items
+ * without replacement, the random variable X counts the number of successes
+ * in the draw.
+ *
+ * PMF: P(X = k) = C(K, k) * C(N - K, n - k) / C(N, n)
+ *
+ * where C(a, b) denotes the binomial coefficient "a choose b".
+ *
+ * @example
+ * ```ts
+ * // Urn with 50 balls: 10 red, 40 blue. Draw 5 without replacement.
+ * const dist = new Hypergeometric(50, 10, 5);
+ * dist.mean();     // 1
+ * dist.pmf(2);     // probability of drawing exactly 2 red balls
+ * dist.sample();   // random number of red balls drawn
+ * ```
+ */
 export class Hypergeometric extends BaseDiscrete {
   readonly name: string;
 
+  /**
+   * Creates a new Hypergeometric distribution.
+   *
+   * @param N - Population size (non-negative integer).
+   * @param K - Number of success states in the population, must be in [0, N].
+   * @param n - Number of draws (sample size), must be in [0, N].
+   * @param rng - Optional custom random number generator; defaults to Math.random.
+   * @throws {Error} If N is not a non-negative integer.
+   * @throws {Error} If K is not an integer in [0, N].
+   * @throws {Error} If n is not an integer in [0, N].
+   *
+   * @example
+   * ```ts
+   * const dist = new Hypergeometric(100, 30, 10);
+   * ```
+   */
   constructor(
     public readonly N: number,
     public readonly K: number,
@@ -18,15 +55,55 @@ export class Hypergeometric extends BaseDiscrete {
     this.name = `Hypergeometric(${N}, ${K}, ${n})`;
   }
 
+  /**
+   * Computes the mean (expected value) of the distribution.
+   *
+   * Formula: E[X] = n * K / N
+   *
+   * @returns The expected number of successes in the draw.
+   *
+   * @example
+   * ```ts
+   * new Hypergeometric(50, 10, 5).mean(); // 1
+   * ```
+   */
   mean(): number {
     return this.n * this.K / this.N;
   }
 
+  /**
+   * Computes the variance of the distribution.
+   *
+   * Formula: Var(X) = n * K * (N - K) * (N - n) / (N^2 * (N - 1))
+   *
+   * @returns The variance of the distribution.
+   *
+   * @example
+   * ```ts
+   * new Hypergeometric(50, 10, 5).variance(); // ~0.6531
+   * ```
+   */
   variance(): number {
     const { N, K, n } = this;
     return (n * K * (N - K) * (N - n)) / (N * N * (N - 1));
   }
 
+  /**
+   * Computes the probability mass function P(X = k).
+   *
+   * Uses log-factorials for numerical stability:
+   * P(X = k) = C(K, k) * C(N - K, n - k) / C(N, n)
+   *
+   * @param k - The number of observed successes. Must be an integer in [max(0, n + K - N), min(n, K)].
+   * @returns The probability P(X = k). Returns 0 for values outside the support.
+   *
+   * @example
+   * ```ts
+   * const dist = new Hypergeometric(50, 10, 5);
+   * dist.pmf(1);   // probability of exactly 1 success
+   * dist.pmf(0);   // probability of no successes
+   * ```
+   */
   pmf(k: number): number {
     if (!Number.isInteger(k)) return 0;
     const { N, K, n } = this;
@@ -41,6 +118,21 @@ export class Hypergeometric extends BaseDiscrete {
     return Math.exp(logPmf);
   }
 
+  /**
+   * Computes the cumulative distribution function P(X <= k).
+   *
+   * Computed by summing the PMF from the lower bound of the support up to floor(k).
+   *
+   * @param k - The value at which to evaluate the CDF.
+   * @returns The cumulative probability P(X <= k).
+   *
+   * @example
+   * ```ts
+   * const dist = new Hypergeometric(50, 10, 5);
+   * dist.cdf(1);   // P(X <= 1)
+   * dist.cdf(5);   // 1 (if 5 >= min(n, K))
+   * ```
+   */
   cdf(k: number): number {
     const { N, K, n } = this;
     const lo = Math.max(0, n + K - N);
@@ -55,6 +147,21 @@ export class Hypergeometric extends BaseDiscrete {
     return sum;
   }
 
+  /**
+   * Computes the quantile (inverse CDF) function.
+   *
+   * Returns the smallest integer k such that P(X <= k) >= prob.
+   *
+   * @param prob - The probability, must be in [0, 1].
+   * @returns The quantile value.
+   * @throws {Error} If prob is not in [0, 1].
+   *
+   * @example
+   * ```ts
+   * const dist = new Hypergeometric(50, 10, 5);
+   * dist.quantile(0.5);  // median number of successes
+   * ```
+   */
   quantile(prob: number): number {
     if (prob < 0 || prob > 1) throw new Error("p must be in [0, 1]");
     const { N, K, n } = this;
@@ -70,6 +177,20 @@ export class Hypergeometric extends BaseDiscrete {
     return hi;
   }
 
+  /**
+   * Draws a single random sample using direct simulation.
+   *
+   * Simulates drawing n balls one at a time (without replacement) from an urn
+   * containing K success balls and N - K failure balls.
+   *
+   * @returns A random integer representing the number of successes in the draw.
+   *
+   * @example
+   * ```ts
+   * const dist = new Hypergeometric(50, 10, 5);
+   * const successes = dist.sample();
+   * ```
+   */
   sample(): number {
     // Direct simulation: draw n balls from urn of N (K success, N-K failure)
     const { N, K, n } = this;

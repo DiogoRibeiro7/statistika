@@ -316,7 +316,12 @@ export function seasonalDecompose(
 
 // ── SARIMA ──────────────────────────────────────────────────────────────
 
-/** Result of a SARIMA model fit. */
+/**
+ * Result of fitting a SARIMA(p,d,q)(P,D,Q)[m] model.
+ *
+ * Contains both non-seasonal and seasonal AR/MA coefficients,
+ * differencing orders, residual variance, AIC, and a forecast function.
+ */
 export interface SARIMAResult {
   /** Non-seasonal AR coefficients */
   arCoefficients: number[];
@@ -402,18 +407,29 @@ function integrateSeasonalForecasts(
 /**
  * Fit a SARIMA(p,d,q)(P,D,Q)[m] model.
  *
- * Extends ARIMA to handle seasonal patterns. The model applies both
- * non-seasonal and seasonal differencing, fits AR/MA and seasonal AR/MA
- * coefficients, and produces forecasts that are integrated back.
+ * Extends ARIMA to handle seasonal patterns by applying both non-seasonal
+ * differencing (order d) and seasonal differencing (order D, at lag m).
+ * AR and MA coefficients are estimated via Yule-Walker equations for the AR
+ * part and iterative residual autocovariance matching for the MA part.
+ * Forecasts are integrated back through both differencing steps.
  *
- * @param series - Time series data
- * @param p - Non-seasonal AR order
- * @param d - Non-seasonal differencing order
- * @param q - Non-seasonal MA order
- * @param P - Seasonal AR order
- * @param D - Seasonal differencing order
- * @param Q - Seasonal MA order
- * @param m - Seasonal period (e.g., 12 for monthly, 4 for quarterly)
+ * @param series - Time series data (must not contain NaN or Infinity)
+ * @param p - Non-seasonal autoregressive order (>= 0)
+ * @param d - Non-seasonal differencing order (>= 0)
+ * @param q - Non-seasonal moving average order (>= 0)
+ * @param P - Seasonal autoregressive order (>= 0)
+ * @param D - Seasonal differencing order (>= 0)
+ * @param Q - Seasonal moving average order (>= 0)
+ * @param m - Seasonal period (e.g., 12 for monthly data, 4 for quarterly)
+ * @returns A {@link SARIMAResult} with coefficients, diagnostics, and forecast function
+ * @throws {Error} If m < 2, any order is negative, or the series is too short
+ *
+ * @example
+ * ```ts
+ * // Fit SARIMA(1,1,1)(1,1,0)[12] to monthly data
+ * const result = sarima(monthlyData, 1, 1, 1, 1, 1, 0, 12);
+ * const forecast = result.forecast(12); // 12-step-ahead forecast
+ * ```
  */
 export function sarima(
   series: Dataset,
@@ -669,7 +685,12 @@ function integrateNonSeasonalForecasts(
 
 // ── Prophet-Style Decomposition ─────────────────────────────────────────
 
-/** Result of a Prophet-style decomposition. */
+/**
+ * Result of a Prophet-style time series decomposition.
+ *
+ * Contains piecewise linear trend, Fourier-based seasonal component,
+ * residuals, detected changepoints, and segment slopes.
+ */
 export interface ProphetDecomposition {
   /** Piecewise linear trend */
   trend: number[];
@@ -688,14 +709,25 @@ export interface ProphetDecomposition {
  *
  * Decomposes a time series into trend + seasonality + residual using:
  * - **Trend**: Piecewise linear trend with automatic changepoint detection
- * - **Seasonality**: Fourier series approximation
+ *   via second-difference magnitudes
+ * - **Seasonality**: Fourier series approximation fitted by least squares
  *
- * This is inspired by Facebook Prophet's approach but uses a simpler
- * implementation suitable for general-purpose use.
+ * Inspired by Facebook Prophet's approach but uses a simpler implementation.
  *
- * @param series - Time series data
- * @param period - Seasonal period (e.g., 12 for monthly, 7 for daily-weekly)
- * @param options - Configuration options
+ * @param series - Time series data (must not contain NaN or Infinity)
+ * @param period - Seasonal period (e.g., 12 for monthly, 7 for daily-weekly; must be >= 2)
+ * @param options - Configuration for changepoint detection and Fourier order
+ * @returns A {@link ProphetDecomposition} with trend, seasonal, residual,
+ *   changepoint indices, and segment slopes
+ * @throws {Error} If period < 2 or the series has fewer than 2 full periods
+ * @throws {Error} If series contains non-finite values
+ *
+ * @example
+ * ```ts
+ * const result = prophetDecompose(monthlySales, 12, { nChangepoints: 5 });
+ * console.log(result.changepoints); // detected trend change indices
+ * console.log(result.seasonal);     // repeating seasonal pattern
+ * ```
  */
 export function prophetDecompose(
   series: Dataset,

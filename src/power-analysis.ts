@@ -5,19 +5,35 @@ import { regularizedBeta } from "./utils/math";
 
 // ---- Result types ----
 
+/**
+ * Result of a statistical power analysis.
+ */
 export interface PowerResult {
+  /** Computed statistical power (probability of rejecting a false H0). */
   power: number;
+  /** Significance level used. */
   alpha: number;
+  /** Effect size used. */
   effectSize: number;
+  /** Sample size used. */
   sampleSize: number;
+  /** Name of the statistical test. */
   test: string;
 }
 
+/**
+ * Result of a sample size determination.
+ */
 export interface SampleSizeResult {
+  /** Minimum sample size required. */
   sampleSize: number;
+  /** Actual power achieved at the computed sample size. */
   achievedPower: number;
+  /** Significance level used. */
   alpha: number;
+  /** Effect size used. */
   effectSize: number;
+  /** Name of the statistical test. */
   test: string;
 }
 
@@ -214,10 +230,24 @@ function solveSampleSize(
 /**
  * Power of a two-sample t-test.
  *
- * @param effectSize - Cohen's d
+ * Computes the probability of rejecting H0 (no difference) when the true
+ * effect is Cohen's d. Uses the non-central t-distribution with
+ * ncp = d * sqrt(n/2) and df = 2n - 2.
+ *
+ * @param effectSize - Cohen's d (standardized mean difference)
  * @param n - Sample size per group
  * @param alpha - Significance level (default 0.05)
  * @param tails - 1 or 2 (default 2)
+ * @returns PowerResult containing the computed power and input parameters
+ * @throws Error if effect size is not finite
+ * @throws Error if n is not an integer >= 2
+ * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = tTestPower(0.5, 64);
+ * // result.power — probability of detecting a medium effect with n=64 per group
+ * ```
  */
 export function tTestPower(
   effectSize: number,
@@ -247,10 +277,23 @@ export function tTestPower(
 /**
  * Required sample size per group for a two-sample t-test.
  *
- * @param effectSize - Cohen's d
+ * Finds the smallest integer n such that the power of the two-sample
+ * t-test reaches the desired level, using bisection search.
+ *
+ * @param effectSize - Cohen's d (standardized mean difference)
  * @param power - Desired power (default 0.80)
  * @param alpha - Significance level (default 0.05)
  * @param tails - 1 or 2 (default 2)
+ * @returns SampleSizeResult with the minimum sample size and achieved power
+ * @throws Error if effect size is zero
+ * @throws Error if power is not in (0, 1)
+ * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = tTestSampleSize(0.5);
+ * // result.sampleSize — minimum n per group for 80% power at d=0.5
+ * ```
  */
 export function tTestSampleSize(
   effectSize: number,
@@ -279,10 +322,16 @@ export function tTestSampleSize(
 /**
  * Power of a one-sample t-test.
  *
+ * Uses the non-central t-distribution with ncp = d * sqrt(n) and df = n - 1.
+ *
  * @param effectSize - Cohen's d (mean / sd)
  * @param n - Sample size
- * @param alpha - Significance level
- * @param tails - 1 or 2
+ * @param alpha - Significance level (default 0.05)
+ * @param tails - 1 or 2 (default 2)
+ * @returns PowerResult containing the computed power
+ * @throws Error if effect size is not finite
+ * @throws Error if n is not an integer >= 2
+ * @throws Error if alpha is not in (0, 1)
  */
 export function oneSampleTTestPower(
   effectSize: number,
@@ -311,6 +360,15 @@ export function oneSampleTTestPower(
 
 /**
  * Required sample size for a one-sample t-test.
+ *
+ * @param effectSize - Cohen's d (mean / sd)
+ * @param power - Desired power (default 0.80)
+ * @param alpha - Significance level (default 0.05)
+ * @param tails - 1 or 2 (default 2)
+ * @returns SampleSizeResult with the minimum sample size and achieved power
+ * @throws Error if effect size is zero
+ * @throws Error if power is not in (0, 1)
+ * @throws Error if alpha is not in (0, 1)
  */
 export function oneSampleTTestSampleSize(
   effectSize: number,
@@ -338,7 +396,17 @@ export function oneSampleTTestSampleSize(
 
 /**
  * Power of a paired t-test.
- * Equivalent to one-sample t-test on the differences.
+ *
+ * Equivalent to a one-sample t-test on the paired differences.
+ *
+ * @param effectSize - Cohen's d for paired differences
+ * @param n - Number of pairs
+ * @param alpha - Significance level (default 0.05)
+ * @param tails - 1 or 2 (default 2)
+ * @returns PowerResult containing the computed power
+ * @throws Error if effect size is not finite
+ * @throws Error if n is not an integer >= 2
+ * @throws Error if alpha is not in (0, 1)
  */
 export function pairedTTestPower(
   effectSize: number,
@@ -351,7 +419,16 @@ export function pairedTTestPower(
 }
 
 /**
- * Required sample size for a paired t-test.
+ * Required sample size (number of pairs) for a paired t-test.
+ *
+ * @param effectSize - Cohen's d for paired differences
+ * @param power - Desired power (default 0.80)
+ * @param alpha - Significance level (default 0.05)
+ * @param tails - 1 or 2 (default 2)
+ * @returns SampleSizeResult with the minimum number of pairs and achieved power
+ * @throws Error if effect size is zero
+ * @throws Error if power is not in (0, 1)
+ * @throws Error if alpha is not in (0, 1)
  */
 export function pairedTTestSampleSize(
   effectSize: number,
@@ -370,10 +447,24 @@ export function pairedTTestSampleSize(
 /**
  * Power of a one-way ANOVA (F-test).
  *
- * @param effectSize - Cohen's f
+ * Uses the non-central F-distribution with df1 = k - 1, df2 = k(n - 1),
+ * and non-centrality parameter lambda = k * n * f^2 where f is Cohen's f.
+ *
+ * @param effectSize - Cohen's f (sqrt of variance of group means / within-group SD)
  * @param k - Number of groups
  * @param n - Sample size per group
- * @param alpha - Significance level
+ * @param alpha - Significance level (default 0.05)
+ * @returns PowerResult containing the computed power
+ * @throws Error if fewer than 2 groups
+ * @throws Error if effect size is not finite
+ * @throws Error if n is not an integer >= 2
+ * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = anovaPower(0.25, 3, 30);
+ * // result.power — power for detecting a small-medium effect across 3 groups
+ * ```
  */
 export function anovaPower(
   effectSize: number,
@@ -409,8 +500,13 @@ export function anovaPower(
  *
  * @param effectSize - Cohen's f
  * @param k - Number of groups
- * @param power - Desired power
- * @param alpha - Significance level
+ * @param power - Desired power (default 0.80)
+ * @param alpha - Significance level (default 0.05)
+ * @returns SampleSizeResult with the minimum sample size per group and achieved power
+ * @throws Error if effect size is zero
+ * @throws Error if fewer than 2 groups
+ * @throws Error if power is not in (0, 1)
+ * @throws Error if alpha is not in (0, 1)
  */
 export function anovaSampleSize(
   effectSize: number,
@@ -444,10 +540,18 @@ export function anovaSampleSize(
 /**
  * Power of a chi-squared test of independence.
  *
- * @param effectSize - Cohen's w (= Cramér's V for 2×2 tables)
+ * Uses the non-central chi-squared distribution with non-centrality
+ * parameter lambda = n * w^2 where w is Cohen's w.
+ *
+ * @param effectSize - Cohen's w (= Cramer's V for 2x2 tables)
  * @param df - Degrees of freedom = (rows-1)*(cols-1)
  * @param n - Total sample size
- * @param alpha - Significance level
+ * @param alpha - Significance level (default 0.05)
+ * @returns PowerResult containing the computed power
+ * @throws Error if df < 1
+ * @throws Error if effect size is not finite
+ * @throws Error if n is not an integer >= 2
+ * @throws Error if alpha is not in (0, 1)
  */
 export function chiSquaredPower(
   effectSize: number,
@@ -478,8 +582,13 @@ export function chiSquaredPower(
  *
  * @param effectSize - Cohen's w
  * @param df - Degrees of freedom
- * @param power - Desired power
- * @param alpha - Significance level
+ * @param power - Desired power (default 0.80)
+ * @param alpha - Significance level (default 0.05)
+ * @returns SampleSizeResult with the minimum total sample size and achieved power
+ * @throws Error if effect size is zero
+ * @throws Error if df < 1
+ * @throws Error if power is not in (0, 1)
+ * @throws Error if alpha is not in (0, 1)
  */
 export function chiSquaredSampleSize(
   effectSize: number,
@@ -513,11 +622,18 @@ export function chiSquaredSampleSize(
 /**
  * Power of a two-proportion z-test.
  *
+ * Uses the normal approximation with pooled standard error under H0
+ * and unpooled standard error under H1.
+ *
  * @param p1 - Proportion in group 1
  * @param p2 - Proportion in group 2
  * @param n - Sample size per group
- * @param alpha - Significance level
- * @param tails - 1 or 2
+ * @param alpha - Significance level (default 0.05)
+ * @param tails - 1 or 2 (default 2)
+ * @returns PowerResult containing the computed power
+ * @throws Error if proportions are not in [0, 1]
+ * @throws Error if n < 2
+ * @throws Error if alpha is not in (0, 1)
  */
 export function proportionTestPower(
   p1: number,
@@ -563,9 +679,12 @@ export function proportionTestPower(
  *
  * @param p1 - Proportion in group 1
  * @param p2 - Proportion in group 2
- * @param power - Desired power
- * @param alpha - Significance level
- * @param tails - 1 or 2
+ * @param power - Desired power (default 0.80)
+ * @param alpha - Significance level (default 0.05)
+ * @param tails - 1 or 2 (default 2)
+ * @returns SampleSizeResult with the minimum sample size per group and achieved power
+ * @throws Error if proportions are equal
+ * @throws Error if power is not in (0, 1)
  */
 export function proportionTestSampleSize(
   p1: number,
@@ -598,10 +717,17 @@ export function proportionTestSampleSize(
 /**
  * Power to detect a Pearson correlation.
  *
- * @param r - Expected correlation coefficient
- * @param n - Sample size
- * @param alpha - Significance level
- * @param tails - 1 or 2
+ * Uses Fisher's z-transform: z_r = 0.5 * ln((1+r)/(1-r)) with
+ * standard error SE = 1 / sqrt(n - 3).
+ *
+ * @param r - Expected correlation coefficient (must be in (-1, 1))
+ * @param n - Sample size (must be >= 4)
+ * @param alpha - Significance level (default 0.05)
+ * @param tails - 1 or 2 (default 2)
+ * @returns PowerResult containing the computed power
+ * @throws Error if |r| >= 1
+ * @throws Error if n < 4
+ * @throws Error if alpha is not in (0, 1)
  */
 export function correlationPower(
   r: number,
@@ -640,6 +766,14 @@ export function correlationPower(
 
 /**
  * Required sample size to detect a Pearson correlation.
+ *
+ * @param r - Expected correlation coefficient (must be non-zero)
+ * @param power - Desired power (default 0.80)
+ * @param alpha - Significance level (default 0.05)
+ * @param tails - 1 or 2 (default 2)
+ * @returns SampleSizeResult with the minimum sample size and achieved power
+ * @throws Error if r is zero
+ * @throws Error if power is not in (0, 1)
  */
 export function correlationSampleSize(
   r: number,

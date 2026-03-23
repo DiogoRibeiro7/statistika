@@ -1,17 +1,31 @@
 /**
  * Multivariate Normal (Gaussian) distribution.
  *
- * Parameterized by a mean vector μ and covariance matrix Σ.
+ * Parameterized by a mean vector mu and covariance matrix Sigma.
  * Supports PDF evaluation, sampling via Cholesky decomposition,
  * and log-likelihood computation.
+ *
+ * PDF: f(x; mu, Sigma) = (2pi)^{-k/2} |Sigma|^{-1/2} exp(-0.5 (x - mu)^T Sigma^{-1} (x - mu))
+ *
+ * @example
+ * ```ts
+ * const dist = new MultivariateNormal([0, 0], [[1, 0.5], [0.5, 1]]);
+ * dist.pdf([0, 0]);    // density at the mean
+ * dist.sample();       // random 2D vector
+ * ```
  */
 
 import { gammaLn } from "../../utils/math";
 import { RandomFn } from "../../types";
 
 /**
- * Cholesky decomposition of a symmetric positive-definite matrix.
+ * Computes the Cholesky decomposition of a symmetric positive-definite matrix.
+ *
  * Returns the lower triangular matrix L such that A = L * L^T.
+ *
+ * @param A - A symmetric positive-definite matrix (n x n).
+ * @returns The lower triangular Cholesky factor L.
+ * @throws {Error} If the matrix is not positive definite.
  */
 function cholesky(A: number[][]): number[][] {
   const n = A.length;
@@ -38,8 +52,12 @@ function cholesky(A: number[][]): number[][] {
 }
 
 /**
- * Compute the log-determinant of a positive-definite matrix
- * from its Cholesky factor L (det(Σ) = det(L)^2, log det = 2 * sum log diag(L)).
+ * Computes the log-determinant of a positive-definite matrix from its Cholesky factor.
+ *
+ * Formula: log det(Sigma) = 2 * sum log(L_ii), since det(Sigma) = det(L)^2.
+ *
+ * @param L - Lower triangular Cholesky factor.
+ * @returns The log-determinant of the original matrix.
  */
 function logDetFromCholesky(L: number[][]): number {
   let sum = 0;
@@ -50,7 +68,11 @@ function logDetFromCholesky(L: number[][]): number {
 }
 
 /**
- * Solve L * x = b where L is lower triangular (forward substitution).
+ * Solves the linear system L * x = b where L is lower triangular (forward substitution).
+ *
+ * @param L - Lower triangular matrix.
+ * @param b - Right-hand side vector.
+ * @returns The solution vector x.
  */
 function forwardSolve(L: number[][], b: number[]): number[] {
   const n = L.length;
@@ -65,6 +87,14 @@ function forwardSolve(L: number[][], b: number[]): number[] {
   return x;
 }
 
+/**
+ * Represents a Multivariate Normal (Gaussian) distribution.
+ *
+ * The distribution is parameterized by a mean vector mu of dimension k
+ * and a k x k symmetric positive-definite covariance matrix Sigma.
+ * Internally uses Cholesky decomposition for efficient sampling and
+ * density evaluation.
+ */
 export class MultivariateNormal {
   readonly name: string;
   readonly dim: number;
@@ -73,9 +103,22 @@ export class MultivariateNormal {
   private rng: RandomFn;
 
   /**
-   * @param mean - Mean vector (length k)
-   * @param covariance - Covariance matrix (k × k, symmetric positive-definite)
-   * @param rng - Optional random number generator (defaults to Math.random).
+   * Creates a new Multivariate Normal distribution.
+   *
+   * @param mean - Mean vector of length k (k >= 1).
+   * @param covariance - Covariance matrix (k x k, symmetric positive-definite).
+   * @param rng - Optional random number generator; defaults to Math.random.
+   * @throws {Error} If dimension is less than 1.
+   * @throws {Error} If covariance matrix dimensions do not match mean vector length.
+   * @throws {Error} If covariance matrix is not positive definite.
+   *
+   * @example
+   * ```ts
+   * const dist = new MultivariateNormal(
+   *   [0, 0],
+   *   [[1, 0.5], [0.5, 1]]
+   * );
+   * ```
    */
   constructor(
     public readonly mean: number[],
@@ -95,14 +138,41 @@ export class MultivariateNormal {
   }
 
   /**
-   * Probability density function at point x.
+   * Computes the probability density function at point x.
+   *
+   * Formula: f(x) = exp(logPdf(x))
+   *
+   * @param x - A point in R^k.
+   * @returns The density at x.
+   * @throws {Error} If x has incorrect length.
+   *
+   * @example
+   * ```ts
+   * const dist = new MultivariateNormal([0, 0], [[1, 0], [0, 1]]);
+   * dist.pdf([0, 0]); // ~0.1592 (peak density for 2D standard normal)
+   * ```
    */
   pdf(x: number[]): number {
     return Math.exp(this.logPdf(x));
   }
 
   /**
-   * Log probability density function at point x.
+   * Computes the log probability density function at point x.
+   *
+   * Formula: log f(x) = -0.5 * (k * log(2pi) + log|Sigma| + (x - mu)^T Sigma^{-1} (x - mu))
+   *
+   * The quadratic form is computed efficiently via the Cholesky factor:
+   * solve L * z = (x - mu), then the quadratic form equals z^T * z.
+   *
+   * @param x - A point in R^k.
+   * @returns The log-density at x.
+   * @throws {Error} If x has incorrect length.
+   *
+   * @example
+   * ```ts
+   * const dist = new MultivariateNormal([0, 0], [[1, 0], [0, 1]]);
+   * dist.logPdf([0, 0]); // ~-1.8379
+   * ```
    */
   logPdf(x: number[]): number {
     if (x.length !== this.dim) {
@@ -120,8 +190,18 @@ export class MultivariateNormal {
   }
 
   /**
-   * Draw a single sample from the distribution.
-   * Uses the Cholesky factor: X = μ + L * Z where Z ~ N(0, I).
+   * Draws a single random sample from the distribution.
+   *
+   * Uses the Cholesky factor: X = mu + L * Z where Z ~ N(0, I),
+   * with Z generated via the Box-Muller transform.
+   *
+   * @returns A random vector of length k from the multivariate normal distribution.
+   *
+   * @example
+   * ```ts
+   * const dist = new MultivariateNormal([0, 0], [[1, 0.5], [0.5, 1]]);
+   * const point = dist.sample(); // e.g., [0.32, -0.17]
+   * ```
    */
   sample(): number[] {
     const k = this.dim;
@@ -145,7 +225,16 @@ export class MultivariateNormal {
   }
 
   /**
-   * Draw n samples.
+   * Draws n independent samples from the distribution.
+   *
+   * @param n - Number of samples to draw.
+   * @returns An array of n random vectors, each of length k.
+   *
+   * @example
+   * ```ts
+   * const dist = new MultivariateNormal([0, 0], [[1, 0], [0, 1]]);
+   * const samples = dist.sampleN(1000); // 1000 random 2D points
+   * ```
    */
   sampleN(n: number): number[][] {
     const samples: number[][] = new Array(n);
@@ -154,7 +243,19 @@ export class MultivariateNormal {
   }
 
   /**
-   * Log-likelihood of a set of observations.
+   * Computes the log-likelihood of a set of observations.
+   *
+   * Formula: LL = sum_j log f(x_j; mu, Sigma)
+   *
+   * @param data - An array of observed points in R^k.
+   * @returns The total log-likelihood.
+   *
+   * @example
+   * ```ts
+   * const dist = new MultivariateNormal([0, 0], [[1, 0], [0, 1]]);
+   * const obs = dist.sampleN(100);
+   * dist.logLikelihood(obs); // log-likelihood of the observations
+   * ```
    */
   logLikelihood(data: number[][]): number {
     let ll = 0;

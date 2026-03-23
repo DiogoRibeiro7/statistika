@@ -16,9 +16,21 @@
 /**
  * Centred Log-Ratio (CLR) transform.
  *
- * clr(x)ᵢ = ln(xᵢ) − (1/D) Σ ln(xⱼ)
+ * Maps a D-part composition to D real-valued coordinates:
+ *   clr(x)_i = ln(x_i) - (1/D) * sum_j ln(x_j)
  *
- * @param x  Composition (all positive, length D).
+ * The CLR coordinates sum to zero. The transform is an isometry between
+ * Aitchison geometry and Euclidean geometry (in the CLR subspace).
+ *
+ * @param x - Composition vector (all parts must be positive, length D >= 2)
+ * @returns Array of D CLR-transformed values (sum to zero)
+ * @throws {Error} If the composition has fewer than 2 parts
+ * @throws {Error} If any part is non-positive
+ *
+ * @example
+ * ```ts
+ * clr([0.2, 0.3, 0.5]); // [-0.405, 0.000, 0.405] (approximately)
+ * ```
  */
 export function clr(x: number[]): number[] {
   validateComposition(x);
@@ -32,7 +44,11 @@ export function clr(x: number[]): number[] {
 /**
  * Inverse CLR transform.
  *
- * clr⁻¹(y) = closure(exp(y))
+ * Reconstructs a composition from CLR coordinates:
+ *   clr_inv(y) = closure(exp(y))
+ *
+ * @param y - CLR coordinates (length D)
+ * @returns Composition on the simplex (sums to 1)
  */
 export function clrInverse(y: number[]): number[] {
   const exp = y.map(Math.exp);
@@ -42,10 +58,24 @@ export function clrInverse(y: number[]): number[] {
 /**
  * Additive Log-Ratio (ALR) transform.
  *
- * alr(x)ᵢ = ln(xᵢ / x_D) for i = 1, ..., D−1
+ * Maps a D-part composition to (D-1) real-valued coordinates using one
+ * component as a reference denominator:
+ *   alr(x)_i = ln(x_i / x_ref) for all i != ref
  *
- * @param x  Composition (all positive, length D).
- * @param ref  Reference component index (default D−1, the last).
+ * Unlike CLR, ALR is not isometric but produces an unconstrained
+ * (D-1)-dimensional representation.
+ *
+ * @param x - Composition vector (all parts must be positive, length D >= 2)
+ * @param ref - Reference component index (default: D-1, the last component)
+ * @returns Array of (D-1) ALR-transformed values
+ * @throws {Error} If the composition has fewer than 2 parts
+ * @throws {Error} If any part is non-positive
+ *
+ * @example
+ * ```ts
+ * alr([0.2, 0.3, 0.5]);    // [ln(0.2/0.5), ln(0.3/0.5)]
+ * alr([0.2, 0.3, 0.5], 0); // [ln(0.3/0.2), ln(0.5/0.2)]
+ * ```
  */
 export function alr(x: number[], ref?: number): number[] {
   validateComposition(x);
@@ -61,8 +91,12 @@ export function alr(x: number[], ref?: number): number[] {
 /**
  * Inverse ALR transform.
  *
- * @param y  ALR coordinates (length D−1).
- * @param ref  Reference component index used in forward transform.
+ * Reconstructs a composition from ALR coordinates by exponentiating
+ * and closing to the simplex.
+ *
+ * @param y - ALR coordinates (length D-1)
+ * @param ref - Reference component index used in the forward transform (default: D-1)
+ * @returns Composition on the simplex (sums to 1, length D = y.length + 1)
  */
 export function alrInverse(y: number[], ref?: number): number[] {
   const D = y.length + 1;
@@ -82,10 +116,20 @@ export function alrInverse(y: number[], ref?: number): number[] {
 /**
  * Isometric Log-Ratio (ILR) transform.
  *
- * Uses the Helmert sub-matrix as the default contrast matrix.
- * Maps D-part composition to (D−1) real coordinates.
+ * Maps a D-part composition to (D-1) orthonormal coordinates using the
+ * Helmert sub-matrix as the contrast matrix. The ILR transform is the
+ * preferred transform for statistical analysis as it produces unconstrained,
+ * orthonormal coordinates that preserve Aitchison distances.
  *
- * @param x  Composition (all positive, length D).
+ * @param x - Composition vector (all parts must be positive, length D >= 2)
+ * @returns Array of (D-1) ILR coordinates
+ * @throws {Error} If the composition has fewer than 2 parts
+ * @throws {Error} If any part is non-positive
+ *
+ * @example
+ * ```ts
+ * ilr([0.2, 0.3, 0.5]); // ILR coordinates in R^2
+ * ```
  */
 export function ilr(x: number[]): number[] {
   validateComposition(x);
@@ -107,10 +151,11 @@ export function ilr(x: number[]): number[] {
 /**
  * Inverse ILR transform.
  *
- * Reconstructs using the Helmert sub-matrix V (D × D−1)
- * where logX = V · y, then closure(exp(logX)).
+ * Reconstructs a composition from ILR coordinates using the Helmert sub-matrix
+ * V (D x D-1): computes logX = V * y, then returns closure(exp(logX)).
  *
- * @param y  ILR coordinates (length D−1).
+ * @param y - ILR coordinates (length D-1)
+ * @returns Composition on the simplex (sums to 1, length D = y.length + 1)
  */
 export function ilrInverse(y: number[]): number[] {
   const D = y.length + 1;
@@ -138,7 +183,12 @@ export function ilrInverse(y: number[]): number[] {
 /**
  * Closure operation: project a positive vector onto the simplex.
  *
- * C(x)ᵢ = xᵢ / Σ xⱼ
+ * C(x)_i = x_i / sum(x_j) * total
+ *
+ * @param x - Positive vector to close
+ * @param total - Target sum (default 1, yielding proportions)
+ * @returns Closed vector summing to `total`
+ * @throws {Error} If the input vector sums to zero
  */
 export function closure(x: number[], total = 1): number[] {
   let sum = 0;
@@ -148,7 +198,17 @@ export function closure(x: number[], total = 1): number[] {
 }
 
 /**
- * Perturbation (Aitchison addition): x ⊕ y = C(x₁y₁, ..., xDyD).
+ * Perturbation (Aitchison addition on the simplex).
+ *
+ * x (+) y = C(x_1 * y_1, ..., x_D * y_D)
+ *
+ * This is the addition operation in Aitchison geometry. It is analogous
+ * to vector addition in Euclidean space.
+ *
+ * @param x - First composition (length D)
+ * @param y - Second composition (length D)
+ * @returns The perturbed composition on the simplex
+ * @throws {Error} If x and y have different lengths
  */
 export function perturbation(x: number[], y: number[]): number[] {
   if (x.length !== y.length) throw new Error("Compositions must have same length");
@@ -157,7 +217,16 @@ export function perturbation(x: number[], y: number[]): number[] {
 }
 
 /**
- * Power transformation (Aitchison scalar multiplication): α ⊙ x = C(x₁^α, ..., xD^α).
+ * Power transformation (Aitchison scalar multiplication on the simplex).
+ *
+ * alpha (*) x = C(x_1^alpha, ..., x_D^alpha)
+ *
+ * This is the scalar multiplication operation in Aitchison geometry,
+ * analogous to scalar multiplication in Euclidean space.
+ *
+ * @param x - Composition (length D)
+ * @param alpha - Scalar exponent
+ * @returns The powered composition on the simplex
  */
 export function powering(x: number[], alpha: number): number[] {
   const powered = x.map((xi) => Math.pow(xi, alpha));

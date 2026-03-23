@@ -48,16 +48,23 @@ export function bonferroni(pValues: number[], alpha = 0.05): MultipleTestingResu
 }
 
 /**
- * Šidák correction for multiple comparisons.
+ * Sidak correction for multiple comparisons.
  *
- * Uses 1 - (1 - p)^m instead of p*m. Slightly less conservative than
- * Bonferroni when tests are independent.
+ * Uses the formula: p_adj = 1 - (1 - p)^m instead of p * m.
+ * Slightly less conservative than Bonferroni when tests are independent.
  *
  * @param pValues - Array of p-values from individual tests
  * @param alpha - Significance level (default: 0.05)
  * @returns MultipleTestingResult with adjusted p-values and rejection decisions
  * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
  * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = sidak([0.01, 0.04, 0.03, 0.005], 0.05);
+ * // result.adjustedPValues — each adjusted via 1 - (1 - p)^4
+ * // result.rejected — which hypotheses to reject
+ * ```
  */
 export function sidak(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);
@@ -132,6 +139,12 @@ export function holm(pValues: number[], alpha = 0.05): MultipleTestingResult {
  * @returns MultipleTestingResult with adjusted p-values and rejection decisions
  * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
  * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = hochberg([0.01, 0.04, 0.03, 0.005], 0.05);
+ * // Step-up adjusted p-values
+ * ```
  */
 export function hochberg(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);
@@ -165,13 +178,21 @@ export function hochberg(pValues: number[], alpha = 0.05): MultipleTestingResult
  *
  * Controls the expected proportion of false positives among rejected
  * hypotheses. Less conservative than FWER-controlling methods when many
- * tests are performed.
+ * tests are performed. Adjusted p-value for rank k: p_adj(k) = p(k) * m / k,
+ * enforced to be non-increasing from the largest rank downward.
  *
  * @param pValues - Array of p-values from individual tests
  * @param alpha - Target FDR level (default: 0.05)
  * @returns MultipleTestingResult with adjusted p-values and rejection decisions
  * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
  * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = benjaminiHochberg([0.01, 0.04, 0.03, 0.005], 0.05);
+ * // result.adjustedPValues — FDR-adjusted p-values
+ * // result.rejected — which hypotheses to reject at FDR = 0.05
+ * ```
  */
 export function benjaminiHochberg(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);
@@ -205,13 +226,20 @@ export function benjaminiHochberg(pValues: number[], alpha = 0.05): MultipleTest
  * Benjamini-Yekutieli procedure for controlling FDR under arbitrary dependence.
  *
  * More conservative than Benjamini-Hochberg but valid regardless of the
- * dependence structure among test statistics.
+ * dependence structure among test statistics. Uses the correction factor
+ * c(m) = sum(1/i, i=1..m), the m-th harmonic number.
  *
  * @param pValues - Array of p-values from individual tests
  * @param alpha - Target FDR level (default: 0.05)
  * @returns MultipleTestingResult with adjusted p-values and rejection decisions
  * @throws Error if p-values array is empty, contains NaN, or values outside [0, 1]
  * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = benjaminiYekutieli([0.01, 0.04, 0.03, 0.005], 0.05);
+ * // More conservative than Benjamini-Hochberg, safe for dependent tests
+ * ```
  */
 export function benjaminiYekutieli(pValues: number[], alpha = 0.05): MultipleTestingResult {
   validatePValues(pValues);

@@ -3,11 +3,31 @@ import { mean } from "../utils/descriptive";
 import { solveLinearSystem } from "../utils/linalg";
 
 /**
- * Multiple linear regression using ordinary least squares (normal equations).
+ * Fits a multiple linear regression model using ordinary least squares (OLS)
+ * via the normal equations.
  *
- * @param X - Array of feature vectors, each of length p (n observations x p features)
- * @param y - Response variable (n observations)
- * @returns MultipleRegressionResult with coefficients, intercept, R², and predict function
+ * Solves the system (X^T X) beta = X^T y where the design matrix includes
+ * an intercept column prepended automatically. The coefficient of determination
+ * R^2 = 1 - SS_res / SS_tot is computed on the training data.
+ *
+ * @param X - Feature matrix of shape (n x p), where n is the number of
+ *   observations and p is the number of predictor variables.
+ * @param y - Response vector of length n.
+ * @returns A {@link MultipleRegressionResult} containing the fitted coefficients
+ *   (one per feature), intercept, R^2, and a `predict` function for new observations.
+ * @throws {Error} If `X` and `y` have different numbers of observations.
+ * @throws {Error} If fewer than 2 observations are provided.
+ * @throws {Error} If feature vectors are empty or have inconsistent lengths.
+ * @throws {Error} If the number of observations does not exceed the number of features
+ *   (the system would be underdetermined).
+ *
+ * @example
+ * ```ts
+ * const X = [[1, 2], [3, 4], [5, 6], [7, 8]];
+ * const y = [3, 7, 11, 15];
+ * const model = multipleRegression(X, y);
+ * model.predict([9, 10]); // predicted value for a new observation
+ * ```
  */
 export function multipleRegression(
   X: number[][],
