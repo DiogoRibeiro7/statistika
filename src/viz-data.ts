@@ -283,10 +283,16 @@ export function boxPlotStats(data: number[]): BoxPlotStats {
 /**
  * Kernel Density Estimate using a Gaussian kernel.
  *
- * @param data  Sample data.
- * @param options.nPoints  Number of evaluation points (default 100).
- * @param options.bandwidth  Bandwidth h (default: Silverman's rule).
- * @param options.range  [min, max] evaluation range.
+ * Estimates f(x) = (1 / (n * h * sqrt(2*pi))) * sum(exp(-0.5 * ((x - x_i) / h)^2)).
+ * Uses Silverman's rule of thumb for bandwidth selection by default:
+ * h = 0.9 * min(sd, IQR/1.34) * n^(-1/5).
+ *
+ * @param data - Sample data
+ * @param options - Configuration options
+ * @param options.nPoints - Number of evaluation points (default 100)
+ * @param options.bandwidth - Bandwidth h (default: Silverman's rule)
+ * @param options.range - [min, max] evaluation range (default: data range +/- 3h)
+ * @returns Array of KDEPoint objects with x and density values
  */
 export function kde(
   data: number[],
@@ -329,8 +335,16 @@ export function kde(
  * Empirical CDF coordinates.
  *
  * Returns sorted (x, F(x)) pairs suitable for a step plot.
+ * F(x_i) = (i + 1) / n for the i-th order statistic.
  *
- * @param data  Sample data.
+ * @param data - Sample data
+ * @returns Array of ECDFPoint objects with x and cumulative probability
+ *
+ * @example
+ * ```ts
+ * const points = ecdf([3, 1, 2]);
+ * // [{x: 1, probability: 1/3}, {x: 2, probability: 2/3}, {x: 3, probability: 1}]
+ * ```
  */
 export function ecdf(data: number[]): ECDFPoint[] {
   const sorted = [...data].sort((a, b) => a - b);
@@ -349,8 +363,18 @@ export function ecdf(data: number[]): ECDFPoint[] {
 /**
  * Generate pairwise scatter data for multiple variables.
  *
- * @param variables  Named numeric arrays, all same length.
- * @returns Array of { xName, yName, x, y } for each pair.
+ * Produces all off-diagonal pairs (i, j) where i != j, creating
+ * data suitable for a scatter plot matrix.
+ *
+ * @param variables - Named numeric arrays, all same length
+ * @returns Array of { xName, yName, x, y } for each pair of variables
+ *
+ * @example
+ * ```ts
+ * const pairs = scatterMatrixData({ height: [170, 180], weight: [60, 80] });
+ * // [{xName: "height", yName: "weight", x: [170, 180], y: [60, 80]},
+ * //  {xName: "weight", yName: "height", x: [60, 80], y: [170, 180]}]
+ * ```
  */
 export function scatterMatrixData(
   variables: Record<string, number[]>,
