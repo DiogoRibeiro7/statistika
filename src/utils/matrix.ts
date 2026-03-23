@@ -197,7 +197,12 @@ export class Mat {
     return m;
   }
 
-  /** Create a diagonal matrix from a vector. */
+  /**
+   * Create a diagonal matrix from a vector.
+   *
+   * @param values - Diagonal elements
+   * @returns A new n x n Mat with values on the diagonal and zeros elsewhere
+   */
   static diag(values: number[]): Mat {
     const n = values.length;
     const m = new Mat(n, n);
@@ -205,30 +210,57 @@ export class Mat {
     return m;
   }
 
-  /** Create a column vector from an array. */
+  /**
+   * Create a column vector (n x 1 matrix) from an array.
+   *
+   * @param v - Array of numbers
+   * @returns A new n x 1 Mat
+   */
   static fromVector(v: number[]): Mat {
     return Mat.from(v.map((x) => [x]));
   }
 
   // ── Element access ───────────────────────────────────────────────────
 
-  /** Get element at (i, j). */
+  /**
+   * Get element at row i, column j.
+   *
+   * @param i - Row index (0-based)
+   * @param j - Column index (0-based)
+   * @returns The element value
+   */
   get(i: number, j: number): number {
     return this.data[i * this.cols + j];
   }
 
-  /** Set element at (i, j). */
+  /**
+   * Set element at row i, column j.
+   *
+   * @param i - Row index (0-based)
+   * @param j - Column index (0-based)
+   * @param value - Value to set
+   */
   set(i: number, j: number, value: number): void {
     this.data[i * this.cols + j] = value;
   }
 
-  /** Get a row as a number array. */
+  /**
+   * Get a row as a number array.
+   *
+   * @param i - Row index (0-based)
+   * @returns Copy of the row as a number array
+   */
   row(i: number): number[] {
     const start = i * this.cols;
     return Array.from(this.data.slice(start, start + this.cols));
   }
 
-  /** Get a column as a number array. */
+  /**
+   * Get a column as a number array.
+   *
+   * @param j - Column index (0-based)
+   * @returns Copy of the column as a number array
+   */
   col(j: number): number[] {
     const result = new Array(this.rows);
     for (let i = 0; i < this.rows; i++) {
@@ -237,7 +269,11 @@ export class Mat {
     return result;
   }
 
-  /** Get the diagonal as a number array. */
+  /**
+   * Get the diagonal as a number array.
+   *
+   * @returns Array of min(rows, cols) diagonal elements
+   */
   diagonal(): number[] {
     const n = Math.min(this.rows, this.cols);
     const result = new Array(n);
@@ -247,7 +283,11 @@ export class Mat {
     return result;
   }
 
-  /** Convert to a 2D array. */
+  /**
+   * Convert to a 2D array of numbers.
+   *
+   * @returns 2D array representation of the matrix
+   */
   toArray(): number[][] {
     const result: number[][] = new Array(this.rows);
     for (let i = 0; i < this.rows; i++) {
@@ -256,7 +296,12 @@ export class Mat {
     return result;
   }
 
-  /** Convert a column vector to a flat array. */
+  /**
+   * Convert a column vector (n x 1 matrix) to a flat array.
+   *
+   * @returns Array of column values
+   * @throws Error if the matrix is not a column vector (cols !== 1)
+   */
   toVector(): number[] {
     if (this.cols !== 1) {
       throw new Error("toVector() requires a column vector (cols === 1)");
@@ -264,22 +309,41 @@ export class Mat {
     return this.col(0);
   }
 
-  /** Deep clone. */
+  /**
+   * Create a deep clone of this matrix.
+   *
+   * @returns A new Mat with copied data
+   */
   clone(): Mat {
     return new Mat(this.rows, this.cols, new Float64Array(this.data));
   }
 
-  /** Check if dimensions match another matrix. */
+  /**
+   * Check if dimensions match another matrix.
+   *
+   * @param other - Matrix to compare dimensions with
+   * @returns True if both matrices have the same number of rows and columns
+   */
   sameSize(other: Mat): boolean {
     return this.rows === other.rows && this.cols === other.cols;
   }
 
-  /** Check if the matrix is square. */
+  /**
+   * Check if the matrix is square (rows === cols).
+   *
+   * @returns True if the matrix is square
+   */
   isSquare(): boolean {
     return this.rows === this.cols;
   }
 
-  /** Element-wise approximate equality. */
+  /**
+   * Element-wise approximate equality within a tolerance.
+   *
+   * @param other - Matrix to compare with
+   * @param tol - Tolerance for element-wise comparison (default: 1e-10)
+   * @returns True if all elements differ by at most tol
+   */
   equals(other: Mat, tol = 1e-10): boolean {
     if (!this.sameSize(other)) return false;
     for (let i = 0; i < this.data.length; i++) {
@@ -290,7 +354,13 @@ export class Mat {
 
   // ── Arithmetic ───────────────────────────────────────────────────────
 
-  /** Add two matrices. */
+  /**
+   * Add two matrices element-wise.
+   *
+   * @param other - Matrix to add (must have same dimensions)
+   * @returns A new Mat containing the element-wise sum
+   * @throws Error if dimensions do not match
+   */
   add(other: Mat): Mat {
     if (!this.sameSize(other)) {
       throw new Error(
@@ -304,7 +374,13 @@ export class Mat {
     return new Mat(this.rows, this.cols, result);
   }
 
-  /** Subtract another matrix. */
+  /**
+   * Subtract another matrix element-wise.
+   *
+   * @param other - Matrix to subtract (must have same dimensions)
+   * @returns A new Mat containing the element-wise difference
+   * @throws Error if dimensions do not match
+   */
   subtract(other: Mat): Mat {
     if (!this.sameSize(other)) {
       throw new Error(
@@ -318,7 +394,12 @@ export class Mat {
     return new Mat(this.rows, this.cols, result);
   }
 
-  /** Scalar multiplication. */
+  /**
+   * Scalar multiplication (multiply all elements by s).
+   *
+   * @param s - Scalar multiplier
+   * @returns A new Mat with all elements scaled by s
+   */
   scale(s: number): Mat {
     const result = new Float64Array(this.data.length);
     for (let i = 0; i < result.length; i++) {
@@ -327,7 +408,11 @@ export class Mat {
     return new Mat(this.rows, this.cols, result);
   }
 
-  /** Negate all elements. */
+  /**
+   * Negate all elements (equivalent to scale(-1)).
+   *
+   * @returns A new Mat with all elements negated
+   */
   negate(): Mat {
     return this.scale(-1);
   }
@@ -335,8 +420,12 @@ export class Mat {
   /**
    * Matrix multiplication: this * other.
    *
-   * Native: BLAS DGEMM.
-   * Fallback: Triple-nested loop O(m*n*k).
+   * Computes C = A * B where A is (m x k) and B is (k x n), yielding (m x n).
+   * Native: BLAS DGEMM. Fallback: Triple-nested loop O(m*n*k).
+   *
+   * @param other - Right-hand matrix (this.cols must equal other.rows)
+   * @returns A new Mat of dimensions (this.rows x other.cols)
+   * @throws Error if inner dimensions do not match
    */
   multiply(other: Mat): Mat {
     if (this.cols !== other.rows) {
@@ -357,7 +446,11 @@ export class Mat {
     return tsMatMul(this, other);
   }
 
-  /** Transpose. */
+  /**
+   * Compute the transpose of this matrix.
+   *
+   * @returns A new Mat of dimensions (cols x rows)
+   */
   transpose(): Mat {
     const result = new Float64Array(this.rows * this.cols);
     for (let i = 0; i < this.rows; i++) {
@@ -368,7 +461,12 @@ export class Mat {
     return new Mat(this.cols, this.rows, result);
   }
 
-  /** Trace (sum of diagonal). */
+  /**
+   * Compute the trace (sum of diagonal elements).
+   *
+   * @returns The sum of diagonal elements
+   * @throws Error if the matrix is not square
+   */
   trace(): number {
     if (!this.isSquare()) throw new Error("Trace requires a square matrix");
     let sum = 0;
@@ -378,7 +476,11 @@ export class Mat {
     return sum;
   }
 
-  /** Frobenius norm. */
+  /**
+   * Compute the Frobenius norm: ||A||_F = sqrt(sum(a_ij^2)).
+   *
+   * @returns The Frobenius norm
+   */
   normF(): number {
     let sum = 0;
     for (let i = 0; i < this.data.length; i++) {
@@ -387,7 +489,15 @@ export class Mat {
     return Math.sqrt(sum);
   }
 
-  /** Extract a submatrix. */
+  /**
+   * Extract a submatrix from row [rowStart, rowEnd) and column [colStart, colEnd).
+   *
+   * @param rowStart - Starting row index (inclusive)
+   * @param rowEnd - Ending row index (exclusive)
+   * @param colStart - Starting column index (inclusive)
+   * @param colEnd - Ending column index (exclusive)
+   * @returns A new Mat containing the specified submatrix
+   */
   submatrix(
     rowStart: number,
     rowEnd: number,
@@ -410,10 +520,13 @@ export class Mat {
 
   /**
    * LU decomposition with partial pivoting: PA = LU.
-   * Returns { L, U, P, pivots, sign } where P is the permutation matrix.
    *
-   * Native: LAPACK DGETRF.
-   * Fallback: Gaussian elimination with partial pivoting.
+   * Native: LAPACK DGETRF. Fallback: Gaussian elimination with partial pivoting.
+   *
+   * @returns LUResult with L (lower triangular, unit diagonal), U (upper triangular),
+   *          P (permutation matrix), pivots (pivot indices), and sign (+1 or -1)
+   * @throws Error if the matrix is not square
+   * @throws Error if the matrix is singular or nearly singular
    */
   lu(): LUResult {
     if (!this.isSquare()) throw new Error("LU requires a square matrix");
@@ -425,10 +538,12 @@ export class Mat {
 
   /**
    * QR decomposition: A = QR.
-   * Works for any m×n matrix with m >= n.
    *
-   * Native: LAPACK DGEQRF + DORGQR.
+   * Works for any m x n matrix with m >= n. Native: LAPACK DGEQRF + DORGQR.
    * Fallback: Householder reflections.
+   *
+   * @returns QRResult with thin Q (m x n), thin R (n x n), full Q (m x m), and full R (m x n)
+   * @throws Error if rows < cols
    */
   qr(): QRResult {
     if (this.rows < this.cols) throw new Error("QR requires rows >= cols");
@@ -440,10 +555,12 @@ export class Mat {
 
   /**
    * Cholesky decomposition for symmetric positive-definite matrices: A = L * L^T.
-   * Returns the lower-triangular factor L.
    *
-   * Native: LAPACK DPOTRF.
-   * Fallback: Standard Cholesky algorithm.
+   * Native: LAPACK DPOTRF. Fallback: Standard Cholesky algorithm.
+   *
+   * @returns The lower-triangular factor L such that A = L * L^T
+   * @throws Error if the matrix is not square
+   * @throws Error if the matrix is not positive definite
    */
   cholesky(): Mat {
     if (!this.isSquare()) {
@@ -457,10 +574,12 @@ export class Mat {
 
   /**
    * Singular Value Decomposition: A = U * diag(S) * V^T.
-   * Works for any m×n matrix.
    *
-   * Native: LAPACK DGESVD.
+   * Works for any m x n matrix. Native: LAPACK DGESVD.
    * Fallback: One-sided Jacobi SVD.
+   *
+   * @returns SVDResult with U (m x k), S (singular values in descending order), and V (n x k)
+   *          where k = min(m, n)
    */
   svd(): SVDResult {
     if (native) {
@@ -529,7 +648,13 @@ export class Mat {
 
   /**
    * Solve Ax = b in the least-squares sense using QR decomposition.
-   * Works for overdetermined systems (m > n).
+   *
+   * Minimizes ||Ax - b||_2. Works for overdetermined systems (m > n).
+   *
+   * @param b - Right-hand side vector (as number[] or column Mat)
+   * @returns Solution vector x that minimizes ||Ax - b||_2
+   * @throws Error if RHS length does not match number of rows
+   * @throws Error if the matrix is rank-deficient
    */
   leastSquares(b: number[] | Mat): number[] {
     const bVec = b instanceof Mat ? b.toVector() : b;
@@ -571,6 +696,11 @@ export class Mat {
 
   /**
    * Compute the determinant using LU decomposition.
+   *
+   * det(A) = sign * product of diagonal elements of U.
+   *
+   * @returns The determinant value
+   * @throws Error if the matrix is not square
    */
   det(): number {
     if (!this.isSquare())
@@ -585,7 +715,11 @@ export class Mat {
 
   /**
    * Compute the inverse using LU decomposition.
-   * Returns null if the matrix is singular.
+   *
+   * Solves A * A^{-1} = I column by column.
+   *
+   * @returns The inverse matrix, or null if the matrix is singular
+   * @throws Error if the matrix is not square
    */
   inverse(): Mat | null {
     if (!this.isSquare()) throw new Error("Inverse requires a square matrix");
@@ -621,7 +755,11 @@ export class Mat {
   }
 
   /**
-   * Compute the condition number (ratio of largest to smallest singular value).
+   * Compute the 2-norm condition number: cond(A) = sigma_max / sigma_min.
+   *
+   * Returns Infinity if the smallest singular value is near zero.
+   *
+   * @returns The condition number (>= 1, Infinity if singular)
    */
   cond(): number {
     const { S } = this.svd();
@@ -633,6 +771,13 @@ export class Mat {
 
   /**
    * Compute the Moore-Penrose pseudoinverse using SVD.
+   *
+   * pinv(A) = V * diag(1/s_i) * U^T, where singular values below the
+   * tolerance are treated as zero.
+   *
+   * @param tol - Threshold below which singular values are treated as zero
+   *              (default: s_max * max(m,n) * machine_epsilon)
+   * @returns The pseudoinverse matrix (n x m)
    */
   pinv(tol?: number): Mat {
     const { U, S, V } = this.svd();
@@ -663,6 +808,9 @@ export class Mat {
 
 // ── Result types ─────────────────────────────────────────────────────────
 
+/**
+ * Result of LU decomposition with partial pivoting: PA = LU.
+ */
 export interface LUResult {
   /** Lower triangular matrix with unit diagonal. */
   L: Mat;
@@ -676,6 +824,9 @@ export interface LUResult {
   sign: number;
 }
 
+/**
+ * Result of QR decomposition: A = QR.
+ */
 export interface QRResult {
   /** Orthogonal factor Q (thin: m×n). */
   Q: Mat;
@@ -687,6 +838,9 @@ export interface QRResult {
   RFull: Mat;
 }
 
+/**
+ * Result of Singular Value Decomposition: A = U * diag(S) * V^T.
+ */
 export interface SVDResult {
   /** Left singular vectors (m×k). */
   U: Mat;
