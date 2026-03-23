@@ -13,6 +13,24 @@ type ColumnValue = number | string | boolean | null;
 type Column = ColumnValue[];
 type AggFn = (values: ColumnValue[]) => ColumnValue;
 
+/**
+ * A column-oriented DataFrame for statistical data manipulation.
+ *
+ * Provides an immutable-style API where mutation methods return new DataFrames.
+ * Supports column storage with typed access (number, string, boolean, null),
+ * selection, filtering, sorting, group-by aggregation, joins, and CSV/JSON I/O.
+ *
+ * @example
+ * ```ts
+ * const df = DataFrame.create({
+ *   name: ["Alice", "Bob", "Carol"],
+ *   age: [30, 25, 35],
+ *   score: [85, 92, 78],
+ * });
+ * const filtered = df.filter((row) => (row.age as number) > 26);
+ * const grouped = df.groupBy(["name"], { total: { column: "score", fn: "sum" } });
+ * ```
+ */
 export class DataFrame {
   private _columns: Map<string, Column>;
   private _nRows: number;
@@ -26,7 +44,17 @@ export class DataFrame {
 
   /**
    * Create a DataFrame from a column map.
-   * All columns must have the same length.
+   *
+   * All columns must have the same length. Column data is copied on creation.
+   *
+   * @param columns - Record mapping column names to arrays of values
+   * @returns A new DataFrame
+   * @throws {Error} If columns have inconsistent lengths
+   *
+   * @example
+   * ```ts
+   * const df = DataFrame.create({ x: [1, 2, 3], y: ["a", "b", "c"] });
+   * ```
    */
   static create(columns: Record<string, Column>): DataFrame {
     const map = new Map<string, Column>();
@@ -43,6 +71,20 @@ export class DataFrame {
 
   /**
    * Create a DataFrame from an array of row objects.
+   *
+   * Column names are inferred from the keys of the first record.
+   * Missing keys in subsequent records are filled with null.
+   *
+   * @param records - Array of row objects with consistent keys
+   * @returns A new DataFrame (empty DataFrame if records is empty)
+   *
+   * @example
+   * ```ts
+   * const df = DataFrame.fromRecords([
+   *   { name: "Alice", age: 30 },
+   *   { name: "Bob", age: 25 },
+   * ]);
+   * ```
    */
   static fromRecords(records: Record<string, ColumnValue>[]): DataFrame {
     if (records.length === 0) return new DataFrame(new Map(), 0);
@@ -58,8 +100,20 @@ export class DataFrame {
   }
 
   /**
-   * Parse CSV string into a DataFrame.
-   * First line is treated as header. Values are auto-typed.
+   * Parse a CSV string into a DataFrame.
+   *
+   * The first line is treated as the header row. Values are auto-typed:
+   * numeric strings become numbers, "true"/"false" become booleans,
+   * "null"/"NA"/"" become null, and everything else remains a string.
+   *
+   * @param csv - CSV-formatted string with header row
+   * @returns A new DataFrame with auto-typed columns
+   *
+   * @example
+   * ```ts
+   * const df = DataFrame.fromCSV("name,age\nAlice,30\nBob,25");
+   * console.log(df.numericColumn("age")); // [30, 25]
+   * ```
    */
   static fromCSV(csv: string): DataFrame {
     const lines = csv.trim().split("\n");
@@ -79,7 +133,10 @@ export class DataFrame {
   }
 
   /**
-   * Parse JSON array of objects into a DataFrame.
+   * Parse a JSON string (array of objects) into a DataFrame.
+   *
+   * @param json - JSON string representing an array of row objects
+   * @returns A new DataFrame
    */
   static fromJSON(json: string): DataFrame {
     const records = JSON.parse(json) as Record<string, ColumnValue>[];
@@ -103,14 +160,27 @@ export class DataFrame {
     return [...this._columns.keys()];
   }
 
-  /** Get a column by name. Returns a copy. */
+  /**
+   * Get a column by name. Returns a copy of the column data.
+   *
+   * @param name - Column name
+   * @returns A copy of the column values
+   * @throws {Error} If the column does not exist
+   */
   column(name: string): Column {
     const col = this._columns.get(name);
     if (!col) throw new Error(`Column "${name}" not found`);
     return [...col];
   }
 
-  /** Get a column as number[]. Throws if any value is not a number. */
+  /**
+   * Get a column as a number array. Validates that all values are numbers.
+   *
+   * @param name - Column name
+   * @returns Array of numeric values
+   * @throws {Error} If the column does not exist
+   * @throws {Error} If any value in the column is not a number
+   */
   numericColumn(name: string): number[] {
     const col = this.column(name);
     for (let i = 0; i < col.length; i++) {
@@ -123,7 +193,13 @@ export class DataFrame {
 
   // ── Selection & Filtering ───────────────────────────────────────────────
 
-  /** Select specific columns. */
+  /**
+   * Select specific columns by name, returning a new DataFrame.
+   *
+   * @param names - Column names to select
+   * @returns A new DataFrame containing only the specified columns
+   * @throws {Error} If any column name does not exist
+   */
   select(...names: string[]): DataFrame {
     const cols: Record<string, Column> = {};
     for (const name of names) {
@@ -132,7 +208,12 @@ export class DataFrame {
     return DataFrame.create(cols);
   }
 
-  /** Filter rows by a predicate on row objects. */
+  /**
+   * Filter rows by a predicate function applied to row objects.
+   *
+   * @param predicate - Function receiving (row, index) and returning true to keep the row
+   * @returns A new DataFrame containing only rows where the predicate returned true
+   */
   filter(predicate: (row: Record<string, ColumnValue>, i: number) => boolean): DataFrame {
     const cols: Record<string, Column> = {};
     for (const name of this.columnNames) cols[name] = [];
@@ -148,7 +229,17 @@ export class DataFrame {
     return DataFrame.create(cols);
   }
 
-  /** Sort by a column. */
+  /**
+   * Sort rows by a column's values.
+   *
+   * Null values are sorted to the end. For non-null values, uses natural
+   * comparison (<, >).
+   *
+   * @param column - Column name to sort by
+   * @param ascending - Sort in ascending order (default true)
+   * @returns A new sorted DataFrame
+   * @throws {Error} If the column does not exist
+   */
   sort(column: string, ascending = true): DataFrame {
     const col = this._columns.get(column);
     if (!col) throw new Error(`Column "${column}" not found`);
@@ -167,18 +258,34 @@ export class DataFrame {
     return this._reindex(indices);
   }
 
-  /** First n rows. */
+  /**
+   * Return the first n rows.
+   *
+   * @param n - Number of rows to return (default 5)
+   * @returns A new DataFrame with at most n rows
+   */
   head(n = 5): DataFrame {
     return this.slice(0, Math.min(n, this._nRows));
   }
 
-  /** Last n rows. */
+  /**
+   * Return the last n rows.
+   *
+   * @param n - Number of rows to return (default 5)
+   * @returns A new DataFrame with at most n rows from the end
+   */
   tail(n = 5): DataFrame {
     const start = Math.max(0, this._nRows - n);
     return this.slice(start, this._nRows);
   }
 
-  /** Slice by row indices [start, end). */
+  /**
+   * Slice rows by index range [start, end).
+   *
+   * @param start - Starting row index (inclusive)
+   * @param end - Ending row index (exclusive)
+   * @returns A new DataFrame with rows in the specified range
+   */
   slice(start: number, end: number): DataFrame {
     const cols: Record<string, Column> = {};
     for (const [name, col] of this._columns) {
@@ -189,7 +296,14 @@ export class DataFrame {
 
   // ── Mutation ────────────────────────────────────────────────────────────
 
-  /** Add or replace a column. Returns a new DataFrame. */
+  /**
+   * Add or replace a column. Returns a new DataFrame.
+   *
+   * @param name - Column name to add or replace
+   * @param values - Column values (must match the DataFrame's row count)
+   * @returns A new DataFrame with the added/replaced column
+   * @throws {Error} If values length does not match the number of rows
+   */
   addColumn(name: string, values: Column): DataFrame {
     if (values.length !== this._nRows) {
       throw new Error(`Column length ${values.length} doesn't match ${this._nRows} rows`);
@@ -200,7 +314,13 @@ export class DataFrame {
     return DataFrame.create(cols);
   }
 
-  /** Create a new column from a row-level function. */
+  /**
+   * Create a new column by applying a function to each row.
+   *
+   * @param name - Name for the new column
+   * @param fn - Function receiving (row, index) and returning the cell value
+   * @returns A new DataFrame with the computed column added
+   */
   mutate(name: string, fn: (row: Record<string, ColumnValue>, i: number) => ColumnValue): DataFrame {
     const values: Column = [];
     for (let i = 0; i < this._nRows; i++) {
@@ -209,7 +329,12 @@ export class DataFrame {
     return this.addColumn(name, values);
   }
 
-  /** Drop a column. Returns a new DataFrame. */
+  /**
+   * Drop a column by name. Returns a new DataFrame without the specified column.
+   *
+   * @param name - Column name to drop
+   * @returns A new DataFrame without the specified column
+   */
   dropColumn(name: string): DataFrame {
     const cols: Record<string, Column> = {};
     for (const [n, c] of this._columns) {
@@ -218,7 +343,14 @@ export class DataFrame {
     return DataFrame.create(cols);
   }
 
-  /** Rename a column. Returns a new DataFrame. */
+  /**
+   * Rename a column. Returns a new DataFrame with the column renamed.
+   *
+   * @param oldName - Current column name
+   * @param newName - New column name
+   * @returns A new DataFrame with the column renamed
+   * @throws {Error} If the old column name does not exist
+   */
   renameColumn(oldName: string, newName: string): DataFrame {
     if (!this._columns.has(oldName)) throw new Error(`Column "${oldName}" not found`);
     const cols: Record<string, Column> = {};
@@ -233,9 +365,23 @@ export class DataFrame {
   /**
    * Group by one or more columns and aggregate.
    *
-   * @param groupCols  Column names to group by.
-   * @param aggs  Map of output column name → { column, fn } where fn is
-   *   "sum" | "mean" | "count" | "min" | "max" or a custom function.
+   * Groups rows by unique combinations of the group columns, then applies
+   * an aggregation function to a specified column within each group.
+   *
+   * @param groupCols - Column names to group by
+   * @param aggs - Map of output column name to aggregation specification:
+   *   `{ column: string, fn: "sum" | "mean" | "count" | "min" | "max" | AggFn }`
+   *   where AggFn is a custom `(values: ColumnValue[]) => ColumnValue` function
+   * @returns A new DataFrame with one row per group and the aggregated columns
+   * @throws {Error} If any referenced column does not exist
+   *
+   * @example
+   * ```ts
+   * df.groupBy(["dept"], {
+   *   avgSalary: { column: "salary", fn: "mean" },
+   *   headcount: { column: "id", fn: "count" },
+   * });
+   * ```
    */
   groupBy(
     groupCols: string[],
@@ -276,9 +422,19 @@ export class DataFrame {
   /**
    * Join this DataFrame with another on shared key column(s).
    *
-   * @param other  Right DataFrame.
-   * @param on  Column name(s) to join on.
-   * @param how  Join type: "inner" | "left" | "right" | "outer".
+   * Supports inner, left, right, and full outer joins. When column names
+   * collide between left and right DataFrames (excluding join keys),
+   * the right column is suffixed with "_right".
+   *
+   * @param other - Right DataFrame to join with
+   * @param on - Column name or array of column names to join on
+   * @param how - Join type: "inner" (default), "left", "right", or "outer"
+   * @returns A new joined DataFrame
+   *
+   * @example
+   * ```ts
+   * const joined = employees.join(departments, "dept_id", "left");
+   * ```
    */
   join(
     other: DataFrame,
@@ -349,7 +505,11 @@ export class DataFrame {
 
   // ── I/O ─────────────────────────────────────────────────────────────────
 
-  /** Convert to array of row objects. */
+  /**
+   * Convert the DataFrame to an array of row objects.
+   *
+   * @returns Array of records, one per row, with column names as keys
+   */
   toRecords(): Record<string, ColumnValue>[] {
     const records: Record<string, ColumnValue>[] = [];
     for (let i = 0; i < this._nRows; i++) {
@@ -358,7 +518,14 @@ export class DataFrame {
     return records;
   }
 
-  /** Serialize to CSV string. */
+  /**
+   * Serialize the DataFrame to a CSV string.
+   *
+   * Includes a header row. Null values are rendered as empty strings.
+   * Values containing commas, quotes, or newlines are properly escaped.
+   *
+   * @returns CSV-formatted string
+   */
   toCSV(): string {
     const names = this.columnNames;
     const lines = [names.map(escapeCsv).join(",")];
@@ -372,12 +539,20 @@ export class DataFrame {
     return lines.join("\n");
   }
 
-  /** Serialize to JSON string (array of objects). */
+  /**
+   * Serialize the DataFrame to a JSON string (array of row objects).
+   *
+   * @returns JSON string representation of the DataFrame
+   */
   toJSON(): string {
     return JSON.stringify(this.toRecords());
   }
 
-  /** Summary of the DataFrame shape. */
+  /**
+   * Get a summary of the DataFrame shape.
+   *
+   * @returns Object with the number of rows, number of columns, and column names
+   */
   describe(): { nRows: number; nCols: number; columns: string[] } {
     return { nRows: this._nRows, nCols: this.nCols, columns: this.columnNames };
   }

@@ -14,12 +14,21 @@ import { mean } from "./utils/descriptive";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
-/** A 2-D or n-D spatial coordinate. */
+/**
+ * A 2-D or n-D spatial coordinate represented as an array of numbers.
+ * For example, [x, y] for 2D or [x, y, z] for 3D.
+ */
 export type SpatialPoint = number[];
 
-/** Spatial weights matrix (row-standardised or binary). */
+/**
+ * Spatial weights matrix (row-standardised or binary).
+ * W[i][j] represents the spatial relationship between locations i and j.
+ */
 export type SpatialWeights = number[][];
 
+/**
+ * Result of a Moran's I spatial autocorrelation test.
+ */
 export interface MoranResult {
   /** Moran's I statistic (range roughly −1 to +1). */
   I: number;
@@ -33,6 +42,9 @@ export interface MoranResult {
   pValue: number;
 }
 
+/**
+ * Result of a Geary's C spatial autocorrelation test.
+ */
 export interface GearyResult {
   /** Geary's C statistic (0 = perfect positive, 1 = no autocorrelation, >1 = negative). */
   C: number;
@@ -44,6 +56,9 @@ export interface GearyResult {
   pValue: number;
 }
 
+/**
+ * A single bin of the empirical variogram.
+ */
 export interface VariogramBin {
   /** Average distance (lag) for this bin. */
   distance: number;
@@ -53,6 +68,9 @@ export interface VariogramBin {
   count: number;
 }
 
+/**
+ * A fitted variogram model with parameters and evaluation function.
+ */
 export interface VariogramModel {
   /** Model type. */
   type: "spherical" | "exponential" | "gaussian" | "linear";
@@ -66,6 +84,9 @@ export interface VariogramModel {
   evaluate: (h: number) => number;
 }
 
+/**
+ * Result of an ordinary kriging interpolation.
+ */
 export interface KrigingResult {
   /** Predicted values at query points. */
   predictions: number[];
@@ -77,6 +98,18 @@ export interface KrigingResult {
 
 /**
  * Compute pairwise Euclidean distance matrix.
+ *
+ * D[i][j] = ||points[i] - points[j]||_2. The matrix is symmetric with
+ * zeros on the diagonal.
+ *
+ * @param points - Array of spatial coordinates (n points, each d-dimensional)
+ * @returns Symmetric n x n distance matrix
+ *
+ * @example
+ * ```ts
+ * const pts = [[0, 0], [3, 4]];
+ * distanceMatrix(pts); // [[0, 5], [5, 0]]
+ * ```
  */
 export function distanceMatrix(points: SpatialPoint[]): number[][] {
   const n = points.length;
@@ -97,7 +130,12 @@ export function distanceMatrix(points: SpatialPoint[]): number[][] {
 
 /**
  * Build binary spatial weights from a distance threshold.
- * W[i][j] = 1 if dist(i,j) ≤ threshold and i ≠ j.
+ *
+ * W[i][j] = 1 if dist(i,j) <= threshold and i != j, 0 otherwise.
+ *
+ * @param points - Array of spatial coordinates
+ * @param threshold - Maximum distance for two points to be considered neighbors
+ * @returns Binary spatial weights matrix (n x n)
  */
 export function distanceBandWeights(
   points: SpatialPoint[],
@@ -116,6 +154,14 @@ export function distanceBandWeights(
 
 /**
  * Build k-nearest-neighbour spatial weights.
+ *
+ * W[i][j] = 1 if j is one of the k nearest neighbors of i, 0 otherwise.
+ * Note: the resulting matrix may be asymmetric.
+ *
+ * @param points - Array of spatial coordinates
+ * @param k - Number of nearest neighbors
+ * @returns Spatial weights matrix (n x n)
+ * @throws Error if k >= number of points
  */
 export function knnWeights(points: SpatialPoint[], k: number): SpatialWeights {
   const n = points.length;
@@ -138,10 +184,26 @@ export function knnWeights(points: SpatialPoint[], k: number): SpatialWeights {
 /**
  * Global Moran's I for spatial autocorrelation.
  *
- * I = (n / S₀) × (Σᵢ Σⱼ wᵢⱼ (xᵢ − x̄)(xⱼ − x̄)) / (Σᵢ (xᵢ − x̄)²)
+ * I = (n / S0) * (sum_ij w_ij (x_i - x_bar)(x_j - x_bar)) / (sum_i (x_i - x_bar)^2)
  *
- * @param values  Observed values at each location (length n).
- * @param W  Spatial weights matrix (n × n).
+ * where S0 = sum_ij w_ij. Values near +1 indicate positive spatial autocorrelation
+ * (clustering), values near -1 indicate negative (dispersion), and values near
+ * E[I] = -1/(n-1) indicate random spatial pattern.
+ *
+ * @param values - Observed values at each location (length n)
+ * @param W - Spatial weights matrix (n x n)
+ * @returns MoranResult with I statistic, expected value, variance, z-score, and p-value
+ * @throws Error if fewer than 3 observations
+ * @throws Error if weights matrix size does not match values length
+ *
+ * @example
+ * ```ts
+ * const values = [1, 2, 3, 4, 5];
+ * const W = distanceBandWeights([[0,0],[1,0],[2,0],[3,0],[4,0]], 1.5);
+ * const result = moranI(values, W);
+ * // result.I — Moran's I statistic
+ * // result.pValue — significance of spatial autocorrelation
+ * ```
  */
 export function moranI(values: number[], W: SpatialWeights): MoranResult {
   const n = values.length;
@@ -201,7 +263,15 @@ export function moranI(values: number[], W: SpatialWeights): MoranResult {
 /**
  * Geary's C for spatial autocorrelation.
  *
- * C = ((n−1) / (2 S₀)) × (Σᵢ Σⱼ wᵢⱼ (xᵢ − xⱼ)²) / (Σᵢ (xᵢ − x̄)²)
+ * C = ((n-1) / (2 * S0)) * (sum_ij w_ij (x_i - x_j)^2) / (sum_i (x_i - x_bar)^2)
+ *
+ * Values near 0 indicate strong positive autocorrelation, near 1 indicates
+ * no autocorrelation, and values greater than 1 indicate negative autocorrelation.
+ *
+ * @param values - Observed values at each location (length n)
+ * @param W - Spatial weights matrix (n x n)
+ * @returns GearyResult with C statistic, expected value, z-score, and p-value
+ * @throws Error if fewer than 3 observations
  */
 export function gearyC(values: number[], W: SpatialWeights): GearyResult {
   const n = values.length;
@@ -240,12 +310,26 @@ export function gearyC(values: number[], W: SpatialWeights): GearyResult {
 /**
  * Compute the empirical (semi)variogram.
  *
- * γ(h) = (1 / 2|N(h)|) Σ_{(i,j)∈N(h)} (z(sᵢ) − z(sⱼ))²
+ * gamma(h) = (1 / (2 * |N(h)|)) * sum_{(i,j) in N(h)} (z(s_i) - z(s_j))^2
  *
- * @param points  Spatial coordinates (n × d).
- * @param values  Observed values at each point (length n).
- * @param nBins  Number of distance bins (default 15).
- * @param maxDist  Maximum distance to consider (default: half the max pairwise distance).
+ * where N(h) is the set of point pairs at distance approximately h.
+ *
+ * @param points - Spatial coordinates (n x d)
+ * @param values - Observed values at each point (length n)
+ * @param nBins - Number of distance bins (default 15)
+ * @param maxDist - Maximum distance to consider (default: half the max pairwise distance)
+ * @returns Array of VariogramBin objects with distance, semivariance, and count
+ * @throws Error if points and values have different lengths
+ * @throws Error if fewer than 3 observations
+ *
+ * @example
+ * ```ts
+ * const points = [[0,0], [1,0], [2,0], [3,0], [0,1], [1,1]];
+ * const values = [1, 2, 4, 8, 2, 3];
+ * const bins = empiricalVariogram(points, values, 10);
+ * // bins[i].distance — average lag distance for bin i
+ * // bins[i].semivariance — estimated semivariance at that lag
+ * ```
  */
 export function empiricalVariogram(
   points: SpatialPoint[],
@@ -302,10 +386,13 @@ export function empiricalVariogram(
 /**
  * Fit a variogram model to empirical variogram bins.
  *
- * Uses weighted least squares on the empirical bins.
+ * Uses weighted least squares (WLS) on the empirical bins to estimate
+ * nugget, sill, and range parameters for the chosen model type.
  *
- * @param bins  Empirical variogram bins.
- * @param type  Model type (default "spherical").
+ * @param bins - Empirical variogram bins from {@link empiricalVariogram}
+ * @param type - Model type: "spherical", "exponential", "gaussian", or "linear" (default "spherical")
+ * @returns VariogramModel with fitted parameters and an evaluate function
+ * @throws Error if fewer than 2 variogram bins
  */
 export function fitVariogramModel(
   bins: VariogramBin[],
@@ -367,19 +454,35 @@ export function fitVariogramModel(
 // ── Kriging ───────────────────────────────────────────────────────────────
 
 /**
- * Ordinary kriging — spatial prediction with uncertainty.
+ * Ordinary kriging -- spatial prediction with uncertainty.
  *
- * Solves the kriging system for each query point:
- *   [C  1] [λ]   [c ]
- *   [1' 0] [μ] = [1 ]
+ * Solves the kriging system for each query point to find optimal weights
+ * that minimize prediction variance subject to unbiasedness:
+ *   [C  1] [lambda]   [c ]
+ *   [1' 0] [mu    ] = [1 ]
  *
  * where C is the covariance matrix of observed points, c is the covariance
- * vector between observed points and the query point, and λ are kriging weights.
+ * vector between observed points and the query point, lambda are kriging
+ * weights, and mu is the Lagrange multiplier.
  *
- * @param points  Known observation locations (n × d).
- * @param values  Known values (length n).
- * @param queryPoints  Locations to predict at (m × d).
- * @param model  Fitted variogram model.
+ * @param points - Known observation locations (n x d)
+ * @param values - Known values at observation locations (length n)
+ * @param queryPoints - Locations to predict at (m x d)
+ * @param model - Fitted variogram model from {@link fitVariogramModel}
+ * @returns KrigingResult with predictions and kriging variances at each query point
+ * @throws Error if points and values have different lengths
+ * @throws Error if fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const points = [[0,0], [1,0], [0,1], [1,1]];
+ * const values = [1, 2, 3, 4];
+ * const bins = empiricalVariogram(points, values);
+ * const model = fitVariogramModel(bins);
+ * const result = ordinaryKriging(points, values, [[0.5, 0.5]], model);
+ * // result.predictions[0] — interpolated value at (0.5, 0.5)
+ * // result.variances[0] — kriging variance (uncertainty)
+ * ```
  */
 export function ordinaryKriging(
   points: SpatialPoint[],

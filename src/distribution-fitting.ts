@@ -22,6 +22,15 @@ import { mean, variance } from "./utils/descriptive";
 
 // ── MLE Fitting ───────────────────────────────────────────────────────────
 
+/**
+ * Result of fitting a distribution to data via maximum likelihood estimation.
+ *
+ * Contains the fitted distribution instance, the log-likelihood of the data
+ * under the fitted distribution, the AIC (Akaike Information Criterion),
+ * and the number of estimated parameters.
+ *
+ * @typeParam T - The type of the fitted distribution
+ */
 export interface FitResult<T> {
   /** The fitted distribution instance. */
   distribution: T;
@@ -34,8 +43,21 @@ export interface FitResult<T> {
 }
 
 /**
- * Fit a Normal distribution by MLE.
- * MLE: μ̂ = x̄, σ̂ = √[(1/n) Σ(xᵢ − x̄)²]
+ * Fit a Normal distribution by maximum likelihood estimation.
+ *
+ * MLE estimators: mu_hat = x_bar, sigma_hat = sqrt( (1/n) * sum((x_i - x_bar)^2) )
+ *
+ * @param data - Sample data (at least 2 observations, all finite)
+ * @returns A {@link FitResult} containing the fitted Normal distribution, log-likelihood, and AIC
+ * @throws {Error} If fewer than 2 observations or data has zero variance
+ * @throws {Error} If any value is not finite
+ *
+ * @example
+ * ```ts
+ * const result = fitNormal([1.2, 2.3, 1.8, 2.1, 1.9]);
+ * console.log(result.distribution.mean); // ~1.86
+ * console.log(result.aic);              // AIC for model comparison
+ * ```
  */
 export function fitNormal(data: number[]): FitResult<Normal> {
   validateContinuousData(data);
@@ -52,8 +74,14 @@ export function fitNormal(data: number[]): FitResult<Normal> {
 }
 
 /**
- * Fit an Exponential distribution by MLE.
- * MLE: λ̂ = 1 / x̄
+ * Fit an Exponential distribution by maximum likelihood estimation.
+ *
+ * MLE estimator: lambda_hat = 1 / x_bar
+ *
+ * @param data - Sample data (at least 2 observations, all non-negative and finite)
+ * @returns A {@link FitResult} containing the fitted Exponential distribution
+ * @throws {Error} If fewer than 2 observations or any value is negative
+ * @throws {Error} If any value is not finite
  */
 export function fitExponential(data: number[]): FitResult<Exponential> {
   validateContinuousData(data);
@@ -67,8 +95,14 @@ export function fitExponential(data: number[]): FitResult<Exponential> {
 }
 
 /**
- * Fit a Poisson distribution by MLE.
- * MLE: λ̂ = x̄
+ * Fit a Poisson distribution by maximum likelihood estimation.
+ *
+ * MLE estimator: lambda_hat = x_bar
+ *
+ * @param data - Sample data (at least 2 observations, all non-negative integers)
+ * @returns A {@link FitResult} containing the fitted Poisson distribution
+ * @throws {Error} If fewer than 2 observations, mean is non-positive, or data
+ *   contains non-integer or negative values
  */
 export function fitPoisson(data: number[]): FitResult<Poisson> {
   validateDiscreteData(data);
@@ -80,8 +114,16 @@ export function fitPoisson(data: number[]): FitResult<Poisson> {
 }
 
 /**
- * Fit a Gamma distribution by MLE (method of moments initialisation).
- * Iterative Newton-Raphson on the shape parameter.
+ * Fit a Gamma distribution by maximum likelihood estimation.
+ *
+ * Uses method of moments for initial estimates, then refines the shape
+ * parameter via Newton-Raphson using the digamma and trigamma functions.
+ * The rate is computed as rate = shape / x_bar.
+ *
+ * @param data - Sample data (at least 2 observations, all positive and finite)
+ * @returns A {@link FitResult} containing the fitted Gamma distribution
+ * @throws {Error} If fewer than 2 observations or any value is non-positive
+ * @throws {Error} If any value is not finite
  */
 export function fitGamma(data: number[]): FitResult<GammaDistribution> {
   validateContinuousData(data);
@@ -116,7 +158,17 @@ export function fitGamma(data: number[]): FitResult<GammaDistribution> {
 }
 
 /**
- * Fit a Beta distribution by MLE (method of moments).
+ * Fit a Beta distribution by the method of moments.
+ *
+ * Estimates alpha and beta from the sample mean m and variance v:
+ *   common = m * (1 - m) / v - 1
+ *   alpha = m * common
+ *   beta = (1 - m) * common
+ *
+ * @param data - Sample data (at least 2 observations, all in the open interval (0, 1))
+ * @returns A {@link FitResult} containing the fitted Beta distribution
+ * @throws {Error} If fewer than 2 observations or any value is not in (0, 1)
+ * @throws {Error} If moment estimates are non-positive
  */
 export function fitBeta(data: number[]): FitResult<BetaDistribution> {
   validateContinuousData(data);
@@ -139,8 +191,14 @@ export function fitBeta(data: number[]): FitResult<BetaDistribution> {
 }
 
 /**
- * Fit a Log-Normal distribution by MLE.
- * MLE: μ̂ = mean(log x), σ̂ = std(log x)
+ * Fit a Log-Normal distribution by maximum likelihood estimation.
+ *
+ * MLE estimators: mu_hat = mean(ln(x)), sigma_hat = sqrt( (1/n) * sum((ln(x_i) - mu_hat)^2) )
+ *
+ * @param data - Sample data (at least 2 observations, all positive and finite)
+ * @returns A {@link FitResult} containing the fitted Log-Normal distribution
+ * @throws {Error} If fewer than 2 observations or any value is non-positive
+ * @throws {Error} If log-transformed data has zero variance
  */
 export function fitLogNormal(data: number[]): FitResult<LogNormal> {
   validateContinuousData(data);
@@ -161,8 +219,14 @@ export function fitLogNormal(data: number[]): FitResult<LogNormal> {
 }
 
 /**
- * Fit a Geometric distribution by MLE.
- * MLE: p̂ = 1 / (1 + x̄)
+ * Fit a Geometric distribution by maximum likelihood estimation.
+ *
+ * MLE estimator: p_hat = 1 / (1 + x_bar)
+ *
+ * @param data - Sample data (at least 2 observations, all non-negative integers)
+ * @returns A {@link FitResult} containing the fitted Geometric distribution
+ * @throws {Error} If fewer than 2 observations or data contains non-integer
+ *   or negative values
  */
 export function fitGeometric(data: number[]): FitResult<Geometric> {
   validateDiscreteData(data);
@@ -173,7 +237,18 @@ export function fitGeometric(data: number[]): FitResult<Geometric> {
 }
 
 /**
- * Fit a Zero-Inflated Poisson distribution by EM algorithm.
+ * Fit a Zero-Inflated Poisson (ZIP) distribution by the EM algorithm.
+ *
+ * The ZIP model assumes observations come from a mixture of a point mass
+ * at zero (with probability pi) and a Poisson distribution (with probability
+ * 1 - pi). The EM algorithm alternates between:
+ *   E-step: compute posterior probability of structural zero for zero observations
+ *   M-step: update pi and lambda based on expected sufficient statistics
+ *
+ * @param data - Sample data (at least 2 observations, all non-negative integers)
+ * @returns A {@link FitResult} containing the fitted ZIP distribution
+ * @throws {Error} If fewer than 2 observations or data contains non-integer
+ *   or negative values
  */
 export function fitZIP(data: number[]): FitResult<ZeroInflatedPoisson> {
   validateDiscreteData(data);
@@ -214,6 +289,12 @@ export function fitZIP(data: number[]): FitResult<ZeroInflatedPoisson> {
 
 // ── Anderson-Darling test ─────────────────────────────────────────────────
 
+/**
+ * Result of a goodness-of-fit test (Anderson-Darling or Cramer-von Mises).
+ *
+ * Contains the test statistic, whether the null hypothesis was rejected
+ * at the given significance level, and the alpha used.
+ */
 export interface GoodnessOfFitResult {
   /** Test statistic. */
   statistic: number;
@@ -231,14 +312,27 @@ export interface GoodnessOfFitResult {
 /**
  * Anderson-Darling test for goodness of fit.
  *
- * Tests H₀: the data come from the specified continuous distribution.
+ * Tests H0: the data come from the specified continuous distribution.
+ * The Anderson-Darling test gives more weight to the tails than the
+ * Kolmogorov-Smirnov test, making it more powerful for detecting
+ * departures in the distribution tails.
  *
- * The statistic is  A² = −n − (1/n) Σᵢ (2i−1)[ln F(yᵢ) + ln(1 − F(y_{n+1−i}))]
- * where y₁ ≤ … ≤ yₙ are the sorted data and F is the hypothesised CDF.
+ * The statistic is:
+ *   A^2 = -n - (1/n) * sum_i (2i - 1) * [ln F(y_i) + ln(1 - F(y_{n+1-i}))]
+ * where y_1 <= ... <= y_n are the sorted data and F is the hypothesized CDF.
  *
- * @param data  Sample data.
- * @param distribution  Hypothesised continuous distribution (must have `cdf`).
- * @param alpha  Significance level (default 0.05).
+ * @param data - Sample data (at least 2 observations)
+ * @param distribution - Hypothesized continuous distribution (must have a `cdf` method)
+ * @param alpha - Significance level (default 0.05). Supported values: 0.15, 0.10, 0.05, 0.025, 0.01
+ * @returns A {@link GoodnessOfFitResult} with the test statistic and rejection decision
+ * @throws {Error} If fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const result = andersonDarlingTest(data, new Normal(0, 1));
+ * console.log(result.statistic); // A^2 statistic
+ * console.log(result.rejected);  // true if data likely not from N(0,1)
+ * ```
  */
 export function andersonDarlingTest(
   data: number[],
@@ -278,16 +372,28 @@ export function andersonDarlingTest(
 }
 
 /**
- * Cramér-von Mises test for goodness of fit.
+ * Cramer-von Mises test for goodness of fit.
  *
- * Tests H₀: the data come from the specified continuous distribution.
+ * Tests H0: the data come from the specified continuous distribution.
+ * Measures the integrated squared difference between the empirical and
+ * hypothesized CDFs.
  *
- * The statistic is  W² = Σᵢ [F(yᵢ) − (2i−1)/(2n)]² + 1/(12n)
- * where y₁ ≤ … ≤ yₙ are the sorted data and F is the hypothesised CDF.
+ * The statistic is:
+ *   W^2 = sum_i [ F(y_i) - (2i - 1) / (2n) ]^2 + 1/(12n)
+ * where y_1 <= ... <= y_n are the sorted data and F is the hypothesized CDF.
  *
- * @param data  Sample data.
- * @param distribution  Hypothesised continuous distribution (must have `cdf`).
- * @param alpha  Significance level (default 0.05).
+ * @param data - Sample data (at least 2 observations)
+ * @param distribution - Hypothesized continuous distribution (must have a `cdf` method)
+ * @param alpha - Significance level (default 0.05). Supported values: 0.15, 0.10, 0.05, 0.025, 0.01
+ * @returns A {@link GoodnessOfFitResult} with the test statistic and rejection decision
+ * @throws {Error} If fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const result = cramerVonMisesTest(data, new Normal(0, 1));
+ * console.log(result.statistic); // W^2 statistic
+ * console.log(result.rejected);  // true if data likely not from N(0,1)
+ * ```
  */
 export function cramerVonMisesTest(
   data: number[],

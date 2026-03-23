@@ -4,6 +4,10 @@ import { solveLinearSystem, invertMatrix, normalCdf } from "./utils/linalg";
 
 /**
  * Regression summary table with coefficient statistics.
+ *
+ * Similar to R's `summary(lm(...))` output, containing coefficient estimates
+ * with standard errors, t-statistics, and p-values, plus model-level statistics
+ * (R-squared, adjusted R-squared, F-statistic, residual standard error).
  */
 export interface RegressionSummary {
   coefficients: CoefficientRow[];
@@ -16,6 +20,12 @@ export interface RegressionSummary {
   p: number;
 }
 
+/**
+ * A single row in the regression coefficient table.
+ *
+ * Contains the coefficient name, point estimate, standard error,
+ * t-statistic, and two-sided p-value for testing H0: coefficient = 0.
+ */
 export interface CoefficientRow {
   name: string;
   estimate: number;
@@ -179,7 +189,10 @@ export function regressionSummary(
 }
 
 /**
- * Residual diagnostics for a regression model.
+ * Residual diagnostics for evaluating regression model assumptions.
+ *
+ * Includes raw and standardized residuals, the Durbin-Watson statistic
+ * for autocorrelation detection, and the Jarque-Bera test for normality.
  */
 export interface ResidualDiagnostics {
   residuals: number[];
@@ -189,13 +202,31 @@ export interface ResidualDiagnostics {
 }
 
 /**
- * Compute residual diagnostics.
+ * Compute residual diagnostics for a regression model.
  *
- * @param observed - Observed values
- * @param predicted - Predicted/fitted values
+ * Computes raw residuals (observed - predicted), standardized residuals
+ * (z-scored), the Durbin-Watson statistic for detecting autocorrelation
+ * (values near 2 suggest no autocorrelation), and the Jarque-Bera test
+ * for residual normality.
+ *
+ * The Durbin-Watson statistic is: DW = sum((e_t - e_{t-1})^2) / sum(e_t^2).
+ * The Jarque-Bera statistic is: JB = (n/6) * (S^2 + (K-3)^2/4) where
+ * S is skewness and K is kurtosis of the standardized residuals.
+ *
+ * @param observed - Observed/actual values
+ * @param predicted - Predicted/fitted values (same length as observed)
  * @returns A {@link ResidualDiagnostics} object with residuals, standardized residuals,
  *   Durbin-Watson statistic, and Jarque-Bera normality test
- * @throws If observed and predicted have different lengths or fewer than 3 observations
+ * @throws {Error} If observed and predicted have different lengths
+ * @throws {Error} If fewer than 3 observations
+ * @throws {Error} If any value is not finite
+ *
+ * @example
+ * ```ts
+ * const diag = residualDiagnostics([1, 2, 3, 4], [1.1, 1.9, 3.2, 3.8]);
+ * console.log(diag.durbinWatson);               // ~2.0 (no autocorrelation)
+ * console.log(diag.jarqueBera.normalityLikely); // true
+ * ```
  */
 export function residualDiagnostics(
   observed: Dataset,
@@ -262,11 +293,24 @@ export function residualDiagnostics(
 /**
  * Variance Inflation Factor (VIF) for multicollinearity detection.
  *
- * VIF > 5 suggests moderate multicollinearity, VIF > 10 is severe.
+ * For each feature j, VIF_j = 1 / (1 - R_j^2) where R_j^2 is the
+ * R-squared from regressing feature j on all other features.
  *
- * @param X - Design matrix (n x p), without intercept
- * @returns An array of VIF values, one per feature
- * @throws If fewer than 2 features or fewer observations than features
+ * Rules of thumb: VIF > 5 suggests moderate multicollinearity,
+ * VIF > 10 indicates severe multicollinearity.
+ *
+ * @param X - Design matrix (n x p, without intercept column, p >= 2)
+ * @returns An array of VIF values, one per feature (VIF >= 1 always)
+ * @throws {Error} If X is empty
+ * @throws {Error} If fewer than 2 features
+ * @throws {Error} If n <= p (not enough observations)
+ * @throws {Error} If any value is not finite
+ *
+ * @example
+ * ```ts
+ * const vifs = vif([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]);
+ * console.log(vifs); // [VIF_x1, VIF_x2] -- high values suggest collinearity
+ * ```
  */
 export function vif(X: number[][]): number[] {
   const n = X.length;

@@ -26,10 +26,17 @@ export function euclidean(a: Dataset, b: Dataset): number {
 /**
  * Manhattan (city-block / L1) distance between two vectors.
  *
+ * d(a, b) = sum_i |a_i - b_i|
+ *
  * @param a - First vector
  * @param b - Second vector
- * @returns The L1 (Manhattan) distance between a and b
- * @throws If vectors are empty or have different lengths
+ * @returns The L1 (Manhattan) distance between a and b (non-negative)
+ * @throws {Error} If vectors are empty or have different lengths
+ *
+ * @example
+ * ```ts
+ * manhattan([1, 2, 3], [4, 5, 6]); // 9
+ * ```
  */
 export function manhattan(a: Dataset, b: Dataset): number {
   assertSameLength(a, b);
@@ -41,10 +48,17 @@ export function manhattan(a: Dataset, b: Dataset): number {
 /**
  * Chebyshev (L-infinity) distance between two vectors.
  *
+ * d(a, b) = max_i |a_i - b_i|
+ *
  * @param a - First vector
  * @param b - Second vector
- * @returns The L-infinity (Chebyshev) distance between a and b
- * @throws If vectors are empty or have different lengths
+ * @returns The L-infinity (Chebyshev) distance between a and b (non-negative)
+ * @throws {Error} If vectors are empty or have different lengths
+ *
+ * @example
+ * ```ts
+ * chebyshev([1, 2, 3], [4, 6, 5]); // 4 (max of |1-4|, |2-6|, |3-5|)
+ * ```
  */
 export function chebyshev(a: Dataset, b: Dataset): number {
   assertSameLength(a, b);
@@ -56,11 +70,23 @@ export function chebyshev(a: Dataset, b: Dataset): number {
 /**
  * Minkowski distance between two vectors.
  *
+ * d(a, b) = ( sum_i |a_i - b_i|^p )^{1/p}
+ *
+ * Special cases: p=1 gives Manhattan distance, p=2 gives Euclidean distance,
+ * p=Infinity gives Chebyshev distance.
+ *
  * @param a - First vector
  * @param b - Second vector
- * @param p - The order of the Minkowski metric (p >= 1)
- * @returns The Minkowski distance of order p between a and b
- * @throws If vectors are empty, have different lengths, or p < 1
+ * @param p - The order of the Minkowski metric (p >= 1, or Infinity)
+ * @returns The Minkowski distance of order p between a and b (non-negative)
+ * @throws {Error} If vectors are empty or have different lengths
+ * @throws {Error} If p < 1 or is not finite (except Infinity)
+ *
+ * @example
+ * ```ts
+ * minkowski([1, 2], [4, 6], 2); // same as euclidean
+ * minkowski([1, 2], [4, 6], 1); // same as manhattan
+ * ```
  */
 export function minkowski(a: Dataset, b: Dataset, p: number): number {
   assertSameLength(a, b);
@@ -156,15 +182,27 @@ export function jaccardDistance(a: number[], b: number[]): number {
 /**
  * Mahalanobis distance of a point from a distribution.
  *
- * Uses the inverse covariance matrix to account for correlations and
- * scale differences between dimensions. Uses LAPACK when available for
- * the matrix inversion.
+ * Computes d = sqrt( (x - mu)' * Sigma^{-1} * (x - mu) ) where mu is the
+ * sample mean vector and Sigma is the sample covariance matrix of the data.
  *
- * @param point - The point to measure
- * @param data - Dataset as array of observation vectors (each row is an observation)
+ * This distance accounts for correlations and scale differences between
+ * dimensions, unlike Euclidean distance which treats all dimensions equally.
+ *
+ * @param point - The point to measure (length p)
+ * @param data - Dataset as array of observation vectors (n x p, each row is an observation)
  * @returns The Mahalanobis distance (non-negative scalar)
- * @throws If data has fewer than 2 observations, observations have inconsistent dimensionality,
- *   n <= p (more dimensions than observations), or the covariance matrix is singular
+ * @throws {Error} If data has fewer than 2 observations
+ * @throws {Error} If observations have inconsistent dimensionality
+ * @throws {Error} If n <= p (not enough observations for covariance estimation)
+ * @throws {Error} If the covariance matrix is singular
+ * @throws {Error} If any value is not finite
+ *
+ * @example
+ * ```ts
+ * const data = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+ * const dist = mahalanobis([2, 0], data);
+ * console.log(dist); // distance accounting for the data's covariance structure
+ * ```
  */
 export function mahalanobis(point: Dataset, data: Dataset[]): number {
   if (data.length < 2) throw new Error("Need at least 2 observations");

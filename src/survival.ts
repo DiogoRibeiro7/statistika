@@ -4,7 +4,9 @@
 
 import { normalQuantile } from "./utils/linalg";
 
-/** A single survival observation. */
+/**
+ * A single survival observation (time-to-event or censored).
+ */
 export interface SurvivalObservation {
   /** Time to event or censoring */
   time: number;
@@ -12,7 +14,9 @@ export interface SurvivalObservation {
   event: boolean;
 }
 
-/** A point on the Kaplan-Meier survival curve. */
+/**
+ * A point on the Kaplan-Meier survival curve.
+ */
 export interface SurvivalPoint {
   time: number;
   survival: number;
@@ -24,7 +28,9 @@ export interface SurvivalPoint {
   nCensored: number;
 }
 
-/** Result of a Kaplan-Meier estimation. */
+/**
+ * Result of a Kaplan-Meier estimation.
+ */
 export interface KaplanMeierResult {
   /** Survival curve points */
   curve: SurvivalPoint[];
@@ -40,7 +46,9 @@ export interface KaplanMeierResult {
   survivalAt: (t: number) => number;
 }
 
-/** Result of a log-rank test comparing two survival curves. */
+/**
+ * Result of a log-rank test comparing two survival curves.
+ */
 export interface LogRankResult {
   chiSquared: number;
   pValue: number;
@@ -48,7 +56,9 @@ export interface LogRankResult {
   rejected: boolean;
 }
 
-/** A point on the Nelson-Aalen cumulative hazard curve. */
+/**
+ * A point on the Nelson-Aalen cumulative hazard curve.
+ */
 export interface CumulativeHazardPoint {
   time: number;
   hazard: number;
@@ -57,7 +67,9 @@ export interface CumulativeHazardPoint {
   nEvents: number;
 }
 
-/** Result of a Nelson-Aalen estimation. */
+/**
+ * Result of a Nelson-Aalen cumulative hazard estimation.
+ */
 export interface NelsonAalenResult {
   curve: CumulativeHazardPoint[];
   n: number;
@@ -68,12 +80,28 @@ export interface NelsonAalenResult {
 /**
  * Kaplan-Meier survival estimator.
  *
- * Computes the non-parametric survival function from time-to-event data
- * with right censoring. Confidence intervals use Greenwood's formula
- * with log transformation.
+ * Computes the non-parametric survival function S(t) = prod_{t_i <= t} (1 - d_i / n_i)
+ * from time-to-event data with right censoring. Confidence intervals use
+ * Greenwood's formula with log transformation for better coverage near 0 and 1.
  *
  * @param observations - Array of {time, event} observations
  * @param confidence - Confidence level (default 0.95)
+ * @returns KaplanMeierResult with survival curve, median survival, and a function to evaluate S(t)
+ * @throws Error if observations array is empty
+ * @throws Error if confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const obs = [
+ *   { time: 1, event: true },
+ *   { time: 2, event: false },
+ *   { time: 3, event: true },
+ *   { time: 5, event: true },
+ * ];
+ * const result = kaplanMeier(obs);
+ * result.survivalAt(2.5); // S(2.5) — survival probability at t=2.5
+ * result.medianSurvival;  // time at which S(t) first drops to 0.5
+ * ```
  */
 export function kaplanMeier(
   observations: SurvivalObservation[],
@@ -199,9 +227,24 @@ export function kaplanMeier(
 /**
  * Nelson-Aalen estimator of the cumulative hazard function.
  *
- * H(t) = sum_{t_i <= t} d_i / n_i
+ * H(t) = sum_{t_i <= t} d_i / n_i where d_i is the number of events at
+ * time t_i and n_i is the number at risk. Standard errors are computed
+ * as sqrt(sum(d_i / n_i^2)).
  *
  * @param observations - Array of {time, event} observations
+ * @returns NelsonAalenResult with cumulative hazard curve and a function to evaluate H(t)
+ * @throws Error if observations array is empty
+ *
+ * @example
+ * ```ts
+ * const obs = [
+ *   { time: 1, event: true },
+ *   { time: 2, event: true },
+ *   { time: 3, event: false },
+ * ];
+ * const result = nelsonAalen(obs);
+ * result.hazardAt(2); // cumulative hazard at time 2
+ * ```
  */
 export function nelsonAalen(
   observations: SurvivalObservation[],
@@ -270,11 +313,25 @@ export function nelsonAalen(
 /**
  * Log-rank test for comparing two survival curves.
  *
- * Tests H0: the two groups have identical survival functions.
+ * Tests H0: the two groups have identical survival functions. The test
+ * statistic is chi-squared with 1 degree of freedom:
+ * chi^2 = (sum(O_1 - E_1))^2 / sum(V) where O_1 are observed events
+ * in group 1, E_1 are expected events under H0, and V is the
+ * hypergeometric variance at each event time.
  *
  * @param group1 - Survival data for group 1
  * @param group2 - Survival data for group 2
- * @param alpha - Significance level
+ * @param alpha - Significance level (default 0.05)
+ * @returns LogRankResult with chi-squared statistic, p-value, df, and rejection decision
+ * @throws Error if either group is empty
+ *
+ * @example
+ * ```ts
+ * const control = [{ time: 1, event: true }, { time: 3, event: true }];
+ * const treatment = [{ time: 5, event: true }, { time: 7, event: false }];
+ * const result = logRankTest(control, treatment);
+ * // result.pValue — significance of difference between survival curves
+ * ```
  */
 export function logRankTest(
   group1: SurvivalObservation[],

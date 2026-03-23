@@ -13,6 +13,9 @@ import { normalCdf } from "./utils/linalg";
 
 // ── Weighted Descriptive Statistics ───────────────────────────────────────
 
+/**
+ * Result of weighted descriptive statistics computation.
+ */
 export interface WeightedStatsResult {
   /** Weighted mean. */
   mean: number;
@@ -29,8 +32,23 @@ export interface WeightedStatsResult {
 /**
  * Compute weighted descriptive statistics.
  *
- * @param data  Observations (length n).
- * @param weights  Non-negative weights (length n).
+ * The weighted mean is sum(w_i * x_i) / sum(w_i). The variance uses
+ * Bessel-corrected reliability weights: Var = sum(w_i * (x_i - x_bar)^2) /
+ * (sum(w_i) - sum(w_i^2) / sum(w_i)).
+ *
+ * @param data - Observations (length n)
+ * @param weights - Non-negative weights (length n)
+ * @returns WeightedStatsResult with mean, variance, stdDev, effective sample size, and sum of weights
+ * @throws Error if data and weights have different lengths
+ * @throws Error if no observations provided
+ * @throws Error if any weight is negative
+ * @throws Error if sum of weights is zero
+ *
+ * @example
+ * ```ts
+ * const result = weightedStats([1, 2, 3], [1, 2, 1]);
+ * // result.mean — weighted mean = (1+4+3)/4 = 2
+ * ```
  */
 export function weightedStats(
   data: number[],
@@ -78,9 +96,17 @@ export function weightedStats(
 /**
  * Weighted quantile using linear interpolation.
  *
- * @param data  Observations (length n).
- * @param weights  Non-negative weights (length n).
- * @param p  Quantile level in [0, 1].
+ * Sorts the data by value and walks through accumulated weights until
+ * the target cumulative weight p * sum(w) is reached.
+ *
+ * @param data - Observations (length n)
+ * @param weights - Non-negative weights (length n)
+ * @param p - Quantile level in [0, 1]
+ * @returns The weighted quantile value
+ * @throws Error if p is not in [0, 1]
+ * @throws Error if data and weights have different lengths
+ * @throws Error if no observations provided
+ * @throws Error if sum of weights is zero
  */
 export function weightedQuantile(
   data: number[],
@@ -114,6 +140,9 @@ export function weightedQuantile(
 
 // ── Horvitz-Thompson Estimator ────────────────────────────────────────────
 
+/**
+ * Result of a Horvitz-Thompson estimation.
+ */
 export interface HorvitzThompsonResult {
   /** Estimated population total: Σ yᵢ / πᵢ. */
   total: number;
@@ -130,10 +159,25 @@ export interface HorvitzThompsonResult {
 /**
  * Horvitz-Thompson estimator for population total and mean.
  *
- * @param y  Observed values (length n, the sample).
- * @param inclusionProbs  First-order inclusion probabilities πᵢ (length n).
- * @param populationSize  Known population size N.
- * @param alpha  Significance level for CI (default 0.05).
+ * Estimates the population total as T_hat = sum(y_i / pi_i) where pi_i
+ * is the first-order inclusion probability. Variance is estimated using
+ * the with-replacement approximation: V_hat = sum((1-pi_i)/pi_i^2 * y_i^2).
+ *
+ * @param y - Observed values (length n, the sample)
+ * @param inclusionProbs - First-order inclusion probabilities pi_i (length n, each in (0, 1])
+ * @param populationSize - Known population size N
+ * @param alpha - Significance level for CI (default 0.05)
+ * @returns HorvitzThompsonResult with total, mean, variance, SE, and confidence interval
+ * @throws Error if y and inclusionProbs have different lengths
+ * @throws Error if populationSize < sample size
+ * @throws Error if any inclusion probability is not in (0, 1]
+ *
+ * @example
+ * ```ts
+ * const result = horvitzThompson([10, 20, 30], [0.1, 0.2, 0.3], 100);
+ * // result.total — estimated population total
+ * // result.mean — estimated population mean (total / N)
+ * ```
  */
 export function horvitzThompson(
   y: number[],
@@ -186,6 +230,9 @@ export function horvitzThompson(
 
 // ── Design Effect ─────────────────────────────────────────────────────────
 
+/**
+ * Result of a design effect (DEFF) computation.
+ */
 export interface DesignEffectResult {
   /** Design effect: Var_design / Var_SRS. */
   deff: number;
@@ -201,11 +248,14 @@ export interface DesignEffectResult {
  * Compute the design effect (DEFF) comparing complex survey variance
  * to simple random sampling variance.
  *
- * Uses Kish's approximation: DEFF ≈ 1 + cv²(w), where cv(w) is the
- * coefficient of variation of the weights.
+ * Uses Kish's approximation: DEFF = n * sum(w_i^2) / (sum(w_i))^2.
+ * A DEFF > 1 means the complex design is less efficient than SRS.
  *
- * @param data  Observations (length n).
- * @param weights  Survey weights (length n).
+ * @param data - Observations (length n)
+ * @param weights - Survey weights (length n)
+ * @returns DesignEffectResult with DEFF, effective sample size, and variance estimates
+ * @throws Error if data and weights have different lengths
+ * @throws Error if fewer than 2 observations
  */
 export function designEffect(
   data: number[],
@@ -245,6 +295,9 @@ export function designEffect(
 
 // ── Ratio Estimator ───────────────────────────────────────────────────────
 
+/**
+ * Result of a ratio estimation.
+ */
 export interface RatioEstimatorResult {
   /** Ratio estimate R̂ = Σwᵢyᵢ / Σwᵢxᵢ. */
   ratio: number;
@@ -259,12 +312,18 @@ export interface RatioEstimatorResult {
 /**
  * Ratio estimator for survey data.
  *
- * R̂ = (Σ wᵢ yᵢ) / (Σ wᵢ xᵢ)
+ * R_hat = (sum w_i * y_i) / (sum w_i * x_i). The population total of y
+ * is estimated as R_hat * X_total. Variance uses the linearized Taylor
+ * series approximation on residuals e_i = y_i - R_hat * x_i.
  *
- * @param y  Study variable (length n).
- * @param x  Auxiliary variable (length n).
- * @param weights  Survey weights (length n).
- * @param xTotal  Known population total of x (for estimating Y total).
+ * @param y - Study variable (length n)
+ * @param x - Auxiliary variable (length n)
+ * @param weights - Survey weights (length n)
+ * @param xTotal - Known population total of x (for estimating Y total)
+ * @returns RatioEstimatorResult with ratio, estimated total, variance, and standard error
+ * @throws Error if y, x, and weights have different lengths
+ * @throws Error if fewer than 2 observations
+ * @throws Error if weighted sum of x is zero
  */
 export function ratioEstimator(
   y: number[],
@@ -315,10 +374,16 @@ export function ratioEstimator(
  * Adjust survey weights to match known population margins
  * (post-stratification).
  *
- * @param weights  Original survey weights (length n).
- * @param strata  Stratum assignment for each observation (length n, integer-coded).
- * @param populationCounts  Known population count for each stratum (indexed by stratum code).
- * @returns Adjusted weights (length n).
+ * For each stratum s, the adjustment factor is:
+ * f_s = N_s / sum(w_i for i in stratum s),
+ * and adjusted weights are w_i * f_s.
+ *
+ * @param weights - Original survey weights (length n)
+ * @param strata - Stratum assignment for each observation (length n, integer-coded)
+ * @param populationCounts - Known population count for each stratum (indexed by stratum code)
+ * @returns Adjusted weights (length n) that sum to known population totals within each stratum
+ * @throws Error if weights and strata have different lengths
+ * @throws Error if any stratum in the data lacks a corresponding population count
  */
 export function postStratify(
   weights: number[],

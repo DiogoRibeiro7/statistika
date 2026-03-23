@@ -14,21 +14,39 @@ import { normalCdf } from "./utils/linalg";
 
 // ── Information criteria ──────────────────────────────────────────────────
 
+/**
+ * Information criteria for model comparison.
+ *
+ * Lower values indicate better model fit (penalised for complexity).
+ */
 export interface InformationCriteria {
-  /** Akaike Information Criterion: −2ℓ + 2k. */
+  /** Akaike Information Criterion: -2*logLik + 2*k. */
   aic: number;
-  /** Corrected AIC for small samples: AIC + 2k(k+1)/(n−k−1). */
+  /** Corrected AIC for small samples: AIC + 2*k*(k+1)/(n-k-1). Infinity if n <= k+1. */
   aicc: number;
-  /** Bayesian Information Criterion: −2ℓ + k ln(n). */
+  /** Bayesian Information Criterion: -2*logLik + k*ln(n). */
   bic: number;
 }
 
 /**
  * Compute AIC, AICc, and BIC for a fitted model.
  *
- * @param logLikelihood  Maximised log-likelihood ℓ.
- * @param k  Number of estimated parameters (including intercept).
- * @param n  Number of observations.
+ * - AIC = -2*logLik + 2*k
+ * - AICc = AIC + 2*k*(k+1)/(n-k-1)  (corrected for small samples)
+ * - BIC = -2*logLik + k*ln(n)
+ *
+ * @param logLikelihood - Maximised log-likelihood (must be finite)
+ * @param k - Number of estimated parameters, including intercept (must be >= 1)
+ * @param n - Number of observations (must be >= 1)
+ * @returns An {@link InformationCriteria} object with AIC, AICc, and BIC
+ * @throws {Error} If k < 1, n < 1, or logLikelihood is not finite
+ *
+ * @example
+ * ```ts
+ * const ic = informationCriteria(-150, 3, 100);
+ * console.log(ic.aic);  // 306
+ * console.log(ic.bic);  // ~313.8
+ * ```
  */
 export function informationCriteria(
   logLikelihood: number,
@@ -53,31 +71,44 @@ export function informationCriteria(
 
 // ── Likelihood ratio test ─────────────────────────────────────────────────
 
+/**
+ * Result of a likelihood ratio test comparing two nested models.
+ */
 export interface LRTResult {
-  /** Test statistic: −2(ℓ_restricted − ℓ_full). */
+  /** Test statistic D = -2*(logLik_restricted - logLik_full), clamped to >= 0. */
   statistic: number;
-  /** Degrees of freedom (difference in parameter counts). */
+  /** Degrees of freedom (difference in parameter counts between models). */
   degreesOfFreedom: number;
-  /** p-value from chi-squared distribution. */
+  /** p-value from chi-squared distribution under H0. */
   pValue: number;
-  /** Whether the null (restricted model is adequate) is rejected at α = 0.05. */
+  /** Whether the null hypothesis (restricted model is adequate) is rejected at the given alpha. */
   rejected: boolean;
 }
 
 /**
  * Likelihood ratio test for nested models.
  *
- * Tests H₀: the restricted (simpler) model is adequate
- * against H₁: the full model fits significantly better.
+ * Tests H0: the restricted (simpler) model is adequate,
+ * against H1: the full model fits significantly better.
  *
- * The test statistic D = −2(ℓ_restricted − ℓ_full) follows a χ²
- * distribution with df = k_full − k_restricted under H₀.
+ * The test statistic D = -2*(logLik_restricted - logLik_full) follows a chi-squared
+ * distribution with df = k_full - k_restricted under H0.
  *
- * @param logLikRestricted  Log-likelihood of the restricted (null) model.
- * @param logLikFull  Log-likelihood of the full (alternative) model.
- * @param dfRestricted  Number of parameters in the restricted model.
- * @param dfFull  Number of parameters in the full model.
- * @param alpha  Significance level (default 0.05).
+ * @param logLikRestricted - Log-likelihood of the restricted (null) model
+ * @param logLikFull - Log-likelihood of the full (alternative) model
+ * @param dfRestricted - Number of parameters in the restricted model
+ * @param dfFull - Number of parameters in the full model (must be > dfRestricted)
+ * @param alpha - Significance level for rejection decision (default: 0.05)
+ * @returns An {@link LRTResult} with test statistic, df, p-value, and rejection decision
+ * @throws {Error} If log-likelihood values are not finite
+ * @throws {Error} If dfFull <= dfRestricted
+ *
+ * @example
+ * ```ts
+ * const result = likelihoodRatioTest(-120, -115, 3, 5);
+ * console.log(result.statistic); // 10
+ * console.log(result.rejected);  // true if p < 0.05
+ * ```
  */
 export function likelihoodRatioTest(
   logLikRestricted: number,
@@ -114,16 +145,19 @@ export function likelihoodRatioTest(
 
 // ── Vuong test ────────────────────────────────────────────────────────────
 
+/**
+ * Result of a Vuong test comparing two non-nested models.
+ */
 export interface VuongResult {
-  /** Vuong test statistic (z-score). */
+  /** Vuong test statistic (z-score). Positive favours model 1, negative favours model 2. */
   statistic: number;
   /** Two-sided p-value. */
   pValue: number;
   /**
-   * Interpretation:
-   * - `"model1"` — Model 1 fits significantly better.
-   * - `"model2"` — Model 2 fits significantly better.
-   * - `"indistinguishable"` — Neither model is significantly better.
+   * Interpretation of which model is preferred:
+   * - `"model1"` -- Model 1 fits significantly better.
+   * - `"model2"` -- Model 2 fits significantly better.
+   * - `"indistinguishable"` -- Neither model is significantly better at the given alpha.
    */
   preferred: "model1" | "model2" | "indistinguishable";
 }
@@ -135,19 +169,28 @@ export interface VuongResult {
  * same data, tests whether one model is closer to the true data-generating
  * process than the other.
  *
- * The test statistic is  V = (1/√n) Σ mᵢ / s_m,  where
- * mᵢ = log f₁(yᵢ | θ̂₁) − log f₂(yᵢ | θ̂₂)  and  s_m is the sample
- * standard deviation of the mᵢ.  Under H₀ (models are equally close
+ * The test statistic is V = (sqrt(n) * mean(m)) / sd(m), where
+ * m_i = logLik1[i] - logLik2[i]. Under H0 (models are equally close
  * to the truth), V ~ N(0, 1).
  *
- * An optional Schwarz correction adjusts for different numbers of
- * parameters: the mean of mᵢ is shifted by −(k₁ − k₂) ln(n) / (2n).
+ * An optional Schwarz correction adjusts for different parameter counts:
+ * the mean of m_i is shifted by -(k1 - k2) * ln(n) / (2n).
  *
- * @param logLik1  Pointwise log-likelihoods from model 1 (length n).
- * @param logLik2  Pointwise log-likelihoods from model 2 (length n).
- * @param options.k1  Number of parameters in model 1 (for Schwarz correction).
- * @param options.k2  Number of parameters in model 2 (for Schwarz correction).
- * @param options.alpha  Significance level (default 0.05).
+ * @param logLik1 - Pointwise log-likelihoods from model 1 (length n)
+ * @param logLik2 - Pointwise log-likelihoods from model 2 (length n)
+ * @param options - Test configuration
+ * @param options.k1 - Number of parameters in model 1 (for Schwarz correction)
+ * @param options.k2 - Number of parameters in model 2 (for Schwarz correction)
+ * @param options.alpha - Significance level (default: 0.05)
+ * @returns A {@link VuongResult} with z-statistic, p-value, and preferred model
+ * @throws {Error} If logLik1 and logLik2 have different lengths
+ * @throws {Error} If fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const result = vuongTest(logLiks1, logLiks2, { k1: 3, k2: 5 });
+ * console.log(result.preferred); // "model1", "model2", or "indistinguishable"
+ * ```
  */
 export function vuongTest(
   logLik1: number[],
@@ -227,22 +270,28 @@ export function vuongTest(
 
 // ── Model comparison helpers ──────────────────────────────────────────────
 
+/**
+ * A single entry in a model comparison table.
+ *
+ * Includes information criteria, delta-AIC from the best model,
+ * and the Akaike weight (evidence ratio).
+ */
 export interface ModelComparisonEntry {
-  /** Model name/label. */
+  /** Model name or label. */
   name: string;
-  /** Log-likelihood. */
+  /** Maximised log-likelihood. */
   logLikelihood: number;
-  /** Number of parameters. */
+  /** Number of estimated parameters. */
   k: number;
-  /** AIC. */
+  /** Akaike Information Criterion. */
   aic: number;
-  /** AICc. */
+  /** Corrected AIC for small samples. */
   aicc: number;
-  /** BIC. */
+  /** Bayesian Information Criterion. */
   bic: number;
-  /** Δ AIC from best model. */
+  /** Difference in AIC from the best (lowest-AIC) model. */
   deltaAIC: number;
-  /** Akaike weight (evidence ratio). */
+  /** Akaike weight: exp(-0.5*deltaAIC) / sum(exp(-0.5*deltaAIC)). Weights sum to 1. */
   weight: number;
 }
 
@@ -251,10 +300,23 @@ export interface ModelComparisonEntry {
  *
  * Returns a table sorted by AIC with Akaike weights (evidence ratios),
  * making it easy to see how much support each model has relative to
- * the best model.
+ * the best model. The weight represents the probability that a given
+ * model is the best approximating model in the set.
  *
- * @param models  Array of { name, logLikelihood, k }.
- * @param n  Number of observations (shared across all models).
+ * @param models - Array of model descriptors with name, logLikelihood, and k (parameter count)
+ * @param n - Number of observations (shared across all models)
+ * @returns Array of {@link ModelComparisonEntry} sorted by AIC (best first)
+ * @throws {Error} If no models are provided or n < 1
+ *
+ * @example
+ * ```ts
+ * const table = compareModels([
+ *   { name: "linear", logLikelihood: -120, k: 2 },
+ *   { name: "quadratic", logLikelihood: -115, k: 3 },
+ * ], 100);
+ * console.log(table[0].name);   // best model by AIC
+ * console.log(table[0].weight); // Akaike weight
+ * ```
  */
 export function compareModels(
   models: Array<{ name: string; logLikelihood: number; k: number }>,
