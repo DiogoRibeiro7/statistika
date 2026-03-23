@@ -88,6 +88,7 @@ export const gaussian: GLMFamily = {
   logLikelihood: (y, mu) => -0.5 * (y - mu) ** 2,
 };
 
+/** Binomial family with logit link. V(mu) = mu*(1-mu). For binary/proportion responses. */
 export const binomial: GLMFamily = {
   name: "binomial",
   link: logitLink,
@@ -98,6 +99,7 @@ export const binomial: GLMFamily = {
   },
 };
 
+/** Poisson family with log link. V(mu) = mu. For count data. */
 export const poisson: GLMFamily = {
   name: "poisson",
   link: logLink,
@@ -108,6 +110,7 @@ export const poisson: GLMFamily = {
   },
 };
 
+/** Gamma family with inverse link. V(mu) = mu^2. For positive continuous data. */
 export const gamma: GLMFamily = {
   name: "gamma",
   link: inverseLink,
@@ -119,7 +122,10 @@ export const gamma: GLMFamily = {
 };
 
 /**
- * Result of a GLM fit.
+ * Result of fitting a Generalized Linear Model.
+ *
+ * Contains estimated coefficients, standard errors, significance tests,
+ * goodness-of-fit measures, and a prediction function.
  */
 export interface GLMResult {
   /** Estimated coefficients (including intercept as first element). */

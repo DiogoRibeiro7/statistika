@@ -351,10 +351,30 @@ export function linearRegressionCI(
  * Confidence intervals for multiple regression coefficients
  * (intercept and all feature coefficients).
  *
- * @param X - Feature matrix (n observations x p features)
- * @param y - Response values (n observations)
- * @param confidence - Confidence level (default 0.95)
- * @param featureNames - Optional names for features
+ * Fits y = X * beta + epsilon via OLS (with an added intercept column),
+ * then computes standard errors from the (X'X)^{-1} matrix, t-statistics,
+ * p-values, and confidence intervals using the t-distribution with
+ * n - (p+1) degrees of freedom.
+ *
+ * @param X - Feature matrix (n observations x p features, without intercept column)
+ * @param y - Response values (n observations, must match number of rows in X)
+ * @param confidence - Confidence level in (0, 1) (default 0.95)
+ * @param featureNames - Optional names for features (default: "x1", "x2", ...)
+ * @returns Array of {@link RegressionCoefficientCI} objects, one for the intercept
+ *   plus one for each feature
+ * @throws {Error} If X and y have different numbers of observations
+ * @throws {Error} If n <= p + 1 (not enough observations for the model)
+ * @throws {Error} If the X'X matrix is singular
+ * @throws {Error} If confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const X = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]];
+ * const y = [2, 4, 6, 8, 10];
+ * const cis = multipleRegressionCI(X, y, 0.95, ["height", "weight"]);
+ * console.log(cis[0].name); // "intercept"
+ * console.log(cis[1].name); // "height"
+ * ```
  */
 export function multipleRegressionCI(
   X: number[][],

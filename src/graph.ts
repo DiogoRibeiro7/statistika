@@ -10,14 +10,34 @@
 
 // ── Graph Data Structure ──────────────────────────────────────────────────
 
+/**
+ * Graph data structure using adjacency list representation.
+ *
+ * Supports both directed and undirected graphs with optional edge weights.
+ * Provides methods for graph construction, property queries, BFS traversal,
+ * connected component detection, and metric computation.
+ *
+ * @example
+ * ```ts
+ * const g = Graph.fromEdgeList([[0, 1], [1, 2], [2, 0]]);
+ * console.log(g.nodeCount);  // 3
+ * console.log(g.edgeCount);  // 3
+ * console.log(g.density());  // 1.0 (complete graph)
+ * ```
+ */
 export class Graph {
-  /** Adjacency list: node → [neighbour, ...]. */
+  /** Adjacency list: node to set of neighbours. */
   private _adj: Map<number, Set<number>>;
-  /** Edge weights. Key = "i,j" (ordered). */
+  /** Edge weights. Key = "u,v" string. */
   private _weights: Map<string, number>;
   /** Whether the graph is directed. */
   readonly directed: boolean;
 
+  /**
+   * Create a new empty graph.
+   *
+   * @param directed - If true, edges are directed (default: false for undirected)
+   */
   constructor(directed = false) {
     this._adj = new Map();
     this._weights = new Map();
@@ -27,7 +47,16 @@ export class Graph {
   // ── Factories ───────────────────────────────────────────────────────────
 
   /**
-   * Create from an edge list: [[source, target, weight?], ...].
+   * Create a graph from an edge list.
+   *
+   * @param edges - Array of [source, target, weight?] tuples (weight defaults to 1)
+   * @param directed - Whether the graph is directed (default: false)
+   * @returns A new Graph with all specified edges
+   *
+   * @example
+   * ```ts
+   * const g = Graph.fromEdgeList([[0, 1, 2.5], [1, 2]], false);
+   * ```
    */
   static fromEdgeList(
     edges: [number, number, number?][],
@@ -41,8 +70,14 @@ export class Graph {
   }
 
   /**
-   * Create from an adjacency matrix (0 = no edge).
-   * Diagonal is ignored.
+   * Create a graph from an adjacency matrix.
+   *
+   * Non-zero entries indicate edges; the value becomes the edge weight.
+   * Diagonal entries are ignored.
+   *
+   * @param matrix - Square adjacency matrix (n x n)
+   * @param directed - Whether the graph is directed (default: false)
+   * @returns A new Graph with nodes 0 to n-1
    */
   static fromAdjacencyMatrix(matrix: number[][], directed = false): Graph {
     const n = matrix.length;
@@ -61,10 +96,24 @@ export class Graph {
 
   // ── Mutation ────────────────────────────────────────────────────────────
 
+  /**
+   * Add a node to the graph (no-op if already present).
+   *
+   * @param node - Node identifier
+   */
   addNode(node: number): void {
     if (!this._adj.has(node)) this._adj.set(node, new Set());
   }
 
+  /**
+   * Add an edge (and its endpoints) to the graph.
+   *
+   * For undirected graphs, the reverse edge is also added.
+   *
+   * @param u - Source node
+   * @param v - Target node
+   * @param weight - Edge weight (default: 1)
+   */
   addEdge(u: number, v: number, weight = 1): void {
     this.addNode(u);
     this.addNode(v);
@@ -78,14 +127,17 @@ export class Graph {
 
   // ── Properties ──────────────────────────────────────────────────────────
 
+  /** All node identifiers, sorted in ascending order. */
   get nodes(): number[] {
     return [...this._adj.keys()].sort((a, b) => a - b);
   }
 
+  /** Total number of nodes in the graph. */
   get nodeCount(): number {
     return this._adj.size;
   }
 
+  /** Total number of edges (each undirected edge counted once). */
   get edgeCount(): number {
     let count = 0;
     for (const [, neighbors] of this._adj) count += neighbors.size;

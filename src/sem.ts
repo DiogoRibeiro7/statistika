@@ -430,6 +430,18 @@ export function cfa(
 
 /**
  * Compute SEM fit indices from observed and model-implied covariance matrices.
+ *
+ * Computes the maximum likelihood discrepancy function
+ * F_ML = tr(S * Sigma^{-1}) + ln|Sigma| - ln|S| - p, then derives
+ * chi-squared = (n-1) * F_ML. Also computes RMSEA, CFI, TLI, SRMR, AIC, and BIC.
+ *
+ * @param observed - Observed covariance (or correlation) matrix (p x p)
+ * @param implied - Model-implied covariance matrix (p x p)
+ * @param n - Number of observations
+ * @param nIndicators - Number of observed indicators (p)
+ * @param nFactors - Number of latent factors
+ * @param nEstimatedParams - Number of freely estimated parameters
+ * @returns SEMFitIndices with chi-squared, df, p-value, RMSEA, CFI, TLI, SRMR, AIC, and BIC
  */
 export function computeFitIndices(
   observed: number[][],
