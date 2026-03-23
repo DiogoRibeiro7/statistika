@@ -29,3 +29,4 @@ export * from "./dimensionality";
 export * from "./resampling";
 export * from "./mixture-models";
 export * from "./model-selection";
+export * from "./distribution-fitting";

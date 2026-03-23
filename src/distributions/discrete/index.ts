@@ -5,3 +5,4 @@ export { Geometric } from "./geometric";
 export { DiscreteUniform } from "./discrete-uniform";
 export { NegativeBinomial } from "./negative-binomial";
 export { Hypergeometric } from "./hypergeometric";
+export { ZeroInflatedPoisson } from "./zero-inflated-poisson";
