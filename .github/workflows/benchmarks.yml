@@ -2,6 +2,11 @@ name: Benchmarks
 
 on:
   pull_request:
+    branches: [develop, main]
+    paths:
+      - "src/**"
+      - "benchmark/**"
+  push:
     branches: [main]
     paths:
       - "src/**"

@@ -1,9 +1,7 @@
-name: CI
+name: Main
 
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
 
 permissions:
@@ -41,6 +39,7 @@ jobs:
 
   coverage:
     name: Coverage
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,8 +68,22 @@ jobs:
       - run: yarn install --frozen-lockfile
       - run: yarn build:ts
 
+  build-native:
+    name: Build (Native)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - name: Install gfortran
+        run: sudo apt-get update && sudo apt-get install -y gfortran
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+
   docs:
-    name: Docs
+    name: Build Docs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,7 +103,6 @@ jobs:
   deploy-docs:
     name: Deploy Docs to GitHub Pages
     needs: docs
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -110,17 +122,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-  build-native:
-    name: Build (Native)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: yarn
-      - name: Install gfortran
-        run: sudo apt-get update && sudo apt-get install -y gfortran
-      - run: yarn install --frozen-lockfile
-      - run: yarn build
