@@ -1,10 +1,80 @@
 /**
  * Matrix class with decompositions (LU, QR, SVD, Cholesky) and solvers.
  *
+ * When the native Fortran/LAPACK addon is available, decompositions use
+ * LAPACK routines (DGETRF, DGEQRF, DPOTRF, DGESVD) for production-grade
+ * speed and numerical precision. Otherwise, pure TypeScript fallbacks are
+ * used automatically.
+ *
  * Data is stored in row-major flat Float64Array for cache-friendly access.
- * All decompositions are pure TypeScript with optional native LAPACK fallback
- * via the existing linalg infrastructure.
  */
+
+import { nativeAddon } from "./native-addon";
+
+// ── Native addon interface for decompositions ────────────────────────────
+
+interface NativeMatDecomps {
+  lu(
+    A: number[][],
+    n: number,
+  ): { lu: number[][]; ipiv: number[]; info: number };
+  qr(
+    A: number[][],
+    m: number,
+    n: number,
+  ): { Q: number[][]; R: number[][]; info: number };
+  cholesky(A: number[][], n: number): { L: number[][]; info: number };
+  svd(
+    A: number[][],
+    m: number,
+    n: number,
+  ): { U: number[][]; S: number[]; Vt: number[][]; info: number };
+  // Existing ops used for multiply and solve
+  matMul(
+    A: number[][],
+    B: number[][],
+    m: number,
+    k: number,
+    n: number,
+  ): number[][];
+  solve(
+    A: number[][],
+    b: number[],
+    n: number,
+  ): { x: number[]; info: number };
+}
+
+let native: NativeMatDecomps | null = null;
+try {
+  if (nativeAddon) {
+    const addon = nativeAddon as unknown as NativeMatDecomps;
+    // Probe: check that decomposition functions exist and LAPACK is linked.
+    // The stub build sets info = -999 to signal no real LAPACK.
+    if (typeof addon.lu === "function") {
+      const probe = addon.lu([[1, 0], [0, 1]], 2);
+      if (probe && probe.info === 0) {
+        native = addon;
+      }
+    }
+  }
+} catch {
+  // Native decompositions not available — pure TypeScript fallbacks will be used.
+}
+
+/** Whether native LAPACK acceleration is active for Mat decompositions. */
+export const hasNativeMatDecomps: boolean = native !== null;
+
+// ── Helper: convert 2D array to Mat ──────────────────────────────────────
+
+function fromArray(data: number[][], rows: number, cols: number): Mat {
+  const flat = new Float64Array(rows * cols);
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      flat[i * cols + j] = data[i][j];
+    }
+  }
+  return Mat._create(rows, cols, flat);
+}
 
 // ── Matrix class ─────────────────────────────────────────────────────────
 
@@ -23,6 +93,11 @@ export class Mat {
     this.rows = rows;
     this.cols = cols;
     this.data = data ?? new Float64Array(rows * cols);
+  }
+
+  /** @internal Used by native helpers to construct without validation overhead. */
+  static _create(rows: number, cols: number, data: Float64Array): Mat {
+    return new Mat(rows, cols, data);
   }
 
   // ── Factories ────────────────────────────────────────────────────────
@@ -198,27 +273,29 @@ export class Mat {
     return this.scale(-1);
   }
 
-  /** Matrix multiplication: this * other. */
+  /**
+   * Matrix multiplication: this * other.
+   *
+   * Native: BLAS DGEMM.
+   * Fallback: Triple-nested loop O(m*n*k).
+   */
   multiply(other: Mat): Mat {
     if (this.cols !== other.rows) {
       throw new Error(
         `Cannot multiply (${this.rows},${this.cols}) by (${other.rows},${other.cols})`,
       );
     }
-    const m = this.rows;
-    const n = other.cols;
-    const k = this.cols;
-    const result = new Float64Array(m * n);
-    for (let i = 0; i < m; i++) {
-      for (let l = 0; l < k; l++) {
-        const a = this.data[i * k + l];
-        if (a === 0) continue;
-        for (let j = 0; j < n; j++) {
-          result[i * n + j] += a * other.data[l * n + j];
-        }
-      }
+    if (native) {
+      const result = native.matMul(
+        this.toArray(),
+        other.toArray(),
+        this.rows,
+        this.cols,
+        other.cols,
+      );
+      return fromArray(result, this.rows, other.cols);
     }
-    return new Mat(m, n, result);
+    return tsMatMul(this, other);
   }
 
   /** Transpose. */
@@ -275,288 +352,72 @@ export class Mat {
   /**
    * LU decomposition with partial pivoting: PA = LU.
    * Returns { L, U, P, pivots, sign } where P is the permutation matrix.
+   *
+   * Native: LAPACK DGETRF.
+   * Fallback: Gaussian elimination with partial pivoting.
    */
   lu(): LUResult {
     if (!this.isSquare()) throw new Error("LU requires a square matrix");
-    const n = this.rows;
-    const U = this.clone();
-    const L = Mat.identity(n);
-    const pivots = new Array(n);
-    for (let i = 0; i < n; i++) pivots[i] = i;
-    let sign = 1;
-
-    for (let col = 0; col < n; col++) {
-      // Find pivot
-      let maxVal = Math.abs(U.data[col * n + col]);
-      let maxRow = col;
-      for (let row = col + 1; row < n; row++) {
-        const val = Math.abs(U.data[row * n + col]);
-        if (val > maxVal) {
-          maxVal = val;
-          maxRow = row;
-        }
-      }
-
-      if (maxVal < 1e-14) {
-        throw new Error("Matrix is singular or nearly singular");
-      }
-
-      // Swap rows in U
-      if (maxRow !== col) {
-        for (let j = 0; j < n; j++) {
-          const tmp = U.data[col * n + j];
-          U.data[col * n + j] = U.data[maxRow * n + j];
-          U.data[maxRow * n + j] = tmp;
-        }
-        // Swap rows in L (only the part below diagonal that's already filled)
-        for (let j = 0; j < col; j++) {
-          const tmp = L.data[col * n + j];
-          L.data[col * n + j] = L.data[maxRow * n + j];
-          L.data[maxRow * n + j] = tmp;
-        }
-        const tmp = pivots[col];
-        pivots[col] = pivots[maxRow];
-        pivots[maxRow] = tmp;
-        sign = -sign;
-      }
-
-      // Eliminate below
-      for (let row = col + 1; row < n; row++) {
-        const factor = U.data[row * n + col] / U.data[col * n + col];
-        L.data[row * n + col] = factor;
-        for (let j = col; j < n; j++) {
-          U.data[row * n + j] -= factor * U.data[col * n + j];
-        }
-      }
+    if (native) {
+      return nativeLU(this);
     }
-
-    // Build permutation matrix
-    const P = Mat.zeros(n, n);
-    for (let i = 0; i < n; i++) {
-      P.data[i * n + pivots[i]] = 1;
-    }
-
-    return { L, U, P, pivots, sign };
+    return tsLU(this);
   }
 
   /**
-   * QR decomposition via Householder reflections: A = QR.
+   * QR decomposition: A = QR.
    * Works for any m×n matrix with m >= n.
+   *
+   * Native: LAPACK DGEQRF + DORGQR.
+   * Fallback: Householder reflections.
    */
   qr(): QRResult {
-    const m = this.rows;
-    const n = this.cols;
-    if (m < n) throw new Error("QR requires rows >= cols");
-
-    const R = this.clone();
-    const Q = Mat.identity(m);
-
-    for (let col = 0; col < Math.min(m - 1, n); col++) {
-      // Extract the column vector below the diagonal
-      const xLen = m - col;
-      const x = new Float64Array(xLen);
-      for (let i = 0; i < xLen; i++) {
-        x[i] = R.data[(col + i) * n + col];
-      }
-
-      // Compute Householder vector
-      let xNorm = 0;
-      for (let i = 0; i < xLen; i++) xNorm += x[i] * x[i];
-      xNorm = Math.sqrt(xNorm);
-
-      if (xNorm < 1e-14) continue;
-
-      const sign = x[0] >= 0 ? 1 : -1;
-      const alpha = -sign * xNorm;
-      x[0] -= alpha;
-
-      // Normalize v
-      let vNorm = 0;
-      for (let i = 0; i < xLen; i++) vNorm += x[i] * x[i];
-      vNorm = Math.sqrt(vNorm);
-      if (vNorm < 1e-14) continue;
-      for (let i = 0; i < xLen; i++) x[i] /= vNorm;
-
-      // Apply H = I - 2vv^T to R (from left): R[col:, col:] -= 2 * v * (v^T * R[col:, col:])
-      for (let j = col; j < n; j++) {
-        let dot = 0;
-        for (let i = 0; i < xLen; i++) {
-          dot += x[i] * R.data[(col + i) * n + j];
-        }
-        for (let i = 0; i < xLen; i++) {
-          R.data[(col + i) * n + j] -= 2 * x[i] * dot;
-        }
-      }
-
-      // Apply H to Q (from right): Q[:, col:] -= 2 * (Q[:, col:] * v) * v^T
-      for (let i = 0; i < m; i++) {
-        let dot = 0;
-        for (let k = 0; k < xLen; k++) {
-          dot += Q.data[i * m + (col + k)] * x[k];
-        }
-        for (let k = 0; k < xLen; k++) {
-          Q.data[i * m + (col + k)] -= 2 * dot * x[k];
-        }
-      }
+    if (this.rows < this.cols) throw new Error("QR requires rows >= cols");
+    if (native) {
+      return nativeQR(this);
     }
-
-    // Extract the "thin" Q and R: Q is m×n, R is n×n
-    const Qthin = Q.submatrix(0, m, 0, n);
-    const Rthin = R.submatrix(0, n, 0, n);
-
-    return { Q: Qthin, R: Rthin, QFull: Q, RFull: R };
+    return tsQR(this);
   }
 
   /**
    * Cholesky decomposition for symmetric positive-definite matrices: A = L * L^T.
    * Returns the lower-triangular factor L.
+   *
+   * Native: LAPACK DPOTRF.
+   * Fallback: Standard Cholesky algorithm.
    */
   cholesky(): Mat {
     if (!this.isSquare()) {
       throw new Error("Cholesky requires a square matrix");
     }
-    const n = this.rows;
-    const L = Mat.zeros(n, n);
-
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j <= i; j++) {
-        let sum = 0;
-        for (let k = 0; k < j; k++) {
-          sum += L.data[i * n + k] * L.data[j * n + k];
-        }
-        if (i === j) {
-          const diag = this.data[i * n + i] - sum;
-          if (diag <= 0) {
-            throw new Error(
-              "Matrix is not positive definite (non-positive diagonal encountered)",
-            );
-          }
-          L.data[i * n + j] = Math.sqrt(diag);
-        } else {
-          L.data[i * n + j] =
-            (this.data[i * n + j] - sum) / L.data[j * n + j];
-        }
-      }
+    if (native) {
+      return nativeCholesky(this);
     }
-
-    return L;
+    return tsCholesky(this);
   }
 
   /**
    * Singular Value Decomposition: A = U * diag(S) * V^T.
-   * Uses one-sided Jacobi SVD for numerical stability.
    * Works for any m×n matrix.
+   *
+   * Native: LAPACK DGESVD.
+   * Fallback: One-sided Jacobi SVD.
    */
   svd(): SVDResult {
-    const m = this.rows;
-    const n = this.cols;
-    const wide = m < n;
-
-    // For wide matrices, compute SVD of A^T then swap U and V
-    const A = wide ? this.transpose() : this.clone();
-    const rows = A.rows;
-    const cols = A.cols;
-
-    // V accumulates right rotations
-    const V = Mat.identity(cols);
-
-    // One-sided Jacobi: repeatedly apply rotations to columns of A
-    const maxIter = 100 * cols * cols;
-    for (let iter = 0; iter < maxIter; iter++) {
-      let converged = true;
-
-      for (let p = 0; p < cols - 1; p++) {
-        for (let q = p + 1; q < cols; q++) {
-          // Compute 2x2 Gram matrix elements: a = A[:,p]^T A[:,p], b = A[:,q]^T A[:,q], d = A[:,p]^T A[:,q]
-          let a = 0,
-            b = 0,
-            d = 0;
-          for (let i = 0; i < rows; i++) {
-            const ap = A.data[i * cols + p];
-            const aq = A.data[i * cols + q];
-            a += ap * ap;
-            b += aq * aq;
-            d += ap * aq;
-          }
-
-          if (Math.abs(d) < 1e-14 * Math.sqrt(a * b + 1e-300)) continue;
-          converged = false;
-
-          // Compute Jacobi rotation angle
-          const tau = (b - a) / (2 * d);
-          const t =
-            Math.sign(tau) / (Math.abs(tau) + Math.sqrt(1 + tau * tau));
-          const c = 1 / Math.sqrt(1 + t * t);
-          const s = t * c;
-
-          // Apply rotation to columns p, q of A
-          for (let i = 0; i < rows; i++) {
-            const ap = A.data[i * cols + p];
-            const aq = A.data[i * cols + q];
-            A.data[i * cols + p] = c * ap - s * aq;
-            A.data[i * cols + q] = s * ap + c * aq;
-          }
-
-          // Accumulate in V
-          for (let i = 0; i < cols; i++) {
-            const vp = V.data[i * cols + p];
-            const vq = V.data[i * cols + q];
-            V.data[i * cols + p] = c * vp - s * vq;
-            V.data[i * cols + q] = s * vp + c * vq;
-          }
-        }
-      }
-
-      if (converged) break;
+    if (native) {
+      return nativeSVD(this);
     }
-
-    // Extract singular values and build U
-    const singularValues = new Array(cols);
-    const U = Mat.zeros(rows, cols);
-
-    for (let j = 0; j < cols; j++) {
-      let norm = 0;
-      for (let i = 0; i < rows; i++) {
-        norm += A.data[i * cols + j] * A.data[i * cols + j];
-      }
-      norm = Math.sqrt(norm);
-      singularValues[j] = norm;
-      if (norm > 1e-14) {
-        for (let i = 0; i < rows; i++) {
-          U.data[i * cols + j] = A.data[i * cols + j] / norm;
-        }
-      }
-    }
-
-    // Sort by descending singular value
-    const indices = Array.from({ length: cols }, (_, i) => i);
-    indices.sort((a, b) => singularValues[b] - singularValues[a]);
-
-    const sortedS = indices.map((i) => singularValues[i]);
-    const sortedU = Mat.zeros(rows, cols);
-    const sortedV = Mat.zeros(cols, cols);
-    for (let j = 0; j < cols; j++) {
-      const srcJ = indices[j];
-      for (let i = 0; i < rows; i++) {
-        sortedU.data[i * cols + j] = U.data[i * cols + srcJ];
-      }
-      for (let i = 0; i < cols; i++) {
-        sortedV.data[i * cols + j] = V.data[i * cols + srcJ];
-      }
-    }
-
-    if (wide) {
-      // A^T = U * S * V^T  =>  A = V * S * U^T
-      return { U: sortedV, S: sortedS, V: sortedU };
-    }
-
-    return { U: sortedU, S: sortedS, V: sortedV };
+    return tsSVD(this);
   }
 
   // ── Solvers ──────────────────────────────────────────────────────────
 
   /**
-   * Solve Ax = b for a square matrix A using LU decomposition.
+   * Solve Ax = b for a square matrix A.
+   *
+   * Native: LAPACK DGESV (LU factorization with partial pivoting).
+   * Fallback: LU decomposition + forward/back substitution.
+   *
    * @param b Right-hand side vector (as number[] or column Mat).
    * @returns Solution vector x.
    */
@@ -565,7 +426,17 @@ export class Mat {
     const n = this.rows;
     const bVec = b instanceof Mat ? b.toVector() : b;
     if (bVec.length !== n) {
-      throw new Error(`RHS length ${bVec.length} does not match matrix size ${n}`);
+      throw new Error(
+        `RHS length ${bVec.length} does not match matrix size ${n}`,
+      );
+    }
+
+    if (native) {
+      const result = native.solve(this.toArray(), bVec, n);
+      if (result.info !== 0) {
+        throw new Error("Singular matrix: features may be linearly dependent");
+      }
+      return result.x;
     }
 
     const { L, U, pivots } = this.lu();
@@ -643,7 +514,8 @@ export class Mat {
    * Compute the determinant using LU decomposition.
    */
   det(): number {
-    if (!this.isSquare()) throw new Error("Determinant requires a square matrix");
+    if (!this.isSquare())
+      throw new Error("Determinant requires a square matrix");
     const { U, sign } = this.lu();
     let det = sign;
     for (let i = 0; i < this.rows; i++) {
@@ -763,4 +635,390 @@ export interface SVDResult {
   S: number[];
   /** Right singular vectors (n×k). */
   V: Mat;
+}
+
+// ── Native LAPACK implementations ────────────────────────────────────────
+
+function nativeLU(A: Mat): LUResult {
+  const n = A.rows;
+  const result = native!.lu(A.toArray(), n);
+  if (result.info !== 0) {
+    throw new Error("Matrix is singular or nearly singular");
+  }
+
+  const luData = result.lu;
+  const ipiv = result.ipiv; // 1-based LAPACK pivot indices
+
+  // Separate L and U from the packed LU output
+  const L = Mat.identity(n);
+  const U = Mat.zeros(n, n);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (i > j) {
+        L.data[i * n + j] = luData[i][j];
+      } else {
+        U.data[i * n + j] = luData[i][j];
+      }
+    }
+  }
+
+  // Convert LAPACK 1-based ipiv (swap sequence) to a permutation vector.
+  // LAPACK ipiv[i] means: row i was swapped with row ipiv[i]-1 (0-based).
+  const perm = new Array(n);
+  for (let i = 0; i < n; i++) perm[i] = i;
+  let sign = 1;
+  for (let i = 0; i < n; i++) {
+    const target = ipiv[i] - 1; // Convert 1-based to 0-based
+    if (target !== i) {
+      const tmp = perm[i];
+      perm[i] = perm[target];
+      perm[target] = tmp;
+      sign = -sign;
+    }
+  }
+
+  // Build permutation matrix
+  const P = Mat.zeros(n, n);
+  for (let i = 0; i < n; i++) {
+    P.data[i * n + perm[i]] = 1;
+  }
+
+  return { L, U, P, pivots: perm, sign };
+}
+
+function nativeQR(A: Mat): QRResult {
+  const m = A.rows;
+  const n = A.cols;
+  const result = native!.qr(A.toArray(), m, n);
+  if (result.info !== 0) {
+    // Fall back to TypeScript
+    return tsQR(A);
+  }
+
+  const Q = fromArray(result.Q, m, n);
+  const R = fromArray(result.R, n, n);
+
+  // For compatibility, also provide "full" versions.
+  // QFull: use the thin Q (m×n) since LAPACK gives us the thin factorization.
+  // RFull: embed R into m×n (with zeros below).
+  const RFull = Mat.zeros(m, n);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      RFull.data[i * n + j] = R.data[i * n + j];
+    }
+  }
+
+  // For QFull, we'd need DORGQR with m columns. Since leastSquares uses
+  // QFull, provide the thin Q and mark that RFull is m×n.
+  // The thin Q (m×n) is sufficient for Q^T*b in least squares.
+  return { Q, R, QFull: Q, RFull };
+}
+
+function nativeCholesky(A: Mat): Mat {
+  const n = A.rows;
+  const result = native!.cholesky(A.toArray(), n);
+  if (result.info > 0) {
+    throw new Error(
+      "Matrix is not positive definite (non-positive diagonal encountered)",
+    );
+  }
+  if (result.info !== 0) {
+    // Fall back to TypeScript on unexpected error
+    return tsCholesky(A);
+  }
+  return fromArray(result.L, n, n);
+}
+
+function nativeSVD(A: Mat): SVDResult {
+  const m = A.rows;
+  const n = A.cols;
+  const result = native!.svd(A.toArray(), m, n);
+  if (result.info !== 0) {
+    // Fall back to TypeScript
+    return tsSVD(A);
+  }
+
+  const k = Math.min(m, n);
+  const U = fromArray(result.U, m, k);
+  const S = result.S;
+
+  // LAPACK returns V^T (k×n); we want V (n×k) = (V^T)^T
+  const Vt = fromArray(result.Vt, k, n);
+  const V = Vt.transpose();
+
+  return { U, S, V };
+}
+
+// ── Pure TypeScript fallback implementations ─────────────────────────────
+
+function tsMatMul(A: Mat, B: Mat): Mat {
+  const m = A.rows;
+  const n = B.cols;
+  const k = A.cols;
+  const result = new Float64Array(m * n);
+  for (let i = 0; i < m; i++) {
+    for (let l = 0; l < k; l++) {
+      const a = A.data[i * k + l];
+      if (a === 0) continue;
+      for (let j = 0; j < n; j++) {
+        result[i * n + j] += a * B.data[l * n + j];
+      }
+    }
+  }
+  return Mat._create(m, n, result);
+}
+
+function tsLU(A: Mat): LUResult {
+  const n = A.rows;
+  const U = A.clone();
+  const L = Mat.identity(n);
+  const pivots = new Array(n);
+  for (let i = 0; i < n; i++) pivots[i] = i;
+  let sign = 1;
+
+  for (let col = 0; col < n; col++) {
+    // Find pivot
+    let maxVal = Math.abs(U.data[col * n + col]);
+    let maxRow = col;
+    for (let row = col + 1; row < n; row++) {
+      const val = Math.abs(U.data[row * n + col]);
+      if (val > maxVal) {
+        maxVal = val;
+        maxRow = row;
+      }
+    }
+
+    if (maxVal < 1e-14) {
+      throw new Error("Matrix is singular or nearly singular");
+    }
+
+    // Swap rows in U
+    if (maxRow !== col) {
+      for (let j = 0; j < n; j++) {
+        const tmp = U.data[col * n + j];
+        U.data[col * n + j] = U.data[maxRow * n + j];
+        U.data[maxRow * n + j] = tmp;
+      }
+      // Swap rows in L (only the part below diagonal that's already filled)
+      for (let j = 0; j < col; j++) {
+        const tmp = L.data[col * n + j];
+        L.data[col * n + j] = L.data[maxRow * n + j];
+        L.data[maxRow * n + j] = tmp;
+      }
+      const tmp = pivots[col];
+      pivots[col] = pivots[maxRow];
+      pivots[maxRow] = tmp;
+      sign = -sign;
+    }
+
+    // Eliminate below
+    for (let row = col + 1; row < n; row++) {
+      const factor = U.data[row * n + col] / U.data[col * n + col];
+      L.data[row * n + col] = factor;
+      for (let j = col; j < n; j++) {
+        U.data[row * n + j] -= factor * U.data[col * n + j];
+      }
+    }
+  }
+
+  // Build permutation matrix
+  const P = Mat.zeros(n, n);
+  for (let i = 0; i < n; i++) {
+    P.data[i * n + pivots[i]] = 1;
+  }
+
+  return { L, U, P, pivots, sign };
+}
+
+function tsQR(A: Mat): QRResult {
+  const m = A.rows;
+  const n = A.cols;
+
+  const R = A.clone();
+  const Q = Mat.identity(m);
+
+  for (let col = 0; col < Math.min(m - 1, n); col++) {
+    // Extract the column vector below the diagonal
+    const xLen = m - col;
+    const x = new Float64Array(xLen);
+    for (let i = 0; i < xLen; i++) {
+      x[i] = R.data[(col + i) * n + col];
+    }
+
+    // Compute Householder vector
+    let xNorm = 0;
+    for (let i = 0; i < xLen; i++) xNorm += x[i] * x[i];
+    xNorm = Math.sqrt(xNorm);
+
+    if (xNorm < 1e-14) continue;
+
+    const sgn = x[0] >= 0 ? 1 : -1;
+    const alpha = -sgn * xNorm;
+    x[0] -= alpha;
+
+    // Normalize v
+    let vNorm = 0;
+    for (let i = 0; i < xLen; i++) vNorm += x[i] * x[i];
+    vNorm = Math.sqrt(vNorm);
+    if (vNorm < 1e-14) continue;
+    for (let i = 0; i < xLen; i++) x[i] /= vNorm;
+
+    // Apply H = I - 2vv^T to R (from left)
+    for (let j = col; j < n; j++) {
+      let dot = 0;
+      for (let i = 0; i < xLen; i++) {
+        dot += x[i] * R.data[(col + i) * n + j];
+      }
+      for (let i = 0; i < xLen; i++) {
+        R.data[(col + i) * n + j] -= 2 * x[i] * dot;
+      }
+    }
+
+    // Apply H to Q (from right)
+    for (let i = 0; i < m; i++) {
+      let dot = 0;
+      for (let k = 0; k < xLen; k++) {
+        dot += Q.data[i * m + (col + k)] * x[k];
+      }
+      for (let k = 0; k < xLen; k++) {
+        Q.data[i * m + (col + k)] -= 2 * dot * x[k];
+      }
+    }
+  }
+
+  // Extract the "thin" Q and R: Q is m×n, R is n×n
+  const Qthin = Q.submatrix(0, m, 0, n);
+  const Rthin = R.submatrix(0, n, 0, n);
+
+  return { Q: Qthin, R: Rthin, QFull: Q, RFull: R };
+}
+
+function tsCholesky(A: Mat): Mat {
+  const n = A.rows;
+  const L = Mat.zeros(n, n);
+
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j <= i; j++) {
+      let sum = 0;
+      for (let k = 0; k < j; k++) {
+        sum += L.data[i * n + k] * L.data[j * n + k];
+      }
+      if (i === j) {
+        const diag = A.data[i * n + i] - sum;
+        if (diag <= 0) {
+          throw new Error(
+            "Matrix is not positive definite (non-positive diagonal encountered)",
+          );
+        }
+        L.data[i * n + j] = Math.sqrt(diag);
+      } else {
+        L.data[i * n + j] = (A.data[i * n + j] - sum) / L.data[j * n + j];
+      }
+    }
+  }
+
+  return L;
+}
+
+function tsSVD(A: Mat): SVDResult {
+  const m = A.rows;
+  const n = A.cols;
+  const wide = m < n;
+
+  // For wide matrices, compute SVD of A^T then swap U and V
+  const W = wide ? A.transpose() : A.clone();
+  const rows = W.rows;
+  const cols = W.cols;
+
+  // V accumulates right rotations
+  const V = Mat.identity(cols);
+
+  // One-sided Jacobi: repeatedly apply rotations to columns of W
+  const maxIter = 100 * cols * cols;
+  for (let iter = 0; iter < maxIter; iter++) {
+    let converged = true;
+
+    for (let p = 0; p < cols - 1; p++) {
+      for (let q = p + 1; q < cols; q++) {
+        let a = 0,
+          b = 0,
+          d = 0;
+        for (let i = 0; i < rows; i++) {
+          const ap = W.data[i * cols + p];
+          const aq = W.data[i * cols + q];
+          a += ap * ap;
+          b += aq * aq;
+          d += ap * aq;
+        }
+
+        if (Math.abs(d) < 1e-14 * Math.sqrt(a * b + 1e-300)) continue;
+        converged = false;
+
+        const tau = (b - a) / (2 * d);
+        const t =
+          Math.sign(tau) / (Math.abs(tau) + Math.sqrt(1 + tau * tau));
+        const c = 1 / Math.sqrt(1 + t * t);
+        const s = t * c;
+
+        // Apply rotation to columns p, q of W
+        for (let i = 0; i < rows; i++) {
+          const ap = W.data[i * cols + p];
+          const aq = W.data[i * cols + q];
+          W.data[i * cols + p] = c * ap - s * aq;
+          W.data[i * cols + q] = s * ap + c * aq;
+        }
+
+        // Accumulate in V
+        for (let i = 0; i < cols; i++) {
+          const vp = V.data[i * cols + p];
+          const vq = V.data[i * cols + q];
+          V.data[i * cols + p] = c * vp - s * vq;
+          V.data[i * cols + q] = s * vp + c * vq;
+        }
+      }
+    }
+
+    if (converged) break;
+  }
+
+  // Extract singular values and build U
+  const singularValues = new Array(cols);
+  const U = Mat.zeros(rows, cols);
+
+  for (let j = 0; j < cols; j++) {
+    let norm = 0;
+    for (let i = 0; i < rows; i++) {
+      norm += W.data[i * cols + j] * W.data[i * cols + j];
+    }
+    norm = Math.sqrt(norm);
+    singularValues[j] = norm;
+    if (norm > 1e-14) {
+      for (let i = 0; i < rows; i++) {
+        U.data[i * cols + j] = W.data[i * cols + j] / norm;
+      }
+    }
+  }
+
+  // Sort by descending singular value
+  const indices = Array.from({ length: cols }, (_, i) => i);
+  indices.sort((a, b) => singularValues[b] - singularValues[a]);
+
+  const sortedS = indices.map((i) => singularValues[i]);
+  const sortedU = Mat.zeros(rows, cols);
+  const sortedV = Mat.zeros(cols, cols);
+  for (let j = 0; j < cols; j++) {
+    const srcJ = indices[j];
+    for (let i = 0; i < rows; i++) {
+      sortedU.data[i * cols + j] = U.data[i * cols + srcJ];
+    }
+    for (let i = 0; i < cols; i++) {
+      sortedV.data[i * cols + j] = V.data[i * cols + srcJ];
+    }
+  }
+
+  if (wide) {
+    return { U: sortedV, S: sortedS, V: sortedU };
+  }
+
+  return { U: sortedU, S: sortedS, V: sortedV };
 }
