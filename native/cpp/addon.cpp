@@ -55,6 +55,16 @@ extern "C" {
                               int* count_out, double* mean_out,
                               double* m2_out, double* min_out,
                               double* max_out);
+  void fortran_elastic_net_cd(const double* X, const double* yc,
+                               double* beta, double* residuals,
+                               const double* col_norms,
+                               double lambda, double alpha,
+                               int max_iter, double tol,
+                               const int* n, const int* p,
+                               int* iters_out);
+  void fortran_ridge_solve(const double* X, const double* yc,
+                            double* beta_out, double lambda,
+                            const int* n, const int* p, int* info);
 }
 
 // ==========================================================================
@@ -521,6 +531,87 @@ Napi::Value WelfordBatch(const Napi::CallbackInfo& info) {
 }
 
 // ==========================================================================
+// Feature selection wrappers (statistics.f90)
+// ==========================================================================
+
+// elasticNetCd(X: number[][], yc: number[], beta: number[], residuals: number[],
+//              colNorms: number[], lambda, alpha, maxIter, tol)
+// => { beta: number[], residuals: number[], iterations: number }
+Napi::Value ElasticNetCd(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[0].As<Napi::Array>().Length();
+  Napi::Array jsX = info[0].As<Napi::Array>();
+  Napi::Array jsYc = info[1].As<Napi::Array>();
+  Napi::Array jsBeta = info[2].As<Napi::Array>();
+  Napi::Array jsResid = info[3].As<Napi::Array>();
+  Napi::Array jsColNorms = info[4].As<Napi::Array>();
+  double lambda = info[5].As<Napi::Number>().DoubleValue();
+  double alpha = info[6].As<Napi::Number>().DoubleValue();
+  int maxIter = info[7].As<Napi::Number>().Int32Value();
+  double tol = info[8].As<Napi::Number>().DoubleValue();
+
+  int p = jsX.Get(static_cast<uint32_t>(0)).As<Napi::Array>().Length();
+
+  auto X = jsMatrixToColMajor(env, jsX, n, p);
+  auto yc = jsArrayToVector(env, jsYc, n);
+  auto beta = jsArrayToVector(env, jsBeta, p);
+  auto residuals = jsArrayToVector(env, jsResid, n);
+  auto colNorms = jsArrayToVector(env, jsColNorms, p);
+  int itersOut = 0;
+
+  fortran_elastic_net_cd(X.data(), yc.data(), beta.data(), residuals.data(),
+                          colNorms.data(), lambda, alpha, maxIter, tol,
+                          &n, &p, &itersOut);
+
+  Napi::Object result = Napi::Object::New(env);
+
+  Napi::Array jsBetaOut = Napi::Array::New(env, p);
+  for (int i = 0; i < p; i++) {
+    jsBetaOut.Set(static_cast<uint32_t>(i), Napi::Number::New(env, beta[i]));
+  }
+  result.Set("beta", jsBetaOut);
+
+  Napi::Array jsResidOut = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResidOut.Set(static_cast<uint32_t>(i), Napi::Number::New(env, residuals[i]));
+  }
+  result.Set("residuals", jsResidOut);
+  result.Set("iterations", Napi::Number::New(env, itersOut));
+
+  return result;
+}
+
+// ridgeSolve(X: number[][], yc: number[], lambda: number)
+// => { beta: number[], info: number }
+Napi::Value RidgeSolve(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array jsX = info[0].As<Napi::Array>();
+  Napi::Array jsYc = info[1].As<Napi::Array>();
+  double lambda = info[2].As<Napi::Number>().DoubleValue();
+
+  int n = jsX.Length();
+  int p = jsX.Get(static_cast<uint32_t>(0)).As<Napi::Array>().Length();
+
+  auto X = jsMatrixToColMajor(env, jsX, n, p);
+  auto yc = jsArrayToVector(env, jsYc, n);
+  std::vector<double> betaOut(p);
+  int lapack_info = 0;
+
+  fortran_ridge_solve(X.data(), yc.data(), betaOut.data(), lambda,
+                       &n, &p, &lapack_info);
+
+  Napi::Object result = Napi::Object::New(env);
+  Napi::Array jsBeta = Napi::Array::New(env, p);
+  for (int i = 0; i < p; i++) {
+    jsBeta.Set(static_cast<uint32_t>(i), Napi::Number::New(env, betaOut[i]));
+  }
+  result.Set("beta", jsBeta);
+  result.Set("info", Napi::Number::New(env, lapack_info));
+
+  return result;
+}
+
+// ==========================================================================
 // Module initialization
 // ==========================================================================
 
@@ -556,6 +647,10 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("kdeGaussian", Napi::Function::New(env, KdeGaussian));
   exports.Set("weightedCrossProducts", Napi::Function::New(env, WeightedCrossProducts));
   exports.Set("welfordBatch", Napi::Function::New(env, WelfordBatch));
+
+  // Feature selection (Fortran-accelerated)
+  exports.Set("elasticNetCd", Napi::Function::New(env, ElasticNetCd));
+  exports.Set("ridgeSolve", Napi::Function::New(env, RidgeSolve));
 
   return exports;
 }

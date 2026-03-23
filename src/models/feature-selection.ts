@@ -12,6 +12,40 @@
 
 import { mean } from "../utils/descriptive";
 import { solveLinearSystem } from "../utils/linalg";
+import { nativeAddon } from "../utils/native-addon";
+
+// ── Native interface ──────────────────────────────────────────────────────
+
+interface NativeFeatureSelection {
+  elasticNetCd(
+    X: number[][],
+    yc: number[],
+    beta: number[],
+    residuals: number[],
+    colNorms: number[],
+    lambda: number,
+    alpha: number,
+    maxIter: number,
+    tol: number,
+  ): { beta: number[]; residuals: number[]; iterations: number };
+  ridgeSolve(
+    X: number[][],
+    yc: number[],
+    lambda: number,
+  ): { beta: number[]; info: number };
+}
+
+let native: NativeFeatureSelection | null = null;
+try {
+  if (nativeAddon && typeof nativeAddon.elasticNetCd === "function") {
+    native = nativeAddon as unknown as NativeFeatureSelection;
+  }
+} catch {
+  // Fallback to TypeScript
+}
+
+/** Whether native feature selection acceleration is available. */
+export const hasNativeFeatureSelection = native !== null;
 
 // ── Result types ──────────────────────────────────────────────────────────
 
@@ -212,29 +246,39 @@ export function ridgeRegression(
   const yc = new Array(n);
   for (let i = 0; i < n; i++) yc[i] = y[i] - yMean;
 
-  // Build (Xs'Xs + λI) and Xs'yc
-  const XtX: number[][] = Array.from({ length: p }, () =>
-    new Array(p).fill(0),
-  );
-  const Xty = new Array(p).fill(0);
+  let betaStd: number[];
 
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < p; j++) {
-      Xty[j] += Xs[i][j] * yc[i];
-      for (let k = j; k < p; k++) {
-        XtX[j][k] += Xs[i][j] * Xs[i][k];
+  if (native) {
+    const result = native.ridgeSolve(Xs, yc, lambda);
+    if (result.info !== 0) {
+      throw new Error("Ridge solve failed (singular system)");
+    }
+    betaStd = result.beta;
+  } else {
+    // Build (Xs'Xs + λI) and Xs'yc
+    const XtX: number[][] = Array.from({ length: p }, () =>
+      new Array(p).fill(0),
+    );
+    const Xty = new Array(p).fill(0);
+
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < p; j++) {
+        Xty[j] += Xs[i][j] * yc[i];
+        for (let k = j; k < p; k++) {
+          XtX[j][k] += Xs[i][j] * Xs[i][k];
+        }
       }
     }
-  }
-  // Symmetrise and add penalty
-  for (let j = 0; j < p; j++) {
-    for (let k = j + 1; k < p; k++) {
-      XtX[k][j] = XtX[j][k];
+    // Symmetrise and add penalty
+    for (let j = 0; j < p; j++) {
+      for (let k = j + 1; k < p; k++) {
+        XtX[k][j] = XtX[j][k];
+      }
+      XtX[j][j] += lambda;
     }
-    XtX[j][j] += lambda;
-  }
 
-  const betaStd = solveLinearSystem(XtX, Xty);
+    betaStd = solveLinearSystem(XtX, Xty);
+  }
 
   // Unstandardise
   const coefficients = new Array(p);
@@ -324,7 +368,7 @@ export function elasticNet(
   const yc = new Array(n);
   for (let i = 0; i < n; i++) yc[i] = y[i] - yMean;
 
-  // Precompute column norms (Xs'Xs diagonal, all = n after standardisation for unit-variance cols)
+  // Precompute column norms (Xs'Xs diagonal)
   const colNorms = new Array(p);
   for (let j = 0; j < p; j++) {
     let s = 0;
@@ -332,42 +376,57 @@ export function elasticNet(
     colNorms[j] = s;
   }
 
-  // Coordinate descent
-  const betaStd = new Array(p).fill(0);
-  const residuals = new Float64Array(yc);
-  let iterations = 0;
+  let betaStd: number[];
+  let iterations: number;
 
-  for (let iter = 0; iter < maxIterations; iter++) {
-    iterations = iter + 1;
-    let maxChange = 0;
+  if (native) {
+    // Fortran-accelerated coordinate descent
+    const initBeta = new Array(p).fill(0);
+    const initResiduals = Array.from(yc);
+    const result = native.elasticNetCd(
+      Xs, yc, initBeta, initResiduals, colNorms,
+      lambda, alpha, maxIterations, tolerance,
+    );
+    betaStd = result.beta;
+    iterations = result.iterations;
+  } else {
+    // TypeScript coordinate descent
+    betaStd = new Array(p).fill(0);
+    const residuals = new Float64Array(yc);
+    iterations = 0;
 
-    for (let j = 0; j < p; j++) {
-      const oldBeta = betaStd[j];
+    for (let iter = 0; iter < maxIterations; iter++) {
+      iterations = iter + 1;
+      let maxChange = 0;
 
-      // Partial residual dot product
-      let rho = 0;
-      for (let i = 0; i < n; i++) {
-        rho += Xs[i][j] * (residuals[i] + Xs[i][j] * oldBeta);
-      }
+      for (let j = 0; j < p; j++) {
+        const oldBeta = betaStd[j];
 
-      // Soft-threshold
-      const lambdaAlpha = lambda * alpha * n;
-      const lambdaL2 = lambda * (1 - alpha) * n;
-      const newBeta =
-        softThreshold(rho, lambdaAlpha) / (colNorms[j] + lambdaL2);
-
-      if (newBeta !== oldBeta) {
-        const diff = newBeta - oldBeta;
-        // Update residuals
+        // Partial residual dot product
+        let rho = 0;
         for (let i = 0; i < n; i++) {
-          residuals[i] -= Xs[i][j] * diff;
+          rho += Xs[i][j] * (residuals[i] + Xs[i][j] * oldBeta);
         }
-        betaStd[j] = newBeta;
-        maxChange = Math.max(maxChange, Math.abs(diff));
-      }
-    }
 
-    if (maxChange < tolerance) break;
+        // Soft-threshold
+        const lambdaAlpha = lambda * alpha * n;
+        const lambdaL2 = lambda * (1 - alpha) * n;
+        const newBeta =
+          softThreshold(rho, lambdaAlpha) / (colNorms[j] + lambdaL2);
+
+        if (newBeta !== oldBeta) {
+          const diff = newBeta - oldBeta;
+          // Update residuals
+          for (let i = 0; i < n; i++) {
+            residuals[i] -= Xs[i][j] * diff;
+          }
+          betaStd[j] = newBeta;
+          maxChange = Math.max(maxChange, Math.abs(diff));
+        }
+      }
+
+      if (maxChange < tolerance) break;
+    }
   }
 
   // Unstandardise
