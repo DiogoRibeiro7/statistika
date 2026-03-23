@@ -4,43 +4,54 @@ import { solveLinearSystem, invertMatrix, normalCdf, normalQuantile } from "./ut
 import { weightedCrossProducts } from "./utils/native-stats";
 
 /**
- * Link function for GLM.
+ * Link function for a Generalized Linear Model.
+ *
+ * Defines the relationship between the linear predictor eta and the
+ * conditional mean mu: g(mu) = eta, or equivalently mu = g^{-1}(eta).
  */
 export interface LinkFunction {
-  /** Link function g(mu). */
+  /** Link function g(mu) mapping the mean to the linear predictor scale. */
   link(mu: number): number;
-  /** Inverse link g^{-1}(eta). */
+  /** Inverse link g^{-1}(eta) mapping the linear predictor to the mean scale. */
   inverse(eta: number): number;
-  /** Derivative of inverse link. */
+  /** Derivative of the inverse link d(g^{-1})/d(eta), used in IRLS weighting. */
   derivative(eta: number): number;
 }
 
 /**
- * GLM family (distribution + canonical link).
+ * GLM family specifying the response distribution and canonical link function.
+ *
+ * Combines a link function with the variance function V(mu) and the
+ * log-likelihood contribution for the exponential family distribution.
  */
 export interface GLMFamily {
+  /** Name of the family (e.g. "gaussian", "binomial", "poisson", "gamma"). */
   name: string;
+  /** The link function relating the linear predictor to the mean. */
   link: LinkFunction;
-  /** Variance function V(mu). */
+  /** Variance function V(mu) defining how variance depends on the mean. */
   variance(mu: number): number;
-  /** Log-likelihood contribution for one observation. */
+  /** Log-likelihood contribution for a single observation (y, mu). */
   logLikelihood(y: number, mu: number): number;
 }
 
 // -- Link Functions ----------------------------------------------------------
 
+/** Identity link: g(mu) = mu. Canonical link for the Gaussian family. */
 export const identityLink: LinkFunction = {
   link: (mu) => mu,
   inverse: (eta) => eta,
   derivative: () => 1,
 };
 
+/** Log link: g(mu) = ln(mu). Canonical link for the Poisson family. */
 export const logLink: LinkFunction = {
   link: (mu) => Math.log(mu),
   inverse: (eta) => Math.exp(eta),
   derivative: (eta) => Math.exp(eta),
 };
 
+/** Logit link: g(mu) = ln(mu/(1-mu)). Canonical link for the Binomial family. */
 export const logitLink: LinkFunction = {
   link: (mu) => Math.log(mu / (1 - mu)),
   inverse: (eta) => 1 / (1 + Math.exp(-eta)),
@@ -50,6 +61,7 @@ export const logitLink: LinkFunction = {
   },
 };
 
+/** Probit link: g(mu) = Phi^{-1}(mu), where Phi is the standard normal CDF. */
 export const probitLink: LinkFunction = {
   link: (mu) => normalQuantile(mu),
   inverse: (eta) => normalCdf(eta),
@@ -59,6 +71,7 @@ export const probitLink: LinkFunction = {
   },
 };
 
+/** Inverse (reciprocal) link: g(mu) = 1/mu. Canonical link for the Gamma family. */
 export const inverseLink: LinkFunction = {
   link: (mu) => 1 / mu,
   inverse: (eta) => 1 / eta,
@@ -67,6 +80,7 @@ export const inverseLink: LinkFunction = {
 
 // -- GLM Families ------------------------------------------------------------
 
+/** Gaussian (normal) family with identity link. V(mu) = 1. */
 export const gaussian: GLMFamily = {
   name: "gaussian",
   link: identityLink,
@@ -74,6 +88,7 @@ export const gaussian: GLMFamily = {
   logLikelihood: (y, mu) => -0.5 * (y - mu) ** 2,
 };
 
+/** Binomial family with logit link. V(mu) = mu*(1-mu). For binary/proportion responses. */
 export const binomial: GLMFamily = {
   name: "binomial",
   link: logitLink,
@@ -84,6 +99,7 @@ export const binomial: GLMFamily = {
   },
 };
 
+/** Poisson family with log link. V(mu) = mu. For count data. */
 export const poisson: GLMFamily = {
   name: "poisson",
   link: logLink,
@@ -94,6 +110,7 @@ export const poisson: GLMFamily = {
   },
 };
 
+/** Gamma family with inverse link. V(mu) = mu^2. For positive continuous data. */
 export const gamma: GLMFamily = {
   name: "gamma",
   link: inverseLink,
@@ -105,7 +122,10 @@ export const gamma: GLMFamily = {
 };
 
 /**
- * Result of a GLM fit.
+ * Result of fitting a Generalized Linear Model.
+ *
+ * Contains estimated coefficients, standard errors, significance tests,
+ * goodness-of-fit measures, and a prediction function.
  */
 export interface GLMResult {
   /** Estimated coefficients (including intercept as first element). */

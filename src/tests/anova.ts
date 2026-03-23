@@ -12,8 +12,28 @@ function fPValue(f: number, d1: number, d2: number): number {
 }
 
 /**
- * One-way ANOVA: tests whether the means of k groups are all equal.
- * Input: array of datasets (one per group).
+ * Performs a one-way analysis of variance (ANOVA).
+ *
+ * Tests the null hypothesis that the population means of all k groups
+ * are equal. Partitions total variation into between-group and within-group
+ * components, and uses the F-distribution to compute a p-value.
+ *
+ * @param groups - Array of datasets, one per group (at least 2 groups required;
+ *   each group must have at least 1 observation; total observations must exceed
+ *   the number of groups)
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns An {@link AnovaResult} containing the F-statistic, p-value,
+ *   between/within degrees of freedom, sum of squares, mean squares,
+ *   and whether the null hypothesis is rejected
+ * @throws {Error} If fewer than 2 groups are provided
+ * @throws {Error} If any group has zero observations
+ * @throws {Error} If total observations do not exceed the number of groups
+ *
+ * @example
+ * ```ts
+ * const result = oneWayAnova([[5, 6, 7], [8, 9, 10], [3, 4, 5]]);
+ * console.log(result.fStatistic, result.pValue, result.rejected);
+ * ```
  */
 export function oneWayAnova(
   groups: Dataset[],

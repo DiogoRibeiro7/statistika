@@ -7,8 +7,22 @@ import { StudentT } from "./distributions/continuous/student-t";
 /**
  * Confidence interval for a population mean using the t-distribution.
  *
- * @param data - Sample data
- * @param confidence - Confidence level (default 0.95)
+ * Computes x_bar +/- t_{alpha/2, n-1} * s / sqrt(n), where s is the
+ * sample standard deviation and t is the critical value from Student's
+ * t-distribution with n-1 degrees of freedom.
+ *
+ * @param data - Sample data (must have at least 2 elements)
+ * @param confidence - Confidence level in (0, 1) (default 0.95)
+ * @returns A {@link ConfidenceInterval} with the estimate, bounds, and margin of error
+ * @throws {Error} If data has fewer than 2 elements
+ * @throws {Error} If confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const ci = meanCI([4.5, 5.1, 4.8, 5.3, 4.9]);
+ * console.log(ci.estimate); // 4.92
+ * console.log(`[${ci.lower}, ${ci.upper}]`); // 95% CI
+ * ```
  */
 export function meanCI(data: Dataset, confidence = 0.95): ConfidenceInterval {
   if (data.length < 2) {
@@ -37,9 +51,21 @@ export function meanCI(data: Dataset, confidence = 0.95): ConfidenceInterval {
  * Confidence interval for the difference of two independent means
  * using Welch's approximation for unequal variances.
  *
- * @param data1 - First sample
- * @param data2 - Second sample
- * @param confidence - Confidence level (default 0.95)
+ * Computes (x_bar1 - x_bar2) +/- t * SE, where SE = sqrt(s1^2/n1 + s2^2/n2)
+ * and degrees of freedom are estimated via the Welch-Satterthwaite equation.
+ *
+ * @param data1 - First sample (must have at least 2 elements)
+ * @param data2 - Second sample (must have at least 2 elements)
+ * @param confidence - Confidence level in (0, 1) (default 0.95)
+ * @returns A {@link ConfidenceInterval} for the difference (data1 mean - data2 mean)
+ * @throws {Error} If either dataset has fewer than 2 elements
+ * @throws {Error} If confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const ci = twoSampleMeanCI([5, 6, 7], [3, 4, 5]);
+ * console.log(ci.estimate); // 2.0 (difference in means)
+ * ```
  */
 export function twoSampleMeanCI(
   data1: Dataset,
@@ -84,9 +110,24 @@ export function twoSampleMeanCI(
 /**
  * Confidence interval for the difference of two paired means.
  *
- * @param data1 - First sample
- * @param data2 - Second sample (paired with data1)
- * @param confidence - Confidence level (default 0.95)
+ * Computes the pairwise differences d_i = data1[i] - data2[i], then applies
+ * a one-sample t-based confidence interval to those differences.
+ *
+ * @param data1 - First sample (must have at least 2 elements)
+ * @param data2 - Second sample, paired with data1 (must have same length as data1)
+ * @param confidence - Confidence level in (0, 1) (default 0.95)
+ * @returns A {@link ConfidenceInterval} for the mean paired difference
+ * @throws {Error} If datasets have different lengths
+ * @throws {Error} If datasets have fewer than 2 elements
+ * @throws {Error} If confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const before = [200, 210, 190, 205];
+ * const after  = [180, 195, 185, 190];
+ * const ci = pairedMeanCI(before, after);
+ * console.log(ci.estimate); // mean difference (positive = before > after)
+ * ```
  */
 export function pairedMeanCI(
   data1: Dataset,
@@ -102,12 +143,26 @@ export function pairedMeanCI(
 
 /**
  * Wilson score confidence interval for a single proportion.
- * More accurate than the Wald interval, especially for small samples
- * or proportions near 0 or 1.
  *
- * @param successes - Number of successes
- * @param n - Total number of trials
- * @param confidence - Confidence level (default 0.95)
+ * More accurate than the Wald interval, especially for small samples
+ * or proportions near 0 or 1. The Wilson interval is computed as:
+ *   centre = (p_hat + z^2/(2n)) / (1 + z^2/n)
+ *   half_width = z * sqrt(p_hat*(1-p_hat)/n + z^2/(4n^2)) / (1 + z^2/n)
+ *
+ * @param successes - Number of successes (non-negative integer, <= n)
+ * @param n - Total number of trials (positive integer)
+ * @param confidence - Confidence level in (0, 1) (default 0.95)
+ * @returns A {@link ConfidenceInterval} for the population proportion
+ * @throws {Error} If n < 1, successes < 0, or successes > n
+ * @throws {Error} If successes or n are not integers
+ * @throws {Error} If confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const ci = proportionCI(7, 10);
+ * console.log(ci.estimate); // 0.7
+ * console.log(`[${ci.lower}, ${ci.upper}]`); // Wilson score interval
+ * ```
  */
 export function proportionCI(
   successes: number,
@@ -146,13 +201,25 @@ export function proportionCI(
 
 /**
  * Confidence interval for the difference of two independent proportions
- * using the Wald method with continuity correction.
+ * using the Wald method.
  *
- * @param successes1 - Successes in first sample
- * @param n1 - Total trials in first sample
- * @param successes2 - Successes in second sample
- * @param n2 - Total trials in second sample
- * @param confidence - Confidence level (default 0.95)
+ * Computes (p1 - p2) +/- z * SE, where SE = sqrt(p1*(1-p1)/n1 + p2*(1-p2)/n2).
+ *
+ * @param successes1 - Successes in first sample (non-negative integer, <= n1)
+ * @param n1 - Total trials in first sample (positive integer)
+ * @param successes2 - Successes in second sample (non-negative integer, <= n2)
+ * @param n2 - Total trials in second sample (positive integer)
+ * @param confidence - Confidence level in (0, 1) (default 0.95)
+ * @returns A {@link ConfidenceInterval} for the difference in proportions (p1 - p2)
+ * @throws {Error} If n1 < 1 or n2 < 1
+ * @throws {Error} If successes are out of range
+ * @throws {Error} If confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const ci = twoProportionCI(30, 100, 20, 100);
+ * console.log(ci.estimate); // 0.10 (difference)
+ * ```
  */
 export function twoProportionCI(
   successes1: number,
@@ -187,11 +254,26 @@ export function twoProportionCI(
 }
 
 /**
- * Confidence intervals for linear regression coefficients (slope and intercept).
+ * Confidence intervals for simple linear regression coefficients (intercept and slope).
  *
- * @param x - Predictor values
- * @param y - Response values
- * @param confidence - Confidence level (default 0.95)
+ * Fits y = intercept + slope * x via OLS and computes confidence intervals,
+ * t-statistics, and p-values for both coefficients using the t-distribution
+ * with n-2 degrees of freedom.
+ *
+ * @param x - Predictor values (length n, must have at least 3 data points)
+ * @param y - Response values (length n, must match x length)
+ * @param confidence - Confidence level in (0, 1) (default 0.95)
+ * @returns Array of two {@link RegressionCoefficientCI} objects: [intercept, slope]
+ * @throws {Error} If x and y have different lengths
+ * @throws {Error} If fewer than 3 data points
+ * @throws {Error} If confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const cis = linearRegressionCI([1, 2, 3, 4, 5], [2.1, 3.9, 6.0, 8.1, 10.0]);
+ * console.log(cis[1].estimate);  // slope estimate ~2.0
+ * console.log(cis[1].pValue);    // p-value for H0: slope = 0
+ * ```
  */
 export function linearRegressionCI(
   x: Dataset,
@@ -269,10 +351,30 @@ export function linearRegressionCI(
  * Confidence intervals for multiple regression coefficients
  * (intercept and all feature coefficients).
  *
- * @param X - Feature matrix (n observations x p features)
- * @param y - Response values (n observations)
- * @param confidence - Confidence level (default 0.95)
- * @param featureNames - Optional names for features
+ * Fits y = X * beta + epsilon via OLS (with an added intercept column),
+ * then computes standard errors from the (X'X)^{-1} matrix, t-statistics,
+ * p-values, and confidence intervals using the t-distribution with
+ * n - (p+1) degrees of freedom.
+ *
+ * @param X - Feature matrix (n observations x p features, without intercept column)
+ * @param y - Response values (n observations, must match number of rows in X)
+ * @param confidence - Confidence level in (0, 1) (default 0.95)
+ * @param featureNames - Optional names for features (default: "x1", "x2", ...)
+ * @returns Array of {@link RegressionCoefficientCI} objects, one for the intercept
+ *   plus one for each feature
+ * @throws {Error} If X and y have different numbers of observations
+ * @throws {Error} If n <= p + 1 (not enough observations for the model)
+ * @throws {Error} If the X'X matrix is singular
+ * @throws {Error} If confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const X = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]];
+ * const y = [2, 4, 6, 8, 10];
+ * const cis = multipleRegressionCI(X, y, 0.95, ["height", "weight"]);
+ * console.log(cis[0].name); // "intercept"
+ * console.log(cis[1].name); // "height"
+ * ```
  */
 export function multipleRegressionCI(
   X: number[][],

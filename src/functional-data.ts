@@ -13,7 +13,13 @@ import { mean } from "./utils/descriptive";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
-/** A functional observation represented by its basis coefficients. */
+/**
+ * A functional observation represented by its basis coefficients.
+ *
+ * Stores a function as a linear combination of basis functions:
+ * f(t) = sum(c_i * phi_i(t)), enabling algebraic operations in
+ * the coefficient space.
+ */
 export interface FunctionalObject {
   /** Basis system used. */
   basis: BasisSystem;
@@ -23,35 +29,62 @@ export interface FunctionalObject {
   evaluate: (t: number) => number;
 }
 
+/**
+ * A system of basis functions defined on a domain [a, b].
+ *
+ * Provides a common interface for polynomial, Fourier, and B-spline
+ * basis systems used in functional data analysis.
+ */
 export interface BasisSystem {
+  /** Type identifier for the basis system. */
   type: "bspline" | "fourier" | "polynomial";
-  /** Number of basis functions. */
+  /** Number of basis functions in the system. */
   nBasis: number;
-  /** Domain [a, b]. */
+  /** Domain [a, b] on which the basis functions are defined. */
   domain: [number, number];
-  /** Evaluate all basis functions at t, returns vector of length nBasis. */
+  /** Evaluate all basis functions at point t, returns a vector of length nBasis. */
   evaluate: (t: number) => number[];
 }
 
+/**
+ * Results from Functional Principal Component Analysis.
+ *
+ * Contains eigenvalues, eigenfunctions (as coefficient vectors in the
+ * chosen basis), scores for each observation on each component, and
+ * variance explained summaries.
+ */
 export interface FPCAResult {
-  /** Eigenvalues (proportion of variance explained by each component). */
+  /** Eigenvalues of the coefficient covariance matrix (ordered largest first). */
   eigenvalues: number[];
-  /** Eigenfunctions (functional PCs): each is an array of coefficients. */
+  /** Eigenfunctions (functional PCs): each is an array of basis coefficients. */
   eigenfunctions: number[][];
-  /** Scores: scores[i][j] = score of observation i on component j. */
+  /** Scores: scores[i][j] = projection of curve i onto component j. */
   scores: number[][];
-  /** Proportion of variance explained by each component. */
+  /** Proportion of total variance explained by each component. */
   varianceExplained: number[];
   /** Cumulative proportion of variance explained. */
   cumulativeVariance: number[];
-  /** Mean function coefficients. */
+  /** Coefficients of the mean function in the chosen basis. */
   meanCoefficients: number[];
 }
 
 // ── Basis Systems ─────────────────────────────────────────────────────────
 
 /**
- * Create a polynomial basis system of degree p (p+1 basis functions).
+ * Create a polynomial basis system of degree p.
+ *
+ * The basis consists of p+1 functions: {1, s, s^2, ..., s^p} where
+ * s = (t - a) / (b - a) maps the domain [a, b] to [0, 1].
+ *
+ * @param degree - Maximum polynomial degree (>= 0)
+ * @param domain - Domain [a, b] for the basis functions (default: [0, 1])
+ * @returns A {@link BasisSystem} with degree+1 polynomial basis functions
+ *
+ * @example
+ * ```ts
+ * const basis = polynomialBasis(3, [0, 10]);
+ * const values = basis.evaluate(5); // [1, 0.5, 0.25, 0.125]
+ * ```
  */
 export function polynomialBasis(degree: number, domain: [number, number] = [0, 1]): BasisSystem {
   return {
@@ -71,7 +104,22 @@ export function polynomialBasis(degree: number, domain: [number, number] = [0, 1
 
 /**
  * Create a Fourier basis system with nBasis functions.
- * nBasis should be odd: 1 constant + (nBasis−1)/2 pairs of sin/cos.
+ *
+ * The basis consists of: 1 constant + (nBasis-1)/2 pairs of sin/cos:
+ * {1, sin(2*pi*k*s), cos(2*pi*k*s)} for k = 1, 2, ..., where
+ * s = (t - a) / (b - a). nBasis is rounded down to the nearest odd number.
+ *
+ * @param nBasis - Desired number of basis functions (must be >= 1; actual count
+ *   is the largest odd number <= nBasis)
+ * @param domain - Domain [a, b] defining the period (default: [0, 1])
+ * @returns A {@link BasisSystem} with Fourier basis functions
+ * @throws {Error} If nBasis is less than 1
+ *
+ * @example
+ * ```ts
+ * const basis = fourierBasis(5, [0, 2*Math.PI]);
+ * // 5 functions: 1, sin(t), cos(t), sin(2t), cos(2t)
+ * ```
  */
 export function fourierBasis(nBasis: number, domain: [number, number] = [0, 1]): BasisSystem {
   if (nBasis < 1) throw new Error("nBasis must be at least 1");
@@ -96,12 +144,21 @@ export function fourierBasis(nBasis: number, domain: [number, number] = [0, 1]):
 }
 
 /**
- * Create a B-spline basis system.
+ * Create a cubic B-spline basis system with evenly spaced knots.
  *
- * Uses cubic B-splines with evenly spaced knots.
+ * Uses Cox-de Boor recursion for evaluation. The extended knot sequence
+ * includes repeated boundary knots (order 4) and uniformly spaced interior knots.
  *
- * @param nBasis  Number of basis functions (≥ 4).
- * @param domain  [a, b] domain.
+ * @param nBasis - Number of basis functions (must be >= 4 for cubic splines)
+ * @param domain - Domain [a, b] for the basis (default: [0, 1])
+ * @returns A {@link BasisSystem} with cubic B-spline basis functions
+ * @throws {Error} If nBasis is less than 4
+ *
+ * @example
+ * ```ts
+ * const basis = bsplineBasis(10, [0, 1]);
+ * const values = basis.evaluate(0.5); // 10-element vector of B-spline values
+ * ```
  */
 export function bsplineBasis(nBasis: number, domain: [number, number] = [0, 1]): BasisSystem {
   if (nBasis < 4) throw new Error("nBasis must be at least 4 for cubic B-splines");
@@ -136,14 +193,26 @@ export function bsplineBasis(nBasis: number, domain: [number, number] = [0, 1]):
 // ── Basis Expansion ───────────────────────────────────────────────────────
 
 /**
- * Fit a functional object to discrete data via least squares.
+ * Fit a functional object to discrete data via penalised least squares.
  *
- * Finds coefficients c such that Σ(y(tⱼ) − Σ cᵢ φᵢ(tⱼ))² is minimized.
+ * Finds coefficients c minimizing sum((y(tj) - sum(ci*phi_i(tj)))^2) + lambda * ||c||^2.
+ * Solves the system (Phi'Phi + lambda*I) c = Phi'y.
  *
- * @param tValues  Observation points (length m).
- * @param yValues  Observed values at those points (length m).
- * @param basis  Basis system to use.
- * @param lambda  Roughness penalty (default 0, no penalty).
+ * @param tValues - Observation time points (length m)
+ * @param yValues - Observed values at those points (length m, must match tValues)
+ * @param basis - Basis system to project onto
+ * @param lambda - Ridge/roughness penalty parameter (default 0 for no penalty)
+ * @returns A {@link FunctionalObject} with fitted coefficients and evaluate function
+ * @throws {Error} If tValues and yValues have different lengths
+ *
+ * @example
+ * ```ts
+ * const t = [0, 0.25, 0.5, 0.75, 1.0];
+ * const y = [0, 1, 0, -1, 0];
+ * const basis = fourierBasis(5);
+ * const f = smoothBasisExpansion(t, y, basis, 0.01);
+ * console.log(f.evaluate(0.3)); // smoothed value at t=0.3
+ * ```
  */
 export function smoothBasisExpansion(
   tValues: number[],
@@ -191,16 +260,29 @@ export function smoothBasisExpansion(
 // ── Functional PCA ────────────────────────────────────────────────────────
 
 /**
- * Functional Principal Component Analysis.
+ * Functional Principal Component Analysis (FPCA).
  *
- * 1. Smooth each curve onto a common basis.
- * 2. Compute the covariance matrix of coefficients.
- * 3. Eigendecompose to get functional PCs.
+ * Steps:
+ * 1. Smooth each curve onto a common basis via {@link smoothBasisExpansion}.
+ * 2. Compute the sample covariance matrix of the basis coefficients.
+ * 3. Eigendecompose to obtain functional principal components.
+ * 4. Project each curve onto the eigenfunctions to get scores.
  *
- * @param curves  Array of curves, each as { t: number[], y: number[] }.
- * @param basis  Common basis system.
- * @param nComponents  Number of PCs to retain (default: all).
- * @param lambda  Smoothing penalty (default 0).
+ * @param curves - Array of curves, each with observation times `t` and values `y`
+ * @param basis - Common basis system for all curves
+ * @param nComponents - Number of PCs to retain (default: min(nBasis, nCurves))
+ * @param lambda - Smoothing penalty for basis expansion (default: 0)
+ * @returns A {@link FPCAResult} with eigenvalues, eigenfunctions, scores,
+ *   and variance explained
+ * @throws {Error} If fewer than 2 curves are provided
+ *
+ * @example
+ * ```ts
+ * const curves = data.map(d => ({ t: d.time, y: d.value }));
+ * const basis = bsplineBasis(10, [0, 1]);
+ * const fpca = functionalPCA(curves, basis, 3);
+ * console.log(fpca.varianceExplained); // [0.7, 0.15, 0.05]
+ * ```
  */
 export function functionalPCA(
   curves: { t: number[]; y: number[] }[],
@@ -291,8 +373,12 @@ export function functionalPCA(
 /**
  * Compute the pointwise mean function from multiple curves.
  *
- * @param curves  Array of curves (each as { t, y } on a common grid).
- * @param tGrid  Common evaluation grid.
+ * For each point on the evaluation grid, linearly interpolates each curve
+ * and averages the values across all curves.
+ *
+ * @param curves - Array of curves, each with observation times `t` and values `y`
+ * @param tGrid - Common evaluation grid of time points
+ * @returns Array of mean values at each point in tGrid
  */
 export function functionalMean(
   curves: { t: number[]; y: number[] }[],
@@ -314,9 +400,15 @@ export function functionalMean(
 }
 
 /**
- * Compute the L² inner product between two functional objects.
+ * Compute the L2 inner product between two functional objects.
  *
- * ⟨f, g⟩ = ∫ f(t) g(t) dt (approximated by trapezoidal rule).
+ * <f, g> = integral from a to b of f(t)*g(t) dt, approximated by the
+ * trapezoidal rule over `nPoints` equally spaced subintervals.
+ *
+ * @param f - First functional object
+ * @param g - Second functional object (must share the same domain as f)
+ * @param nPoints - Number of subintervals for numerical integration (default: 100)
+ * @returns The approximate L2 inner product value
  */
 export function l2InnerProduct(
   f: FunctionalObject,
@@ -337,7 +429,13 @@ export function l2InnerProduct(
 }
 
 /**
- * Compute the L² norm of a functional object.
+ * Compute the L2 norm of a functional object.
+ *
+ * ||f|| = sqrt(<f, f>) = sqrt(integral of f(t)^2 dt).
+ *
+ * @param f - Functional object to compute the norm of
+ * @param nPoints - Number of subintervals for numerical integration (default: 100)
+ * @returns The L2 norm (always non-negative)
  */
 export function l2Norm(f: FunctionalObject, nPoints = 100): number {
   return Math.sqrt(l2InnerProduct(f, f, nPoints));

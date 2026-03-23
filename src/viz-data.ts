@@ -13,6 +13,9 @@ import { ContinuousDistribution } from "./types";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
+/**
+ * A single bin of a histogram.
+ */
 export interface HistogramBin {
   /** Left edge of the bin (inclusive). */
   lo: number;
@@ -28,6 +31,9 @@ export interface HistogramBin {
   density: number;
 }
 
+/**
+ * A single point on a Q-Q plot.
+ */
 export interface QQPoint {
   /** Theoretical quantile. */
   theoretical: number;
@@ -35,6 +41,9 @@ export interface QQPoint {
   sample: number;
 }
 
+/**
+ * Box plot statistics (five-number summary plus outliers and mean).
+ */
 export interface BoxPlotStats {
   /** Minimum (excluding outliers). */
   min: number;
@@ -60,6 +69,9 @@ export interface BoxPlotStats {
   mean: number;
 }
 
+/**
+ * A single point of a kernel density estimate.
+ */
 export interface KDEPoint {
   /** Evaluation point. */
   x: number;
@@ -67,6 +79,9 @@ export interface KDEPoint {
   density: number;
 }
 
+/**
+ * A single point of the empirical CDF.
+ */
 export interface ECDFPoint {
   /** Data value. */
   x: number;
@@ -79,9 +94,20 @@ export interface ECDFPoint {
 /**
  * Generate histogram bins from data.
  *
- * @param data  Numeric observations.
- * @param options.bins  Number of bins (default: Sturges' rule).
- * @param options.range  [min, max] range to bin over.
+ * Uses Sturges' rule by default: nBins = ceil(log2(n) + 1).
+ *
+ * @param data - Numeric observations
+ * @param options - Configuration options
+ * @param options.bins - Number of bins (default: Sturges' rule)
+ * @param options.range - [min, max] range to bin over (default: data range)
+ * @returns Array of HistogramBin objects with lo, hi, mid, count, frequency, and density
+ *
+ * @example
+ * ```ts
+ * const bins = histogramBins([1, 2, 2, 3, 3, 3, 4], { bins: 4 });
+ * // bins[i].count — number of observations in bin i
+ * // bins[i].density — density = frequency / bin_width
+ * ```
  */
 export function histogramBins(
   data: number[],
@@ -131,10 +157,20 @@ export function histogramBins(
 // ── Q-Q Plot ──────────────────────────────────────────────────────────────
 
 /**
- * Generate Q-Q plot coordinates.
+ * Generate Q-Q plot coordinates against a theoretical distribution.
  *
- * @param data  Sample data.
- * @param distribution  Theoretical distribution to compare against.
+ * Uses Filliben's plotting position: p_i = (i + 0.6825) / (n + 0.365).
+ *
+ * @param data - Sample data
+ * @param distribution - Theoretical continuous distribution to compare against
+ * @returns Array of QQPoint objects with theoretical and sample quantiles
+ *
+ * @example
+ * ```ts
+ * const points = qqPlot([1, 2, 3, 4, 5], new Normal(3, 1.5));
+ * // points[i].theoretical — expected quantile from the distribution
+ * // points[i].sample — corresponding sample quantile
+ * ```
  */
 export function qqPlot(
   data: number[],
@@ -157,7 +193,12 @@ export function qqPlot(
 }
 
 /**
- * Generate Q-Q plot coordinates against a standard normal distribution.
+ * Generate Q-Q plot coordinates against a standard normal distribution (N(0,1)).
+ *
+ * Convenience wrapper that uses an approximation of the standard normal quantile.
+ *
+ * @param data - Sample data
+ * @returns Array of QQPoint objects with theoretical (normal) and sample quantiles
  */
 export function normalQQPlot(data: number[]): QQPoint[] {
   const sorted = [...data].sort((a, b) => a - b);
@@ -180,7 +221,19 @@ export function normalQQPlot(data: number[]): QQPoint[] {
 /**
  * Compute box plot statistics (five-number summary + outliers).
  *
- * @param data  Numeric observations.
+ * Computes Q1, median, Q3, IQR, and identifies outliers using Tukey's fences
+ * (Q1 - 1.5*IQR, Q3 + 1.5*IQR). The min/max are the non-outlier extremes.
+ *
+ * @param data - Numeric observations
+ * @returns BoxPlotStats with five-number summary, fences, outliers, and mean
+ * @throws Error if data is empty
+ *
+ * @example
+ * ```ts
+ * const stats = boxPlotStats([1, 2, 3, 4, 5, 6, 7, 8, 100]);
+ * // stats.median — 5
+ * // stats.upperOutliers — [100]
+ * ```
  */
 export function boxPlotStats(data: number[]): BoxPlotStats {
   if (data.length === 0) throw new Error("Need at least 1 observation");
@@ -230,10 +283,16 @@ export function boxPlotStats(data: number[]): BoxPlotStats {
 /**
  * Kernel Density Estimate using a Gaussian kernel.
  *
- * @param data  Sample data.
- * @param options.nPoints  Number of evaluation points (default 100).
- * @param options.bandwidth  Bandwidth h (default: Silverman's rule).
- * @param options.range  [min, max] evaluation range.
+ * Estimates f(x) = (1 / (n * h * sqrt(2*pi))) * sum(exp(-0.5 * ((x - x_i) / h)^2)).
+ * Uses Silverman's rule of thumb for bandwidth selection by default:
+ * h = 0.9 * min(sd, IQR/1.34) * n^(-1/5).
+ *
+ * @param data - Sample data
+ * @param options - Configuration options
+ * @param options.nPoints - Number of evaluation points (default 100)
+ * @param options.bandwidth - Bandwidth h (default: Silverman's rule)
+ * @param options.range - [min, max] evaluation range (default: data range +/- 3h)
+ * @returns Array of KDEPoint objects with x and density values
  */
 export function kde(
   data: number[],
@@ -276,8 +335,16 @@ export function kde(
  * Empirical CDF coordinates.
  *
  * Returns sorted (x, F(x)) pairs suitable for a step plot.
+ * F(x_i) = (i + 1) / n for the i-th order statistic.
  *
- * @param data  Sample data.
+ * @param data - Sample data
+ * @returns Array of ECDFPoint objects with x and cumulative probability
+ *
+ * @example
+ * ```ts
+ * const points = ecdf([3, 1, 2]);
+ * // [{x: 1, probability: 1/3}, {x: 2, probability: 2/3}, {x: 3, probability: 1}]
+ * ```
  */
 export function ecdf(data: number[]): ECDFPoint[] {
   const sorted = [...data].sort((a, b) => a - b);
@@ -296,8 +363,18 @@ export function ecdf(data: number[]): ECDFPoint[] {
 /**
  * Generate pairwise scatter data for multiple variables.
  *
- * @param variables  Named numeric arrays, all same length.
- * @returns Array of { xName, yName, x, y } for each pair.
+ * Produces all off-diagonal pairs (i, j) where i != j, creating
+ * data suitable for a scatter plot matrix.
+ *
+ * @param variables - Named numeric arrays, all same length
+ * @returns Array of { xName, yName, x, y } for each pair of variables
+ *
+ * @example
+ * ```ts
+ * const pairs = scatterMatrixData({ height: [170, 180], weight: [60, 80] });
+ * // [{xName: "height", yName: "weight", x: [170, 180], y: [60, 80]},
+ * //  {xName: "weight", yName: "height", x: [60, 80], y: [170, 180]}]
+ * ```
  */
 export function scatterMatrixData(
   variables: Record<string, number[]>,

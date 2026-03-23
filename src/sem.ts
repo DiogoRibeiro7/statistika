@@ -12,22 +12,34 @@ import { solveLinearSystem, invertMatrix, symmetricEigen } from "./utils/linalg"
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
-/** A directed path (regression) in the SEM. */
+/**
+ * A directed path (regression) in a Structural Equation Model.
+ * Represents a causal relationship from one variable to another.
+ */
 export interface SEMPath {
+  /** Source (predictor) variable name. */
   from: string;
+  /** Target (outcome) variable name. */
   to: string;
-  /** Fixed coefficient value. If undefined, estimated from data. */
+  /** Fixed coefficient value. If undefined, estimated from data via OLS. */
   coefficient?: number;
 }
 
-/** Factor-indicator loading for CFA. */
+/**
+ * Factor-indicator loading specification for Confirmatory Factor Analysis.
+ */
 export interface CFALoading {
+  /** Latent factor name. */
   factor: string;
+  /** Observed indicator (variable) name. */
   indicator: string;
-  /** Fixed loading. If undefined, estimated. */
+  /** Fixed loading value. If undefined, estimated from data. */
   loading?: number;
 }
 
+/**
+ * Result of a path analysis.
+ */
 export interface PathAnalysisResult {
   /** Estimated path coefficients. */
   coefficients: Map<string, number>;
@@ -39,6 +51,9 @@ export interface PathAnalysisResult {
   rSquared: Map<string, number>;
 }
 
+/**
+ * Result of a Confirmatory Factor Analysis.
+ */
 export interface CFAResult {
   /** Estimated factor loadings (factor → indicator → loading). */
   loadings: Map<string, Map<string, number>>;
@@ -52,6 +67,9 @@ export interface CFAResult {
   fit: SEMFitIndices;
 }
 
+/**
+ * Fit indices for evaluating SEM / CFA model quality.
+ */
 export interface SEMFitIndices {
   /** Chi-squared test statistic. */
   chiSquared: number;
@@ -78,11 +96,23 @@ export interface SEMFitIndices {
 /**
  * Path analysis via sequential OLS regressions.
  *
- * Estimates direct effects from a set of directed paths (DAG), then
- * computes indirect and total effects via the Leontief inverse (I − B)⁻¹.
+ * Estimates standardized direct effects from a set of directed paths (DAG),
+ * then computes indirect and total effects via the Leontief inverse (I - B)^{-1},
+ * where B is the matrix of direct effects.
  *
- * @param data  Map from variable name → numeric array (all same length).
- * @param paths  Directed paths defining the structural model.
+ * @param data - Map from variable name to numeric array (all same length)
+ * @param paths - Directed paths defining the structural model
+ * @returns PathAnalysisResult with coefficients, direct/total effects, and R-squared values
+ * @throws Error if any variable has a length mismatch
+ *
+ * @example
+ * ```ts
+ * const data = { X: [1, 2, 3, 4], M: [2, 3, 5, 6], Y: [3, 5, 7, 9] };
+ * const paths = [{ from: "X", to: "M" }, { from: "M", to: "Y" }];
+ * const result = pathAnalysis(data, paths);
+ * // result.coefficients — Map of "X -> M" => coefficient, etc.
+ * // result.totalEffects — includes indirect effect of X on Y through M
+ * ```
  */
 export function pathAnalysis(
   data: Record<string, number[]>,
@@ -204,12 +234,30 @@ export function pathAnalysis(
 /**
  * Confirmatory Factor Analysis.
  *
- * Estimates factor loadings from observed correlation matrix using
+ * Estimates factor loadings from the observed correlation matrix using
  * iterative principal axis factoring constrained to the specified structure.
+ * The model assumes: Sigma = Lambda * Lambda' + Psi where Lambda is the
+ * loadings matrix and Psi is the diagonal uniqueness matrix.
  *
- * @param data  Map from indicator name → numeric array (all same length).
- * @param loadingSpec  Factor-indicator loading specifications.
- * @param options.maxIterations  Max iterations (default 100).
+ * @param data - Map from indicator name to numeric array (all same length)
+ * @param loadingSpec - Factor-indicator loading specifications defining which indicators load on which factors
+ * @param options - Configuration options
+ * @param options.maxIterations - Maximum iterations for convergence (default 100)
+ * @returns CFAResult with loadings, communalities, uniquenesses, and fit indices
+ * @throws Error if any specified indicator is not found in data
+ *
+ * @example
+ * ```ts
+ * const data = { x1: [1,2,3,4], x2: [2,3,4,5], x3: [1,3,5,7] };
+ * const spec = [
+ *   { factor: "F1", indicator: "x1" },
+ *   { factor: "F1", indicator: "x2" },
+ *   { factor: "F1", indicator: "x3" },
+ * ];
+ * const result = cfa(data, spec);
+ * // result.loadings — Map of factor => Map of indicator => loading
+ * // result.fit — model fit indices (chi-squared, RMSEA, CFI, etc.)
+ * ```
  */
 export function cfa(
   data: Record<string, number[]>,
@@ -382,6 +430,18 @@ export function cfa(
 
 /**
  * Compute SEM fit indices from observed and model-implied covariance matrices.
+ *
+ * Computes the maximum likelihood discrepancy function
+ * F_ML = tr(S * Sigma^{-1}) + ln|Sigma| - ln|S| - p, then derives
+ * chi-squared = (n-1) * F_ML. Also computes RMSEA, CFI, TLI, SRMR, AIC, and BIC.
+ *
+ * @param observed - Observed covariance (or correlation) matrix (p x p)
+ * @param implied - Model-implied covariance matrix (p x p)
+ * @param n - Number of observations
+ * @param nIndicators - Number of observed indicators (p)
+ * @param nFactors - Number of latent factors
+ * @param nEstimatedParams - Number of freely estimated parameters
+ * @returns SEMFitIndices with chi-squared, df, p-value, RMSEA, CFI, TLI, SRMR, AIC, and BIC
  */
 export function computeFitIndices(
   observed: number[][],

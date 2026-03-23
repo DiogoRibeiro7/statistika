@@ -14,42 +14,60 @@ import { mean } from "./utils/descriptive";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
+/**
+ * Result of fitting a Linear Mixed Model.
+ *
+ * Contains fixed effects, random effects variance components, BLUPs for
+ * each group, model fit criteria, and a prediction function.
+ */
 export interface LMMResult {
-  /** Fixed effect coefficients (including intercept at [0]). */
+  /** Fixed effect coefficients (intercept at index 0, then covariates). */
   fixedEffects: number[];
   /** Random effects variance components. */
   randomEffects: {
-    /** Variance of random intercepts. */
+    /** Variance of random intercepts (sigma^2_b). */
     interceptVariance: number;
-    /** Variance of random slopes (if model includes random slopes). */
+    /** Variance of random slopes, if the model includes random slopes. */
     slopeVariance?: number;
     /** Covariance between random intercept and slope. */
     interceptSlopeCovariance?: number;
   };
-  /** Residual variance σ². */
+  /** Residual (within-group) variance sigma^2. */
   residualVariance: number;
-  /** Group-level BLUPs (best linear unbiased predictors). */
+  /** Group-level BLUPs (best linear unbiased predictors): group label to [intercept, slope?]. */
   blups: Map<number | string, number[]>;
-  /** Log-likelihood (REML). */
+  /** REML log-likelihood of the fitted model. */
   logLikelihood: number;
-  /** AIC = −2ℓ + 2k. */
+  /** Akaike Information Criterion: -2*logLik + 2*k. */
   aic: number;
-  /** BIC = −2ℓ + k ln(n). */
+  /** Bayesian Information Criterion: -2*logLik + k*ln(n). */
   bic: number;
-  /** Number of variance parameters estimated. */
+  /** Number of variance parameters estimated (2 for random intercept, 4 for intercept+slope). */
   nVarParams: number;
-  /** Number of EM iterations. */
+  /** Number of EM iterations performed. */
   iterations: number;
-  /** Predict for new data. */
+  /**
+   * Predict for new data.
+   *
+   * @param x - Covariate values (without intercept)
+   * @param group - Optional group identifier to include the group-specific BLUP
+   * @returns The predicted response value
+   */
   predict: (x: number[], group?: number | string) => number;
 }
 
+/**
+ * Result of an Intraclass Correlation Coefficient computation.
+ *
+ * ICC measures the proportion of total variance attributable to
+ * between-group differences.
+ */
 export interface ICCResult {
-  /** Intraclass correlation coefficient: σ²_group / (σ²_group + σ²_resid). */
+  /** Intraclass correlation coefficient: sigma^2_between / (sigma^2_between + sigma^2_within). */
   icc: number;
-  /** Between-group variance. */
+  /** Estimated between-group variance component. */
   betweenVariance: number;
-  /** Within-group (residual) variance. */
+  /** Estimated within-group (residual) variance component. */
   withinVariance: number;
 }
 
@@ -58,16 +76,30 @@ export interface ICCResult {
 /**
  * Fit a linear mixed model with random intercepts.
  *
- * y = Xβ + Zb + ε
- * where b ~ N(0, σ²_b I), ε ~ N(0, σ² I)
+ * Model: y = X*beta + Z*b + epsilon,
+ * where b ~ N(0, sigma^2_b * I) and epsilon ~ N(0, sigma^2 * I).
+ * Estimated via an EM algorithm with REML-like variance component updates.
  *
- * Estimated via EM algorithm (REML-like).
+ * @param y - Response variable (length n)
+ * @param X - Fixed effects design matrix (n x p, without intercept column).
+ *   Pass null for an intercept-only model.
+ * @param groups - Group assignments (length n), as integers or strings
+ * @param options - EM algorithm configuration
+ * @param options.maxIterations - Maximum number of EM iterations (default: 200)
+ * @param options.tolerance - Convergence tolerance for variance components (default: 1e-8)
+ * @returns A {@link LMMResult} with fixed effects, variance components, BLUPs,
+ *   and model fit criteria
+ * @throws {Error} If y and groups have different lengths
  *
- * @param y  Response variable (length n).
- * @param X  Fixed effects design matrix (n × p). If null, intercept-only.
- * @param groups  Group assignments (length n, integer or string-coded).
- * @param options.maxIterations  Max EM iterations (default 200).
- * @param options.tolerance  Convergence tolerance (default 1e-8).
+ * @example
+ * ```ts
+ * const y = [5.1, 4.9, 6.2, 6.0, 3.1, 3.3];
+ * const X = [[1], [2], [1], [2], [1], [2]];
+ * const groups = [1, 1, 2, 2, 3, 3];
+ * const result = lmmRandomIntercept(y, X, groups);
+ * console.log(result.fixedEffects);
+ * console.log(result.randomEffects.interceptVariance);
+ * ```
  */
 export function lmmRandomIntercept(
   y: number[],
@@ -208,16 +240,28 @@ export function lmmRandomIntercept(
 /**
  * Fit a linear mixed model with random intercepts and random slopes.
  *
- * y = Xβ + Z[b₀ b₁]' + ε
- * where [b₀, b₁] ~ N(0, G), ε ~ N(0, σ² I)
+ * Model: y = X*beta + Z*[b0, b1]' + epsilon,
+ * where [b0, b1] ~ N(0, G) with G = [[g00, g01], [g01, g11]],
+ * and epsilon ~ N(0, sigma^2 * I).
+ * The random slope corresponds to the first column of X.
  *
- * The random slope is on the first column of X (excluding intercept).
+ * @param y - Response variable (length n)
+ * @param X - Fixed effects covariates (n x p, without intercept; must have >= 1 column)
+ * @param groups - Group assignments (length n)
+ * @param options - EM algorithm configuration
+ * @param options.maxIterations - Maximum EM iterations (default: 200)
+ * @param options.tolerance - Convergence tolerance (default: 1e-8)
+ * @returns A {@link LMMResult} with fixed effects, G matrix components
+ *   (interceptVariance, slopeVariance, interceptSlopeCovariance), BLUPs, and fit criteria
+ * @throws {Error} If y, X, or groups have mismatched lengths
+ * @throws {Error} If X has no columns
  *
- * @param y  Response variable (length n).
- * @param X  Fixed effects covariates (n × p, without intercept column).
- * @param groups  Group assignments (length n).
- * @param options.maxIterations  Max EM iterations (default 200).
- * @param options.tolerance  Convergence tolerance (default 1e-8).
+ * @example
+ * ```ts
+ * const result = lmmRandomSlope(y, X, groups);
+ * console.log(result.randomEffects.slopeVariance);
+ * const pred = result.predict([2.5], "groupA");
+ * ```
  */
 export function lmmRandomSlope(
   y: number[],
@@ -417,12 +461,23 @@ export function lmmRandomSlope(
 /**
  * Compute the Intraclass Correlation Coefficient (ICC).
  *
- * ICC = σ²_between / (σ²_between + σ²_within)
+ * ICC = sigma^2_between / (sigma^2_between + sigma^2_within).
+ * Uses one-way random effects ANOVA decomposition with Rao's unbiased
+ * estimator adjusted for unequal group sizes.
  *
- * Uses one-way random effects ANOVA decomposition.
+ * @param values - Numeric observations (length n)
+ * @param groups - Group assignments (length n, must have at least 2 distinct groups)
+ * @returns An {@link ICCResult} with ICC value and variance components
+ * @throws {Error} If values and groups have different lengths
+ * @throws {Error} If fewer than 2 observations or fewer than 2 groups
  *
- * @param values  Observations (length n).
- * @param groups  Group assignments (length n).
+ * @example
+ * ```ts
+ * const values = [1, 2, 3, 10, 11, 12];
+ * const groups = ["A", "A", "A", "B", "B", "B"];
+ * const result = icc(values, groups);
+ * console.log(result.icc); // high ICC (groups are well-separated)
+ * ```
  */
 export function icc(values: number[], groups: (number | string)[]): ICCResult {
   const n = values.length;
@@ -467,21 +522,30 @@ export function icc(values: number[], groups: (number | string)[]): ICCResult {
 
 // ── Likelihood Ratio Test ─────────────────────────────────────────────────
 
+/**
+ * Result of a likelihood ratio test comparing two nested mixed models.
+ */
 export interface LRTResult {
-  /** Likelihood ratio statistic: −2(ℓ₀ − ℓ₁). */
+  /** Likelihood ratio statistic: -2*(logLik_restricted - logLik_full). */
   statistic: number;
   /** Degrees of freedom (difference in number of parameters). */
   df: number;
-  /** p-value from chi-squared distribution. */
+  /** p-value from chi-squared distribution under H0. */
   pValue: number;
 }
 
 /**
  * Likelihood ratio test comparing two nested mixed models.
  *
- * @param restricted  Log-likelihood of the restricted (null) model.
- * @param full  Log-likelihood of the full (alternative) model.
- * @param dfDiff  Difference in number of parameters.
+ * Tests H0: the restricted model is adequate, against H1: the full model
+ * fits better. The test statistic D = -2*(logLik_restricted - logLik_full)
+ * follows a chi-squared distribution with dfDiff degrees of freedom.
+ *
+ * @param restricted - Log-likelihood of the restricted (null) model
+ * @param full - Log-likelihood of the full (alternative) model
+ * @param dfDiff - Difference in number of parameters (must be >= 1)
+ * @returns An {@link LRTResult} with test statistic, df, and p-value
+ * @throws {Error} If dfDiff is less than 1
  */
 export function lrtTest(
   restricted: number,

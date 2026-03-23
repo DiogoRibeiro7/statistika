@@ -13,6 +13,13 @@ import { solveLinearSystem } from "./utils/linalg";
 
 // ── Propensity Scores ─────────────────────────────────────────────────────
 
+/**
+ * Result of propensity score estimation via logistic regression.
+ *
+ * The propensity score e(X) = P(T=1 | X) is the probability of receiving
+ * treatment given the observed covariates. Used for matching, stratification,
+ * and inverse probability weighting in causal inference.
+ */
 export interface PropensityScoreResult {
   /** Estimated propensity scores P(T=1|X) for each observation. */
   scores: number[];
@@ -23,12 +30,29 @@ export interface PropensityScoreResult {
 }
 
 /**
- * Estimate propensity scores via logistic regression.
+ * Estimate propensity scores via logistic regression (IRLS).
  *
- * @param X  Covariates (n × p).
- * @param treatment  Treatment indicator (0 or 1, length n).
- * @param options.maxIterations  Maximum IRLS iterations (default 100).
- * @param options.tolerance  Convergence tolerance (default 1e-8).
+ * Fits a logistic regression model P(T=1 | X) = sigmoid(X * beta) using
+ * iteratively reweighted least squares (Newton-Raphson). The propensity
+ * score is the fitted probability of receiving treatment.
+ *
+ * @param X - Covariate matrix (n observations x p features)
+ * @param treatment - Treatment indicator array (0 or 1, length n)
+ * @param options - Optional configuration
+ * @param options.maxIterations - Maximum IRLS iterations (default 100)
+ * @param options.tolerance - Convergence tolerance for coefficient updates (default 1e-8)
+ * @returns A {@link PropensityScoreResult} with estimated scores, logistic regression
+ *   coefficients, and iteration count
+ * @throws {Error} If X and treatment have different lengths
+ * @throws {Error} If fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const X = [[1.2, 0.5], [0.8, 1.1], [1.5, 0.3], [0.9, 1.4]];
+ * const treatment = [1, 0, 1, 0];
+ * const result = propensityScore(X, treatment);
+ * console.log(result.scores); // [0.65, 0.35, 0.72, 0.28]
+ * ```
  */
 export function propensityScore(
   X: number[][],
@@ -100,6 +124,12 @@ export function propensityScore(
 
 // ── IPW (Inverse Probability Weighting) ───────────────────────────────────
 
+/**
+ * Result of inverse probability weighting estimation.
+ *
+ * Contains the Average Treatment Effect (ATE) and Average Treatment
+ * Effect on the Treated (ATT), along with the (clipped) propensity scores used.
+ */
 export interface IPWResult {
   /** Average Treatment Effect (ATE). */
   ate: number;
@@ -110,14 +140,29 @@ export interface IPWResult {
 }
 
 /**
- * Estimate ATE and ATT using inverse probability weighting.
+ * Estimate ATE and ATT using inverse probability weighting (Horvitz-Thompson).
  *
- * ATE = (1/n) Σ [Tᵢ Yᵢ / eᵢ − (1−Tᵢ) Yᵢ / (1−eᵢ)]
- * ATT = (1/n₁) Σ Tᵢ Yᵢ − Σ [(1−Tᵢ) eᵢ Yᵢ / (1−eᵢ)] / Σ [(1−Tᵢ) eᵢ / (1−eᵢ)]
+ * The ATE uses the Horvitz-Thompson estimator:
+ *   ATE = (1/n) * sum[ T_i * Y_i / e_i  -  (1-T_i) * Y_i / (1-e_i) ]
  *
- * @param y  Outcome variable (length n).
- * @param treatment  Treatment indicator (0 or 1, length n).
- * @param scores  Propensity scores (length n).
+ * The ATT compares treated outcomes against reweighted control outcomes:
+ *   ATT = mean(Y | T=1) - sum[ (1-T_i) * w_i * Y_i ] / sum[ (1-T_i) * w_i ]
+ * where w_i = e_i / (1 - e_i).
+ *
+ * Propensity scores are clipped to [0.01, 0.99] to avoid extreme weights.
+ *
+ * @param y - Outcome variable (length n)
+ * @param treatment - Treatment indicator (0 or 1, length n)
+ * @param scores - Propensity scores P(T=1|X) for each observation (length n)
+ * @returns An {@link IPWResult} with ATE, ATT, and clipped propensity scores
+ * @throws {Error} If y, treatment, and scores have different lengths
+ *
+ * @example
+ * ```ts
+ * const result = ipw(outcomes, treatment, propensityScores);
+ * console.log(result.ate); // Average Treatment Effect
+ * console.log(result.att); // Average Treatment Effect on the Treated
+ * ```
  */
 export function ipw(
   y: number[],
@@ -164,6 +209,12 @@ export function ipw(
 
 // ── Propensity Score Matching ─────────────────────────────────────────────
 
+/**
+ * Result of propensity score matching.
+ *
+ * Contains the ATT estimate, matched pairs (treated-control index pairs),
+ * and the mean outcomes for matched treated and control groups.
+ */
 export interface MatchingResult {
   /** Average Treatment Effect on the Treated (ATT). */
   att: number;
@@ -176,14 +227,25 @@ export interface MatchingResult {
 }
 
 /**
- * Nearest-neighbour propensity score matching.
+ * Nearest-neighbour propensity score matching (with replacement).
  *
  * Each treated unit is matched to the control unit with the closest
- * propensity score. Returns ATT = mean(Y_treated) − mean(Y_matched_control).
+ * propensity score (greedy, with replacement). The ATT is estimated as:
+ *   ATT = mean(Y_treated) - mean(Y_matched_control)
  *
- * @param y  Outcome variable (length n).
- * @param treatment  Treatment indicator (0 or 1, length n).
- * @param scores  Propensity scores (length n).
+ * @param y - Outcome variable (length n)
+ * @param treatment - Treatment indicator (0 or 1, length n)
+ * @param scores - Propensity scores P(T=1|X) for each observation (length n)
+ * @returns A {@link MatchingResult} with ATT, matched pairs, and group means
+ * @throws {Error} If y, treatment, and scores have different lengths
+ * @throws {Error} If there are no treated or no control observations
+ *
+ * @example
+ * ```ts
+ * const result = propensityMatching(outcomes, treatment, scores);
+ * console.log(result.att);     // ATT estimate
+ * console.log(result.matches); // [[treated_idx, control_idx], ...]
+ * ```
  */
 export function propensityMatching(
   y: number[],
@@ -238,6 +300,15 @@ export function propensityMatching(
 
 // ── Difference-in-Differences ─────────────────────────────────────────────
 
+/**
+ * Result of a Difference-in-Differences estimation.
+ *
+ * The DiD estimate is:
+ *   delta = (Y_treat_post - Y_treat_pre) - (Y_control_post - Y_control_pre)
+ *
+ * Under the parallel trends assumption, this identifies the causal effect
+ * of the treatment.
+ */
 export interface DiDResult {
   /** The DiD estimate: (Y_treat_post − Y_treat_pre) − (Y_ctrl_post − Y_ctrl_pre). */
   estimate: number;
@@ -256,11 +327,27 @@ export interface DiDResult {
 }
 
 /**
- * Difference-in-Differences estimator.
+ * Difference-in-Differences (DiD) estimator.
  *
- * @param y  Outcome variable (length n).
- * @param treatment  Treatment group indicator (0 or 1, length n).
- * @param post  Post-period indicator (0 or 1, length n).
+ * Computes the DiD estimate by comparing the change in outcomes between
+ * treatment and control groups across pre and post periods. The standard
+ * error is computed via pooled group-level variances.
+ *
+ * @param y - Outcome variable (length n)
+ * @param treatment - Treatment group indicator (0 = control, 1 = treatment, length n)
+ * @param post - Post-period indicator (0 = pre, 1 = post, length n)
+ * @returns A {@link DiDResult} with the DiD estimate, group means, standard error,
+ *   and t-statistic
+ * @throws {Error} If y, treatment, and post have different lengths
+ * @throws {Error} If any of the four groups (treated+post, treated+pre,
+ *   control+post, control+pre) has no observations
+ *
+ * @example
+ * ```ts
+ * const result = differenceInDifferences(y, treatment, post);
+ * console.log(result.estimate);     // DiD estimate
+ * console.log(result.tStatistic);   // t-statistic for significance
+ * ```
  */
 export function differenceInDifferences(
   y: number[],
@@ -311,6 +398,13 @@ export function differenceInDifferences(
 
 // ── Instrumental Variables / 2SLS ─────────────────────────────────────────
 
+/**
+ * Result of Two-Stage Least Squares (2SLS) instrumental variable estimation.
+ *
+ * Contains the regression coefficients, intercept, slopes for endogenous
+ * variables, the first-stage F-statistic (testing instrument relevance),
+ * and a prediction function.
+ */
 export interface TwoSLSResult {
   /** 2SLS coefficients (including intercept at [0]). */
   coefficients: number[];
@@ -327,12 +421,29 @@ export interface TwoSLSResult {
 /**
  * Two-Stage Least Squares (2SLS) for instrumental variable estimation.
  *
- * Stage 1: Regress endogenous variable(s) X on instruments Z.
- * Stage 2: Regress outcome Y on fitted values X̂.
+ * Stage 1: Regress each endogenous variable X_j on instruments Z (with intercept)
+ *   to obtain fitted values X_hat.
+ * Stage 2: Regress outcome Y on X_hat (with intercept) to obtain consistent
+ *   estimates of the causal effect of X on Y.
  *
- * @param y  Outcome variable (length n).
- * @param X  Endogenous regressor(s) (n × p or length n for simple case).
- * @param Z  Instruments (n × q, q ≥ p). May include exogenous controls.
+ * A first-stage F-statistic > 10 is generally considered evidence of
+ * instrument relevance (Staiger & Stock rule of thumb).
+ *
+ * @param y - Outcome variable (length n)
+ * @param X - Endogenous regressor(s): a flat array of length n for a single
+ *   regressor, or an n x p matrix for multiple endogenous variables
+ * @param Z - Instrument matrix (n x q, where q >= p). May include exogenous controls.
+ * @returns A {@link TwoSLSResult} with coefficients, first-stage F-statistic,
+ *   and a prediction function
+ * @throws {Error} If y, X, and Z have different numbers of observations
+ * @throws {Error} If fewer instruments than endogenous variables (q < p)
+ *
+ * @example
+ * ```ts
+ * const result = twoSLS(wages, education, [parentEducation, proximity]);
+ * console.log(result.slopes[0]);    // causal effect of education on wages
+ * console.log(result.firstStageF); // instrument strength (want > 10)
+ * ```
  */
 export function twoSLS(
   y: number[],
@@ -401,6 +512,13 @@ export function twoSLS(
 
 // ── Regression Discontinuity Design ───────────────────────────────────────
 
+/**
+ * Result of a Regression Discontinuity Design (RDD) estimation.
+ *
+ * Contains the estimated treatment effect at the cutoff, the linear
+ * regression fits on each side of the cutoff, sample sizes, and
+ * the standard error of the treatment effect estimate.
+ */
 export interface RDDResult {
   /** Estimated treatment effect at the cutoff. */
   estimate: number;
@@ -422,13 +540,29 @@ export interface RDDResult {
 /**
  * Sharp Regression Discontinuity Design.
  *
- * Fits separate linear regressions on each side of the cutoff and
- * estimates the treatment effect as the jump at the discontinuity.
+ * Fits separate linear regressions on each side of the cutoff (centred at 0)
+ * and estimates the treatment effect as the difference in intercepts:
+ *   tau = intercept_above - intercept_below
  *
- * @param y  Outcome variable (length n).
- * @param running  Running/forcing variable (length n).
- * @param cutoff  The discontinuity threshold.
- * @param options.bandwidth  Only use observations within this distance of the cutoff.
+ * An optional bandwidth restricts the analysis to observations close to the cutoff.
+ *
+ * @param y - Outcome variable (length n)
+ * @param running - Running/forcing variable (length n)
+ * @param cutoff - The discontinuity threshold value
+ * @param options - Optional configuration
+ * @param options.bandwidth - If specified, only observations within this distance
+ *   of the cutoff are used
+ * @returns An {@link RDDResult} with the treatment effect estimate, regression fits,
+ *   sample sizes, and standard error
+ * @throws {Error} If y and running have different lengths
+ * @throws {Error} If fewer than 2 observations on either side of the cutoff
+ *
+ * @example
+ * ```ts
+ * const result = rdd(testScores, runningVariable, 50);
+ * console.log(result.estimate);      // treatment effect at cutoff
+ * console.log(result.standardError); // SE of the estimate
+ * ```
  */
 export function rdd(
   y: number[],
@@ -495,14 +629,32 @@ export function rdd(
 /**
  * Fuzzy Regression Discontinuity Design.
  *
- * Uses 2SLS where the instrument is the indicator 1(running ≥ cutoff)
- * and the endogenous variable is the actual treatment take-up.
+ * Unlike sharp RDD where treatment assignment is deterministic at the cutoff,
+ * fuzzy RDD handles cases where the probability of treatment changes
+ * discontinuously but not from 0 to 1.
  *
- * @param y  Outcome variable (length n).
- * @param treatment  Actual treatment take-up (continuous or binary, length n).
- * @param running  Running/forcing variable (length n).
- * @param cutoff  The discontinuity threshold.
- * @param options.bandwidth  Only use observations within this distance of the cutoff.
+ * Uses 2SLS where the instrument is the indicator 1(running >= cutoff)
+ * and the centred running variable, and the endogenous variable is the
+ * actual treatment take-up.
+ *
+ * @param y - Outcome variable (length n)
+ * @param treatment - Actual treatment take-up (continuous or binary, length n)
+ * @param running - Running/forcing variable (length n)
+ * @param cutoff - The discontinuity threshold
+ * @param options - Optional configuration
+ * @param options.bandwidth - If specified, only observations within this distance
+ *   of the cutoff are used
+ * @returns Object with the treatment effect estimate, first-stage F-statistic,
+ *   and number of observations used
+ * @throws {Error} If y, treatment, and running have different lengths
+ * @throws {Error} If fewer than 4 observations within bandwidth
+ *
+ * @example
+ * ```ts
+ * const result = fuzzyRDD(outcomes, actualTreatment, runningVar, 50);
+ * console.log(result.estimate);    // LATE at the cutoff
+ * console.log(result.firstStageF); // instrument strength
+ * ```
  */
 export function fuzzyRDD(
   y: number[],

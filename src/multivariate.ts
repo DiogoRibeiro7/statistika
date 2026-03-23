@@ -6,6 +6,9 @@ import { transpose, matMul, createRng, symmetricEigen, type Matrix } from "./uti
 
 // ── Types ───────────────────────────────────────────────────────────────
 
+/**
+ * Result of a Principal Component Analysis.
+ */
 export interface PCAResult {
   /** Eigenvalues in descending order. */
   eigenvalues: number[];
@@ -23,6 +26,9 @@ export interface PCAResult {
   nObservations: number;
 }
 
+/**
+ * Result of a Factor Analysis.
+ */
 export interface FactorAnalysisResult {
   /** Factor loadings matrix (nFeatures x nFactors). */
   loadings: Matrix;
@@ -36,6 +42,9 @@ export interface FactorAnalysisResult {
   nFactors: number;
 }
 
+/**
+ * Result of K-Means clustering.
+ */
 export interface KMeansResult {
   /** Cluster assignments for each observation (0-indexed). */
   assignments: number[];
@@ -49,6 +58,9 @@ export interface KMeansResult {
   totalWCSS: number;
 }
 
+/**
+ * Result of hierarchical (agglomerative) clustering.
+ */
 export interface HierarchicalClusterResult {
   /** Cluster assignments for each observation (0-indexed). */
   assignments: number[];
@@ -111,11 +123,27 @@ function covarianceMatrix(centered: Matrix): Matrix {
  * Uses eigendecomposition of the covariance matrix (LAPACK DSYEV when
  * available, Jacobi iteration fallback).
  *
+ * The covariance matrix is computed as C = X'X / (n - 1) where X is the
+ * centered data matrix. Eigenvalues represent the variance captured by
+ * each principal component.
+ *
  * @param data - Data matrix (n observations x p features)
  * @param options - Configuration options
  * @param options.nComponents - Number of components to retain (default: all)
  * @param options.center - Whether to center the data (default: true)
  * @param options.scale - Whether to standardize to unit variance (default: false)
+ * @returns PCAResult containing eigenvalues, components, explained variance, and scores
+ * @throws Error if fewer than 2 observations are provided
+ * @throws Error if fewer than 1 feature is provided
+ * @throws Error if nComponents is not between 1 and the number of features
+ *
+ * @example
+ * ```ts
+ * const data = [[1, 2], [3, 4], [5, 6], [7, 8]];
+ * const result = pca(data, { nComponents: 1 });
+ * // result.explainedVariance[0] — proportion of variance in the first PC
+ * // result.scores — data projected onto the first PC
+ * ```
  */
 export function pca(
   data: Matrix,
@@ -213,13 +241,26 @@ export function pca(
  *
  * Extracts latent factors that explain the shared variance among observed
  * variables. Uses iterative principal axis factoring with communality
- * estimation.
+ * estimation. The model decomposes the covariance matrix as
+ * Sigma = Lambda * Lambda' + Psi, where Lambda is the loadings matrix and
+ * Psi is the diagonal uniqueness matrix.
  *
  * @param data - Data matrix (n observations x p features)
  * @param nFactors - Number of factors to extract
  * @param options - Configuration options
  * @param options.maxIter - Maximum iterations (default: 100)
  * @param options.tol - Convergence tolerance (default: 1e-6)
+ * @returns FactorAnalysisResult with loadings, uniquenesses, communalities, and explained variance
+ * @throws Error if fewer than 2 observations are provided
+ * @throws Error if nFactors is not between 1 and the number of features
+ *
+ * @example
+ * ```ts
+ * const data = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
+ * const result = factorAnalysis(data, 1);
+ * // result.loadings — nFeatures x 1 matrix of factor loadings
+ * // result.communalities — proportion of each variable's variance explained
+ * ```
  */
 export function factorAnalysis(
   data: Matrix,
@@ -333,7 +374,11 @@ function sqDist(a: number[], b: number[]): number {
  * K-Means clustering.
  *
  * Partitions n observations into k clusters by minimizing within-cluster
- * sum of squares. Uses k-means++ initialization for better convergence.
+ * sum of squares (WCSS). Uses k-means++ initialization for better convergence
+ * and runs multiple initializations, keeping the best result.
+ *
+ * The objective is to minimize: sum_i ||x_i - mu_{c(i)}||^2 where c(i) is
+ * the cluster assignment and mu_c is the centroid of cluster c.
  *
  * @param data - Data matrix (n observations x p features)
  * @param k - Number of clusters
@@ -342,6 +387,17 @@ function sqDist(a: number[], b: number[]): number {
  * @param options.tol - Convergence tolerance for centroid movement (default: 1e-6)
  * @param options.seed - Random seed for reproducibility
  * @param options.nInit - Number of initializations, best result kept (default: 10)
+ * @returns KMeansResult with cluster assignments, centroids, iterations, and WCSS
+ * @throws Error if number of observations is less than k
+ * @throws Error if k is less than 1
+ *
+ * @example
+ * ```ts
+ * const data = [[1, 0], [1.1, 0.1], [5, 5], [5.1, 5.1]];
+ * const result = kMeans(data, 2, { seed: 42 });
+ * // result.assignments — e.g., [0, 0, 1, 1]
+ * // result.centroids — 2 x 2 matrix of cluster centers
+ * ```
  */
 export function kMeans(
   data: Matrix,
@@ -463,18 +519,31 @@ export function kMeans(
 
 // ── Hierarchical Clustering ─────────────────────────────────────────────
 
+/** Linkage criterion for hierarchical clustering. */
 export type Linkage = "single" | "complete" | "average";
 
 /**
  * Agglomerative hierarchical clustering.
  *
- * Builds a hierarchy of clusters by successively merging the closest pair.
- * Supports single, complete, and average linkage.
+ * Builds a hierarchy of clusters by successively merging the closest pair
+ * of clusters until the desired number of clusters is reached.
+ * Supports single (minimum), complete (maximum), and average linkage.
  *
  * @param data - Data matrix (n observations x p features)
  * @param nClusters - Desired number of clusters
  * @param options - Configuration options
  * @param options.linkage - Linkage method: "single", "complete", "average" (default: "complete")
+ * @returns HierarchicalClusterResult with assignments, merge history, and cluster count
+ * @throws Error if fewer than 1 observation is provided
+ * @throws Error if nClusters is not between 1 and the number of observations
+ *
+ * @example
+ * ```ts
+ * const data = [[0, 0], [1, 0], [10, 10], [11, 10]];
+ * const result = hierarchicalClustering(data, 2, { linkage: "complete" });
+ * // result.assignments — e.g., [0, 0, 1, 1]
+ * // result.merges — history of which clusters were merged and at what distance
+ * ```
  */
 export function hierarchicalClustering(
   data: Matrix,

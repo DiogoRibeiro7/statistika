@@ -10,14 +10,34 @@
 
 // ── Graph Data Structure ──────────────────────────────────────────────────
 
+/**
+ * Graph data structure using adjacency list representation.
+ *
+ * Supports both directed and undirected graphs with optional edge weights.
+ * Provides methods for graph construction, property queries, BFS traversal,
+ * connected component detection, and metric computation.
+ *
+ * @example
+ * ```ts
+ * const g = Graph.fromEdgeList([[0, 1], [1, 2], [2, 0]]);
+ * console.log(g.nodeCount);  // 3
+ * console.log(g.edgeCount);  // 3
+ * console.log(g.density());  // 1.0 (complete graph)
+ * ```
+ */
 export class Graph {
-  /** Adjacency list: node → [neighbour, ...]. */
+  /** Adjacency list: node to set of neighbours. */
   private _adj: Map<number, Set<number>>;
-  /** Edge weights. Key = "i,j" (ordered). */
+  /** Edge weights. Key = "u,v" string. */
   private _weights: Map<string, number>;
   /** Whether the graph is directed. */
   readonly directed: boolean;
 
+  /**
+   * Create a new empty graph.
+   *
+   * @param directed - If true, edges are directed (default: false for undirected)
+   */
   constructor(directed = false) {
     this._adj = new Map();
     this._weights = new Map();
@@ -27,7 +47,16 @@ export class Graph {
   // ── Factories ───────────────────────────────────────────────────────────
 
   /**
-   * Create from an edge list: [[source, target, weight?], ...].
+   * Create a graph from an edge list.
+   *
+   * @param edges - Array of [source, target, weight?] tuples (weight defaults to 1)
+   * @param directed - Whether the graph is directed (default: false)
+   * @returns A new Graph with all specified edges
+   *
+   * @example
+   * ```ts
+   * const g = Graph.fromEdgeList([[0, 1, 2.5], [1, 2]], false);
+   * ```
    */
   static fromEdgeList(
     edges: [number, number, number?][],
@@ -41,8 +70,14 @@ export class Graph {
   }
 
   /**
-   * Create from an adjacency matrix (0 = no edge).
-   * Diagonal is ignored.
+   * Create a graph from an adjacency matrix.
+   *
+   * Non-zero entries indicate edges; the value becomes the edge weight.
+   * Diagonal entries are ignored.
+   *
+   * @param matrix - Square adjacency matrix (n x n)
+   * @param directed - Whether the graph is directed (default: false)
+   * @returns A new Graph with nodes 0 to n-1
    */
   static fromAdjacencyMatrix(matrix: number[][], directed = false): Graph {
     const n = matrix.length;
@@ -61,10 +96,24 @@ export class Graph {
 
   // ── Mutation ────────────────────────────────────────────────────────────
 
+  /**
+   * Add a node to the graph (no-op if already present).
+   *
+   * @param node - Node identifier
+   */
   addNode(node: number): void {
     if (!this._adj.has(node)) this._adj.set(node, new Set());
   }
 
+  /**
+   * Add an edge (and its endpoints) to the graph.
+   *
+   * For undirected graphs, the reverse edge is also added.
+   *
+   * @param u - Source node
+   * @param v - Target node
+   * @param weight - Edge weight (default: 1)
+   */
   addEdge(u: number, v: number, weight = 1): void {
     this.addNode(u);
     this.addNode(v);
@@ -78,32 +127,61 @@ export class Graph {
 
   // ── Properties ──────────────────────────────────────────────────────────
 
+  /** All node identifiers, sorted in ascending order. */
   get nodes(): number[] {
     return [...this._adj.keys()].sort((a, b) => a - b);
   }
 
+  /** Total number of nodes in the graph. */
   get nodeCount(): number {
     return this._adj.size;
   }
 
+  /** Total number of edges (each undirected edge counted once). */
   get edgeCount(): number {
     let count = 0;
     for (const [, neighbors] of this._adj) count += neighbors.size;
     return this.directed ? count : count / 2;
   }
 
+  /**
+   * Get the neighbours of a node.
+   *
+   * @param node - Node identifier
+   * @returns Array of neighbouring node identifiers
+   */
   neighbours(node: number): number[] {
     return [...(this._adj.get(node) ?? [])];
   }
 
+  /**
+   * Get the degree of a node (number of adjacent edges).
+   *
+   * @param node - Node identifier
+   * @returns The degree (0 if node does not exist)
+   */
   degree(node: number): number {
     return this._adj.get(node)?.size ?? 0;
   }
 
+  /**
+   * Get the weight of an edge.
+   *
+   * @param u - Source node
+   * @param v - Target node
+   * @returns The edge weight, or 0 if the edge does not exist
+   */
   weight(u: number, v: number): number {
     return this._weights.get(edgeKey(u, v)) ?? 0;
   }
 
+  /**
+   * Check whether an edge exists between two nodes.
+   *
+   * @param u - Source node
+   * @param v - Target node
+   * @returns True if the edge exists
+   */
   hasEdge(u: number, v: number): boolean {
     return this._adj.get(u)?.has(v) ?? false;
   }
@@ -111,7 +189,11 @@ export class Graph {
   // ── Graph metrics ───────────────────────────────────────────────────────
 
   /**
-   * Graph density: |E| / (|V|(|V|−1)/k), k = 1 for directed, 2 for undirected.
+   * Graph density: ratio of actual edges to the maximum possible edges.
+   *
+   * density = |E| / (|V|*(|V|-1)/k), where k = 1 for directed, k = 2 for undirected.
+   *
+   * @returns A value between 0 (no edges) and 1 (complete graph)
    */
   density(): number {
     const n = this.nodeCount;
@@ -121,8 +203,12 @@ export class Graph {
   }
 
   /**
-   * Global clustering coefficient (transitivity):
-   * 3 × triangles / connected triples.
+   * Global clustering coefficient (transitivity).
+   *
+   * Measures the fraction of connected triples that form triangles:
+   * C = (number of closed triplets) / (total number of connected triples).
+   *
+   * @returns A value between 0 and 1 (0 if no triples exist)
    */
   clusteringCoefficient(): number {
     const nodeList = this.nodes;
@@ -145,8 +231,10 @@ export class Graph {
   // ── Paths ───────────────────────────────────────────────────────────────
 
   /**
-   * BFS shortest path (unweighted) from source.
-   * Returns distances (−1 = unreachable).
+   * Compute BFS shortest path distances (unweighted) from a source node.
+   *
+   * @param source - The source node to compute distances from
+   * @returns Map from each node to its shortest-path distance (-1 if unreachable)
    */
   bfsDistances(source: number): Map<number, number> {
     const dist = new Map<number, number>();
@@ -169,8 +257,9 @@ export class Graph {
   }
 
   /**
-   * Connected components (undirected).
-   * Returns array of component arrays.
+   * Find all connected components of the graph (undirected traversal).
+   *
+   * @returns Array of components, where each component is an array of node identifiers
    */
   connectedComponents(): number[][] {
     const visited = new Set<number>();
@@ -198,8 +287,11 @@ export class Graph {
   }
 
   /**
-   * Graph diameter (longest shortest path).
-   * Returns Infinity if the graph is disconnected.
+   * Compute the graph diameter (the longest shortest path between any two nodes).
+   *
+   * Uses BFS from every node to find all-pairs shortest paths.
+   *
+   * @returns The diameter (longest shortest path distance), or Infinity if disconnected
    */
   diameter(): number {
     let maxDist = 0;
@@ -216,13 +308,23 @@ export class Graph {
 
 // ── Centrality Measures ───────────────────────────────────────────────────
 
+/**
+ * Result of a centrality computation.
+ *
+ * Maps each node to its centrality score.
+ */
 export interface CentralityResult {
   /** Map from node ID to centrality value. */
   values: Map<number, number>;
 }
 
 /**
- * Degree centrality: degree(v) / (n − 1).
+ * Degree centrality: normalised degree of each node.
+ *
+ * C_D(v) = degree(v) / (n - 1), ranging from 0 to 1.
+ *
+ * @param g - Graph to compute centrality for
+ * @returns A {@link CentralityResult} mapping each node to its degree centrality
  */
 export function degreeCentrality(g: Graph): CentralityResult {
   const n = g.nodeCount;
@@ -234,7 +336,13 @@ export function degreeCentrality(g: Graph): CentralityResult {
 }
 
 /**
- * Closeness centrality: (n − 1) / Σ d(v, u).
+ * Closeness centrality for each node.
+ *
+ * C_C(v) = (number of reachable nodes) / (sum of shortest-path distances from v).
+ * Nodes with no reachable neighbours get centrality 0.
+ *
+ * @param g - Graph to compute centrality for
+ * @returns A {@link CentralityResult} mapping each node to its closeness centrality
  */
 export function closenessCentrality(g: Graph): CentralityResult {
   const n = g.nodeCount;
@@ -256,8 +364,13 @@ export function closenessCentrality(g: Graph): CentralityResult {
 }
 
 /**
- * Betweenness centrality (Brandes' algorithm).
- * Normalised by 2/((n−1)(n−2)) for undirected graphs.
+ * Betweenness centrality using Brandes' algorithm.
+ *
+ * Measures how often a node lies on shortest paths between other pairs.
+ * Normalised by 2/((n-1)*(n-2)) for undirected or 1/((n-1)*(n-2)) for directed graphs.
+ *
+ * @param g - Graph to compute centrality for
+ * @returns A {@link CentralityResult} mapping each node to its betweenness centrality
  */
 export function betweennessCentrality(g: Graph): CentralityResult {
   const nodeList = g.nodes;
@@ -324,6 +437,14 @@ export function betweennessCentrality(g: Graph): CentralityResult {
 
 /**
  * Eigenvector centrality via power iteration.
+ *
+ * A node has high eigenvector centrality if it is connected to other
+ * high-centrality nodes. Converges to the leading eigenvector of the
+ * adjacency matrix.
+ *
+ * @param g - Graph to compute centrality for
+ * @param options - Optional iteration limits and convergence tolerance
+ * @returns A {@link CentralityResult} mapping each node to its eigenvector centrality
  */
 export function eigenvectorCentrality(
   g: Graph,
@@ -366,10 +487,17 @@ export function eigenvectorCentrality(
 /**
  * PageRank centrality.
  *
- * @param g  Graph.
- * @param options.damping  Damping factor (default 0.85).
- * @param options.maxIterations  Max iterations (default 100).
- * @param options.tolerance  Convergence tolerance (default 1e-8).
+ * Computes the stationary distribution of a random walker that follows
+ * edges with probability `damping` and teleports to a random node with
+ * probability `1 - damping`. Dangling nodes distribute their rank evenly.
+ *
+ * @param g - Graph to compute PageRank for
+ * @param options - Configuration options
+ * @param options.damping - Damping factor (default: 0.85)
+ * @param options.maxIterations - Maximum iterations (default: 100)
+ * @param options.tolerance - Convergence tolerance (default: 1e-8)
+ * @returns A {@link CentralityResult} mapping each node to its PageRank score
+ *   (scores sum to 1)
  */
 export function pageRank(
   g: Graph,
@@ -410,20 +538,38 @@ export function pageRank(
 
 // ── Community Detection ───────────────────────────────────────────────────
 
+/**
+ * Result of community detection.
+ *
+ * Contains the partition of nodes into communities, the number of
+ * communities found, and the modularity score of the partition.
+ */
 export interface CommunityResult {
-  /** Map from node to community label. */
+  /** Map from each node to its community label. */
   communities: Map<number, number>;
-  /** Number of communities. */
+  /** Number of distinct communities detected. */
   nCommunities: number;
-  /** Modularity of the partition. */
+  /** Modularity Q of the partition (higher is better, typically 0.3-0.7). */
   modularity: number;
 }
 
 /**
  * Community detection via label propagation.
  *
- * Each node adopts the most frequent label among its neighbours.
- * Ties are broken randomly. Runs until convergence or maxIterations.
+ * Each node iteratively adopts the most frequent label among its neighbours.
+ * Ties are broken by keeping the current label. The algorithm converges when
+ * no labels change, or after maxIterations.
+ *
+ * @param g - Graph to detect communities in
+ * @param maxIterations - Maximum number of label propagation iterations (default: 100)
+ * @returns A {@link CommunityResult} with community assignments and modularity
+ *
+ * @example
+ * ```ts
+ * const g = Graph.fromEdgeList([[0,1],[1,2],[3,4],[4,5]]);
+ * const result = labelPropagation(g);
+ * console.log(result.nCommunities); // likely 2
+ * ```
  */
 export function labelPropagation(
   g: Graph,
@@ -480,9 +626,15 @@ export function labelPropagation(
 }
 
 /**
- * Compute modularity Q for a given partition.
+ * Compute modularity Q for a given partition of a graph.
  *
- * Q = (1 / 2m) Σᵢⱼ [Aᵢⱼ − kᵢkⱼ/(2m)] δ(cᵢ, cⱼ)
+ * Q = (1/(2m)) * sum_ij [A_ij - k_i*k_j/(2m)] * delta(c_i, c_j),
+ * where m is the number of edges, A is the adjacency matrix, k_i is the
+ * degree of node i, and delta is 1 when nodes i and j share a community.
+ *
+ * @param g - The graph
+ * @param communities - Map from each node to its community label
+ * @returns The modularity Q (typically between -0.5 and 1.0)
  */
 export function modularity(g: Graph, communities: Map<number, number>): number {
   const m = g.edgeCount;

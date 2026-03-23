@@ -5,6 +5,13 @@ import { regularizedGammaP } from "./utils/math";
  * Contingency table utilities and categorical data analysis.
  */
 
+/**
+ * Summary of a contingency table including observed counts, expected counts
+ * under independence, marginal totals, and table dimensions.
+ *
+ * Expected counts are computed as E_ij = (row_i_total * col_j_total) / grand_total,
+ * representing the counts expected if rows and columns were independent.
+ */
 export interface ContingencyTableSummary {
   /** The table of observed counts. */
   observed: number[][];

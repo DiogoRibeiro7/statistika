@@ -1,27 +1,70 @@
 import { BaseContinuous } from "../base";
 import { gammaLn, regularizedGammaP, quantileBisect } from "../../utils/math";
+import { RandomFn } from "../../types";
 
+/**
+ * Gamma distribution parameterized by `shape` (alpha) and `rate` (beta).
+ *
+ * The PDF is:
+ *
+ *   f(x) = (rate^shape / Gamma(shape)) * x^(shape-1) * exp(-rate * x)
+ *
+ * for x > 0. The scale parameterization uses scale = 1/rate.
+ *
+ * Support: [0, +Infinity) (or (0, +Infinity) when shape < 1)
+ *
+ * @example
+ * ```ts
+ * const dist = new GammaDistribution(2, 1);
+ * dist.mean();    // 2
+ * dist.pdf(1);    // exp(-1) ~ 0.3679
+ * ```
+ */
 export class GammaDistribution extends BaseContinuous {
   readonly name: string;
 
+  /**
+   * Creates a Gamma distribution.
+   * @param shape - Shape parameter alpha (must be > 0). Defaults to 1.
+   * @param rate - Rate parameter beta (must be > 0). Defaults to 1.
+   * @param rng - Optional random number generator.
+   * @throws If `shape` or `rate` is not positive.
+   */
   constructor(
     public readonly shape: number = 1,
     public readonly rate: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (shape <= 0) throw new Error("shape must be positive");
     if (rate <= 0) throw new Error("rate must be positive");
     this.name = `Gamma(${shape}, ${rate})`;
   }
 
+  /**
+   * Returns the mean: `shape / rate`.
+   */
   mean(): number {
     return this.shape / this.rate;
   }
 
+  /**
+   * Returns the variance: `shape / rate^2`.
+   */
   variance(): number {
     return this.shape / this.rate ** 2;
   }
 
+  /**
+   * Evaluates the PDF at `x`.
+   *
+   * f(x) = (rate^shape / Gamma(shape)) * x^(shape-1) * exp(-rate * x)
+   *
+   * Computed in log-space for numerical stability.
+   *
+   * @param x - The point at which to evaluate the density.
+   * @returns The density f(x).
+   */
   pdf(x: number): number {
     if (x < 0) return 0;
     if (x === 0) {
@@ -37,11 +80,25 @@ export class GammaDistribution extends BaseContinuous {
     return Math.exp(logPdf);
   }
 
+  /**
+   * Evaluates the CDF at `x` using the regularized lower incomplete gamma function.
+   *
+   * F(x) = P(shape, rate * x) = gammaP(shape, rate * x)
+   *
+   * @param x - The point at which to evaluate the CDF.
+   * @returns P(X <= x) in [0, 1].
+   */
   cdf(x: number): number {
     if (x <= 0) return 0;
     return regularizedGammaP(this.shape, this.rate * x);
   }
 
+  /**
+   * Computes the quantile (inverse CDF) via bisection search.
+   * @param p - A probability in [0, 1].
+   * @returns The value x such that P(X <= x) = p.
+   * @throws If `p` is outside [0, 1].
+   */
   quantile(p: number): number {
     if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
     if (p === 0) return 0;
@@ -53,22 +110,27 @@ export class GammaDistribution extends BaseContinuous {
     return quantileBisect((x) => this.cdf(x), p, 0, upper);
   }
 
+  /**
+   * Draws a random sample using the Marsaglia-Tsang method (shape >= 1)
+   * with a shape-shifting technique for shape < 1.
+   * @returns A random variate from this Gamma distribution.
+   */
   sample(): number {
     // Marsaglia-Tsang method for shape >= 1, shift for shape < 1
     if (this.shape < 1) {
-      const g = new GammaDistribution(this.shape + 1, 1).sample();
-      return (g * Math.pow(Math.random(), 1 / this.shape)) / this.rate;
+      const g = new GammaDistribution(this.shape + 1, 1, this.rng).sample();
+      return (g * Math.pow(this.rng(), 1 / this.shape)) / this.rate;
     }
     const d = this.shape - 1 / 3;
     const c = 1 / Math.sqrt(9 * d);
     while (true) {
       let x: number, v: number;
       do {
-        x = standardNormal();
+        x = standardNormal(this.rng);
         v = 1 + c * x;
       } while (v <= 0);
       v = v * v * v;
-      const u = Math.random();
+      const u = this.rng();
       if (
         u < 1 - 0.0331 * (x * x) * (x * x) ||
         Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))
@@ -79,8 +141,8 @@ export class GammaDistribution extends BaseContinuous {
   }
 }
 
-function standardNormal(): number {
-  const u1 = Math.random();
-  const u2 = Math.random();
+function standardNormal(rng: RandomFn): number {
+  const u1 = rng();
+  const u2 = rng();
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }

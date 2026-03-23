@@ -4,6 +4,9 @@ import { createRng, normalCdf, normalQuantile } from "./utils/linalg";
 
 // ── Kernel Density Estimation ───────────────────────────────────────────
 
+/**
+ * Result of a kernel density estimation.
+ */
 export interface KDEResult {
   /** Evaluation points on the x-axis. */
   x: number[];
@@ -15,6 +18,10 @@ export interface KDEResult {
   kernel: string;
 }
 
+/**
+ * A kernel function K(u) used in kernel density estimation.
+ * Takes a standardized distance u and returns the kernel weight.
+ */
 export type KernelFunction = (u: number) => number;
 
 const kernels: Record<string, KernelFunction> = {
@@ -44,7 +51,9 @@ function silvermanBandwidth(data: Dataset): number {
  * Kernel density estimation.
  *
  * Estimates the probability density function of a continuous random variable
- * using a kernel smoothing approach.
+ * using a kernel smoothing approach. For each evaluation point x, the density
+ * is estimated as: f(x) = (1 / (n * h)) * sum(K((x - x_i) / h)) where K is
+ * the kernel function and h is the bandwidth.
  *
  * @param data - Input sample data
  * @param options - Configuration options
@@ -53,6 +62,18 @@ function silvermanBandwidth(data: Dataset): number {
  * @param options.nPoints - Number of evaluation points (default: 512)
  * @param options.from - Lower bound of evaluation range (default: min - 3*bandwidth)
  * @param options.to - Upper bound of evaluation range (default: max + 3*bandwidth)
+ * @returns KDEResult with evaluation points, density values, bandwidth, and kernel name
+ * @throws Error if dataset has fewer than 2 elements
+ * @throws Error if an unknown kernel name is specified
+ * @throws Error if bandwidth is not positive
+ *
+ * @example
+ * ```ts
+ * const data = [1, 1.5, 2, 2.5, 3, 3.5, 4];
+ * const result = kernelDensity(data, { kernel: "gaussian", nPoints: 100 });
+ * // result.x — 100 evaluation points
+ * // result.density — estimated density at each point
+ * ```
  */
 export function kernelDensity(
   data: Dataset,
@@ -100,6 +121,9 @@ export function kernelDensity(
 
 // ── Bootstrap Confidence Intervals ──────────────────────────────────────
 
+/**
+ * Result of a bootstrap confidence interval estimation.
+ */
 export interface BootstrapCIResult {
   /** The statistic computed on the original sample. */
   estimate: number;
@@ -122,7 +146,8 @@ export interface BootstrapCIResult {
  *
  * Estimates a confidence interval for any statistic by resampling with
  * replacement. Supports percentile and BCa (bias-corrected and accelerated)
- * methods.
+ * methods. The BCa method adjusts for bias and skewness in the bootstrap
+ * distribution using jackknife acceleration.
  *
  * @param data - Input sample data
  * @param statistic - Function that computes the statistic of interest from a sample
@@ -131,6 +156,20 @@ export interface BootstrapCIResult {
  * @param options.nReplicates - Number of bootstrap resamples (default: 10000)
  * @param options.method - "percentile" or "bca" (default: "percentile")
  * @param options.seed - Random seed for reproducibility
+ * @returns BootstrapCIResult with the estimate, confidence interval bounds, and standard error
+ * @throws Error if dataset has fewer than 2 elements
+ *
+ * @example
+ * ```ts
+ * const data = [2, 4, 6, 8, 10, 12];
+ * const result = bootstrapCI(data, (s) => s.reduce((a, b) => a + b) / s.length, {
+ *   confidence: 0.95,
+ *   nReplicates: 5000,
+ *   seed: 42,
+ * });
+ * // result.estimate — sample mean
+ * // result.lower, result.upper — 95% CI bounds
+ * ```
  */
 export function bootstrapCI(
   data: Dataset,
@@ -230,6 +269,9 @@ export function bootstrapCI(
 
 // ── Permutation Test ────────────────────────────────────────────────────
 
+/**
+ * Result of a permutation test.
+ */
 export interface PermutationTestResult {
   /** Observed test statistic. */
   observedStatistic: number;
@@ -246,6 +288,7 @@ export interface PermutationTestResult {
  *
  * Tests whether two independent samples come from the same distribution
  * by randomly permuting group assignments and comparing the test statistic.
+ * The p-value is computed as (count_extreme + 1) / (nPermutations + 1).
  *
  * @param data1 - First sample
  * @param data2 - Second sample
@@ -255,6 +298,17 @@ export interface PermutationTestResult {
  * @param options.alternative - "two-sided", "greater", or "less" (default: "two-sided")
  * @param options.alpha - Significance level (default: 0.05)
  * @param options.seed - Random seed for reproducibility
+ * @returns PermutationTestResult with observed statistic, p-value, and rejection decision
+ * @throws Error if either sample is empty
+ *
+ * @example
+ * ```ts
+ * const group1 = [1, 2, 3, 4, 5];
+ * const group2 = [6, 7, 8, 9, 10];
+ * const result = permutationTest(group1, group2, { seed: 42 });
+ * // result.pValue — estimated p-value
+ * // result.rejected — whether to reject H0 at alpha = 0.05
+ * ```
  */
 export function permutationTest(
   data1: Dataset,
@@ -324,6 +378,20 @@ export function permutationTest(
  * @param data - Sample data
  * @param center - Hypothesized center value (default: 0)
  * @param options - Configuration options
+ * @param options.statistic - Function computing the test statistic (default: mean)
+ * @param options.nPermutations - Number of random permutations (default: 10000)
+ * @param options.alternative - "two-sided", "greater", or "less" (default: "two-sided")
+ * @param options.alpha - Significance level (default: 0.05)
+ * @param options.seed - Random seed for reproducibility
+ * @returns PermutationTestResult with observed statistic, p-value, and rejection decision
+ * @throws Error if dataset has fewer than 1 element
+ *
+ * @example
+ * ```ts
+ * const data = [1.2, 2.3, 0.8, 1.9, 2.1];
+ * const result = oneSamplePermutationTest(data, 0, { seed: 42 });
+ * // Tests whether the center of `data` differs from 0
+ * ```
  */
 export function oneSamplePermutationTest(
   data: Dataset,

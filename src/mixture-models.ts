@@ -3,7 +3,11 @@ import { mean, variance } from "./utils/descriptive";
 import { createRng } from "./utils/linalg";
 
 /**
- * Result of a Gaussian Mixture Model fit.
+ * Result of fitting a 1D Gaussian Mixture Model via the EM algorithm.
+ *
+ * Contains the estimated mixture parameters (weights, means, variances),
+ * soft and hard cluster assignments, model selection criteria (AIC/BIC),
+ * and convergence information.
  */
 export interface GMMResult {
   /** Number of components. */

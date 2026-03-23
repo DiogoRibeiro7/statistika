@@ -4,7 +4,7 @@ import { Dataset } from "./types";
  * Simple Moving Average (SMA).
  *
  * Computes the unweighted mean of the previous `window` data points
- * for each position in the series.
+ * for each position in the series. SMA(t) = (1/w) * sum(x_{t-w+1}..x_t).
  *
  * @param data - Input time series
  * @param window - Window size
@@ -12,6 +12,12 @@ import { Dataset } from "./types";
  * @throws {Error} If dataset is empty
  * @throws {Error} If window is not an integer between 1 and data length
  * @throws {Error} If any data value is NaN or Infinity
+ *
+ * @example
+ * ```ts
+ * const data = [1, 2, 3, 4, 5, 6];
+ * sma(data, 3); // [2, 3, 4, 5]
+ * ```
  */
 export function sma(data: Dataset, window: number): number[] {
   if (data.length === 0) throw new Error("Dataset must not be empty");
@@ -37,6 +43,7 @@ export function sma(data: Dataset, window: number): number[] {
  * Exponential Moving Average (EMA).
  *
  * Applies exponentially decreasing weights to older observations.
+ * EMA(t) = alpha * x_t + (1 - alpha) * EMA(t-1), with EMA(0) = x_0.
  *
  * @param data - Input time series
  * @param alpha - Smoothing factor (0 < alpha <= 1). Higher = more weight on recent values.
@@ -44,6 +51,12 @@ export function sma(data: Dataset, window: number): number[] {
  * @throws {Error} If dataset is empty
  * @throws {Error} If alpha is not in (0, 1]
  * @throws {Error} If any data value is NaN or Infinity
+ *
+ * @example
+ * ```ts
+ * const data = [1, 2, 3, 4, 5];
+ * ema(data, 0.5); // [1, 1.5, 2.25, 3.125, 4.0625]
+ * ```
  */
 export function ema(data: Dataset, alpha: number): number[] {
   if (data.length === 0) throw new Error("Dataset must not be empty");
@@ -66,6 +79,8 @@ export function ema(data: Dataset, alpha: number): number[] {
  * Weighted Moving Average (WMA).
  *
  * Applies linearly increasing weights (most recent gets highest weight).
+ * Weight for position j in the window is (j + 1), normalized by
+ * the sum w(w+1)/2 where w is the window size.
  *
  * @param data - Input time series
  * @param window - Window size
@@ -73,6 +88,12 @@ export function ema(data: Dataset, alpha: number): number[] {
  * @throws {Error} If dataset is empty
  * @throws {Error} If window is not between 1 and data length
  * @throws {Error} If any data value is NaN or Infinity
+ *
+ * @example
+ * ```ts
+ * const data = [1, 2, 3, 4, 5];
+ * wma(data, 3); // weights [1, 2, 3], normalized by 6
+ * ```
  */
 export function wma(data: Dataset, window: number): number[] {
   if (data.length === 0) throw new Error("Dataset must not be empty");

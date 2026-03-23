@@ -16,6 +16,10 @@ import { nativeAddon } from "../utils/native-addon";
 
 // ── Native interface ──────────────────────────────────────────────────────
 
+/**
+ * Interface for optional native (Fortran/C) accelerated implementations
+ * of regularised regression solvers.
+ */
 interface NativeFeatureSelection {
   elasticNetCd(
     X: number[][],
@@ -49,47 +53,88 @@ export const hasNativeFeatureSelection = native !== null;
 
 // ── Result types ──────────────────────────────────────────────────────────
 
+/**
+ * Result of stepwise feature selection, including the selected feature subset
+ * and fitted regression model.
+ */
 export interface StepwiseResult {
-  /** Indices of selected features (0-based, referring to columns of X). */
+  /** 0-based indices of selected features, referring to columns of the input matrix X. */
   selectedFeatures: number[];
-  /** Regression coefficients for selected features (same order). */
+  /** Regression coefficients for the selected features (same order as `selectedFeatures`). */
   coefficients: number[];
-  /** Intercept. */
+  /** Intercept (constant) term of the fitted model. */
   intercept: number;
-  /** R² on the full dataset. */
+  /** Coefficient of determination (R^2) on the full dataset. */
   rSquared: number;
-  /** Final criterion value (AIC, BIC, or adjusted-R²). */
+  /** Final information criterion value (AIC, BIC, or negated adjusted-R^2). Lower is better. */
   criterion: number;
-  /** Predict y for a full feature vector (all p features). */
+  /**
+   * Predicts y for a full feature vector containing all p features.
+   * Only the selected features are used internally.
+   * @param x - Feature vector of length p (all original features).
+   * @returns The predicted response value.
+   */
   predict: (x: number[]) => number;
 }
 
+/**
+ * Result of a regularised (penalised) regression fit (Ridge, LASSO, or Elastic Net).
+ */
 export interface RegularisedResult {
-  /** Regression coefficients for all p features. */
+  /** Regression coefficients for all p features on the original (unstandardised) scale. */
   coefficients: number[];
-  /** Intercept. */
+  /** Intercept (constant) term on the original scale. */
   intercept: number;
-  /** Regularisation parameter used. */
+  /** Regularisation strength parameter that was used. */
   lambda: number;
-  /** Number of coordinate-descent iterations (LASSO / Elastic Net). */
+  /** Number of coordinate-descent iterations performed (0 for Ridge, which uses a closed-form solution). */
   iterations: number;
-  /** Predict y for a feature vector. */
+  /**
+   * Predicts y for a feature vector.
+   * @param x - Feature vector of length p.
+   * @returns The predicted response value.
+   */
   predict: (x: number[]) => number;
 }
 
+/** Model selection criterion for stepwise feature selection. */
 export type StepwiseCriterion = "aic" | "bic" | "adjr2";
+
+/** Search direction for stepwise feature selection. */
 export type StepwiseDirection = "forward" | "backward" | "both";
 
 // ── Stepwise selection ────────────────────────────────────────────────────
 
 /**
- * Stepwise feature selection.
+ * Performs stepwise feature selection for linear regression models.
  *
- * @param X  Feature matrix (n × p).
- * @param y  Response vector (length n).
- * @param options.direction  "forward" | "backward" | "both" (default "both").
- * @param options.criterion  "aic" | "bic" | "adjr2" (default "aic").
- * @param options.maxFeatures  Upper bound on selected features (default p).
+ * Iteratively adds (forward) or removes (backward) features from the model,
+ * evaluating each candidate model using the specified information criterion.
+ * The "both" direction alternates between forward and backward steps.
+ *
+ * Criteria:
+ * - **AIC**: n * ln(RSS/n) + 2k (Akaike Information Criterion)
+ * - **BIC**: n * ln(RSS/n) + ln(n) * k (Bayesian Information Criterion)
+ * - **adjR2**: RSS / (n - k) as a proxy (lower is better)
+ *
+ * @param X - Feature matrix of shape (n x p).
+ * @param y - Response vector of length n.
+ * @param options - Configuration options.
+ * @param options.direction - Search direction: "forward", "backward", or "both" (default "both").
+ * @param options.criterion - Model selection criterion: "aic", "bic", or "adjr2" (default "aic").
+ * @param options.maxFeatures - Upper bound on the number of selected features (default p).
+ * @returns A {@link StepwiseResult} containing the selected features, fitted model,
+ *   and the final criterion value.
+ * @throws {Error} If `X` and `y` have different numbers of observations.
+ * @throws {Error} If fewer than 2 observations or empty feature vectors are provided.
+ *
+ * @example
+ * ```ts
+ * const X = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
+ * const y = [1, 2, 3, 4];
+ * const result = stepwiseSelection(X, y, { direction: "forward", criterion: "bic" });
+ * result.selectedFeatures; // indices of the best feature subset
+ * ```
  */
 export function stepwiseSelection(
   X: number[][],
@@ -219,17 +264,35 @@ export function stepwiseSelection(
 // ── Ridge regression ──────────────────────────────────────────────────────
 
 /**
- * Ridge regression (L2 penalty).
+ * Fits a Ridge regression model with L2 penalty.
  *
- * Solves  min  ‖y − Xβ‖² + λ ‖β‖²
- * via the augmented normal equations (X'X + λI)β = X'y.
+ * Solves the optimization problem:
  *
- * Features are standardised internally; returned coefficients are on the
- * original scale.
+ *   min  ||y - X*beta||^2 + lambda * ||beta||^2
  *
- * @param X  Feature matrix (n × p).
- * @param y  Response vector (length n).
- * @param lambda  Regularisation strength (≥ 0).
+ * via the augmented normal equations: (X^T X + lambda * I) beta = X^T y.
+ *
+ * Features are standardised internally (zero mean, unit variance); returned
+ * coefficients are transformed back to the original scale.
+ *
+ * @param X - Feature matrix of shape (n x p).
+ * @param y - Response vector of length n.
+ * @param lambda - Regularisation strength (must be >= 0). Larger values
+ *   shrink coefficients more aggressively toward zero.
+ * @returns A {@link RegularisedResult} with coefficients on the original scale,
+ *   intercept, and a `predict` function. The `iterations` field is always 0
+ *   since Ridge uses a closed-form solution.
+ * @throws {Error} If `X` and `y` have different numbers of observations.
+ * @throws {Error} If fewer than 2 observations or empty feature vectors are provided.
+ * @throws {Error} If `lambda` is negative.
+ *
+ * @example
+ * ```ts
+ * const X = [[1], [2], [3], [4]];
+ * const y = [2.1, 3.9, 6.2, 7.8];
+ * const result = ridgeRegression(X, y, 0.1);
+ * result.predict([5]); // predicted value with slight L2 regularisation
+ * ```
  */
 export function ridgeRegression(
   X: number[][],
@@ -304,18 +367,37 @@ export function ridgeRegression(
 // ── LASSO regression ──────────────────────────────────────────────────────
 
 /**
- * LASSO regression (L1 penalty) via coordinate descent.
+ * Fits a LASSO regression model with L1 penalty via coordinate descent.
  *
- * Solves  min  (1/2n) ‖y − Xβ‖² + λ ‖β‖₁
+ * Solves the optimization problem:
+ *
+ *   min  (1 / 2n) ||y - X*beta||^2 + lambda * ||beta||_1
+ *
+ * The L1 penalty promotes sparsity, driving some coefficients exactly to zero.
+ * This is equivalent to calling {@link elasticNet} with alpha = 1.0.
  *
  * Features are standardised internally; returned coefficients are on the
  * original scale.
  *
- * @param X  Feature matrix (n × p).
- * @param y  Response vector (length n).
- * @param lambda  Regularisation strength (≥ 0).
- * @param options.maxIterations  Maximum iterations (default 1000).
- * @param options.tolerance  Convergence tolerance (default 1e-7).
+ * @param X - Feature matrix of shape (n x p).
+ * @param y - Response vector of length n.
+ * @param lambda - Regularisation strength (must be >= 0). Larger values
+ *   yield sparser models.
+ * @param options - Optional configuration.
+ * @param options.maxIterations - Maximum coordinate descent iterations (default 1000).
+ * @param options.tolerance - Convergence tolerance on coefficient changes (default 1e-7).
+ * @returns A {@link RegularisedResult} with coefficients (some may be exactly zero),
+ *   intercept, iteration count, and a `predict` function.
+ * @throws {Error} If `X` and `y` have different numbers of observations.
+ * @throws {Error} If `lambda` is negative.
+ *
+ * @example
+ * ```ts
+ * const X = [[1, 0.5], [2, 1.1], [3, 1.4], [4, 2.0]];
+ * const y = [2, 4, 6, 8];
+ * const result = lassoRegression(X, y, 0.5);
+ * // Some coefficients may be exactly 0 due to L1 sparsity
+ * ```
  */
 export function lassoRegression(
   X: number[][],
@@ -329,22 +411,45 @@ export function lassoRegression(
 // ── Elastic Net ───────────────────────────────────────────────────────────
 
 /**
- * Elastic Net regression via coordinate descent.
+ * Fits an Elastic Net regression model via coordinate descent.
  *
- * Solves  min  (1/2n) ‖y − Xβ‖² + λ [ α ‖β‖₁ + (1−α)/2 ‖β‖² ]
+ * Solves the optimization problem:
  *
- * - α = 1 → LASSO
- * - α = 0 → Ridge
+ *   min  (1 / 2n) ||y - X*beta||^2 + lambda * [ alpha * ||beta||_1 + (1 - alpha)/2 * ||beta||^2 ]
  *
- * Features are standardised internally; returned coefficients are on the
- * original scale.
+ * The mixing parameter alpha interpolates between:
+ * - alpha = 1: pure LASSO (L1 penalty, promotes sparsity)
+ * - alpha = 0: pure Ridge (L2 penalty, shrinks coefficients)
  *
- * @param X  Feature matrix (n × p).
- * @param y  Response vector (length n).
- * @param lambda  Regularisation strength (≥ 0).
- * @param options.alpha  Mixing parameter in [0, 1] (default 0.5).
- * @param options.maxIterations  Maximum iterations (default 1000).
- * @param options.tolerance  Convergence tolerance (default 1e-7).
+ * The coordinate descent update for each coefficient j uses soft-thresholding:
+ *   beta_j = S(rho_j, lambda * alpha * n) / (||X_j||^2 + lambda * (1 - alpha) * n)
+ *
+ * Features are standardised internally (zero mean, unit variance); returned
+ * coefficients are transformed back to the original scale.
+ *
+ * @param X - Feature matrix of shape (n x p).
+ * @param y - Response vector of length n.
+ * @param lambda - Regularisation strength (must be >= 0).
+ * @param options - Optional configuration.
+ * @param options.alpha - L1/L2 mixing parameter in [0, 1] (default 0.5).
+ * @param options.maxIterations - Maximum coordinate descent iterations (default 1000).
+ * @param options.tolerance - Convergence tolerance on the maximum absolute
+ *   coefficient change per iteration (default 1e-7).
+ * @returns A {@link RegularisedResult} with coefficients on the original scale,
+ *   intercept, iteration count, and a `predict` function.
+ * @throws {Error} If `X` and `y` have different numbers of observations.
+ * @throws {Error} If fewer than 2 observations or empty feature vectors are provided.
+ * @throws {Error} If `lambda` is negative.
+ * @throws {Error} If `alpha` is not in [0, 1].
+ *
+ * @example
+ * ```ts
+ * const X = [[1, 2], [3, 4], [5, 6], [7, 8]];
+ * const y = [1, 2, 3, 4];
+ * const result = elasticNet(X, y, 0.1, { alpha: 0.5 });
+ * result.coefficients; // regularised coefficients
+ * result.predict([9, 10]); // predicted value
+ * ```
  */
 export function elasticNet(
   X: number[][],
@@ -452,6 +557,13 @@ export function elasticNet(
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
+/**
+ * Validates feature matrix and response vector dimensions.
+ *
+ * @param X - Feature matrix (n x p).
+ * @param y - Response vector (length n).
+ * @throws {Error} If dimensions are inconsistent, n < 2, or p = 0.
+ */
 function validateInputs(X: number[][], y: number[]): void {
   const n = X.length;
   if (n !== y.length) {
@@ -471,6 +583,15 @@ function validateInputs(X: number[][], y: number[]): void {
   }
 }
 
+/**
+ * Standardises the feature matrix to zero mean and unit variance (population std dev).
+ * Also computes the response mean for centering.
+ *
+ * @param X - Feature matrix (n x p).
+ * @param y - Response vector (length n).
+ * @returns Object with standardised matrix `Xs`, column means `xMeans`,
+ *   column standard deviations `xStds`, and response mean `yMean`.
+ */
 function standardise(
   X: number[][],
   y: number[],
@@ -512,7 +633,16 @@ function standardise(
   return { Xs, xMeans, xStds, yMean };
 }
 
-/** Soft-thresholding operator S(z, γ) = sign(z) * max(|z| − γ, 0). */
+/**
+ * Soft-thresholding operator: S(z, gamma) = sign(z) * max(|z| - gamma, 0).
+ *
+ * This is the proximal operator of the L1 norm, used in coordinate descent
+ * for LASSO and Elastic Net.
+ *
+ * @param z - Input value.
+ * @param gamma - Threshold (non-negative).
+ * @returns The soft-thresholded value.
+ */
 function softThreshold(z: number, gamma: number): number {
   if (z > gamma) return z - gamma;
   if (z < -gamma) return z + gamma;
@@ -520,8 +650,19 @@ function softThreshold(z: number, gamma: number): number {
 }
 
 /**
- * Score a model by AIC, BIC, or adjusted-R².
- * Returns a value where **lower is better** (adjusted-R² is negated).
+ * Scores a model by AIC, BIC, or adjusted-R^2.
+ *
+ * All values are returned on a "lower is better" scale:
+ * - AIC: n * ln(RSS/n) + 2k
+ * - BIC: n * ln(RSS/n) + ln(n) * k
+ * - adjR2: RSS / (n - k) (a proxy; since TSS is constant across models, minimising this
+ *   is equivalent to maximising adjusted-R^2)
+ *
+ * @param rss - Residual sum of squares.
+ * @param n - Number of observations.
+ * @param k - Number of estimated parameters (including intercept).
+ * @param criterion - The criterion to use.
+ * @returns The criterion score (lower is better).
  */
 function scoreCriterion(
   rss: number,
@@ -546,8 +687,16 @@ function scoreCriterion(
 }
 
 /**
- * Fit OLS on a subset of features. Returns beta (with intercept at [0])
- * and the residual sum of squares.
+ * Fits an OLS (ordinary least squares) model on a subset of features.
+ *
+ * Constructs the normal equations (X^T X) beta = X^T y for the selected
+ * feature columns plus an intercept, and solves via LU decomposition.
+ *
+ * @param X - Full feature matrix (n x p).
+ * @param y - Response vector (length n).
+ * @param features - 0-based indices of the feature columns to include.
+ * @returns An object with `beta` (intercept at index 0, then feature coefficients)
+ *   and `rss` (residual sum of squares).
  */
 function fitOLS(
   X: number[][],

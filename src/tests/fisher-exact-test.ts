@@ -2,13 +2,38 @@ import { HypothesisTestResult } from "../types";
 import { logFactorial } from "../utils/math";
 
 /**
- * Fisher's exact test for a 2x2 contingency table (two-tailed).
+ * Performs Fisher's exact test for independence on a 2x2 contingency table (two-tailed).
  *
- * Computes the exact p-value using the hypergeometric distribution.
+ * Computes the exact p-value by summing hypergeometric probabilities of all
+ * table configurations that are as extreme or more extreme than the observed table.
+ * "Extreme" is defined as having probability <= the observed table's probability.
  *
- * @param table - A 2x2 contingency table [[a, b], [c, d]]
- * @param alpha - Significance level (default 0.05)
- * @returns HypothesisTestResult where statistic is the odds ratio, degreesOfFreedom is 0
+ * The probability of a specific table configuration with cell (1,1) = a is:
+ *
+ *   P(a) = C(r1, a) * C(r2, c) / C(n, c1)
+ *
+ * where r1, r2 are row totals, c1, c2 are column totals, and n is the grand total.
+ * Computations are done in log-space using log-factorials for numerical stability.
+ *
+ * @param table - A 2x2 contingency table `[[a, b], [c, d]]` where all entries
+ *   must be non-negative integers.
+ * @param alpha - Significance level for the hypothesis test (default 0.05).
+ * @returns A {@link HypothesisTestResult} where:
+ *   - `statistic` is the odds ratio (a*d) / (b*c), or Infinity if b*c = 0
+ *   - `pValue` is the exact two-tailed p-value
+ *   - `degreesOfFreedom` is 0 (exact test, no chi-squared approximation)
+ *   - `rejected` is true if pValue < alpha
+ * @throws {Error} If any table entry is negative or not an integer.
+ * @throws {Error} If the table has no observations (all entries are 0).
+ *
+ * @example
+ * ```ts
+ * // Test whether treatment and outcome are independent
+ * const result = fisherExactTest([[1, 9], [11, 3]]);
+ * result.pValue;    // exact two-tailed p-value
+ * result.statistic; // odds ratio
+ * result.rejected;  // true if significant at alpha=0.05
+ * ```
  */
 export function fisherExactTest(
   table: [[number, number], [number, number]],

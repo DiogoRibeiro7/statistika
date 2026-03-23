@@ -252,10 +252,15 @@ function tsSymmetricEigen(
 // ── Exported functions (native with TS fallback) ────────────────────────
 
 /**
- * Solve a linear system Ax = b.
+ * Solves the linear system Ax = b for x.
  *
  * Native: LAPACK DGESV (LU factorization with partial pivoting).
  * Fallback: Gaussian elimination with partial pivoting.
+ *
+ * @param A - Square coefficient matrix (n x n).
+ * @param b - Right-hand side vector of length n.
+ * @returns Solution vector x of length n.
+ * @throws {Error} If the matrix is singular or nearly singular.
  */
 export function solveLinearSystem(A: Matrix, b: number[]): number[] {
   if (native) {

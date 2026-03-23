@@ -3,7 +3,7 @@ import { mean } from "./utils/descriptive";
 import { createRng } from "./utils/linalg";
 
 /**
- * Result of a cross-validation procedure.
+ * Result of a cross-validation procedure (k-fold or LOOCV).
  */
 export interface CrossValidationResult {
   /** Error/score for each fold. */
@@ -135,11 +135,24 @@ export function loocv(
  * Jackknife estimation of bias and standard error.
  *
  * Resamples by systematically leaving out one observation at a time.
+ * Bias is estimated as (n-1) * (jackknife_mean - full_estimate).
+ * Standard error uses the leave-one-out variance formula:
+ * SE = sqrt(((n-1)/n) * sum((theta_i - theta_bar)^2)).
+ * Pseudo-values are computed as: pv_i = n * theta_all - (n-1) * theta_{-i}.
  *
  * @param data - Input dataset
  * @param statistic - Function computing the statistic of interest
  * @returns Object containing the full-sample estimate, bias, standard error, and pseudo-values
  * @throws {Error} If data has fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const data = [1, 2, 3, 4, 5];
+ * const result = jackknife(data, (s) => s.reduce((a, b) => a + b) / s.length);
+ * // result.estimate — the mean of the full sample
+ * // result.bias — estimated bias of the statistic
+ * // result.standardError — jackknife standard error
+ * ```
  */
 export function jackknife(
   data: Dataset,
@@ -185,12 +198,21 @@ export function jackknife(
  * excess samples are trimmed from the largest stratum.
  *
  * @param data - Dataset values
- * @param strata - Stratum label for each observation
+ * @param strata - Stratum label for each observation (integer-coded)
  * @param sampleSize - Total number of samples to draw
- * @param seed - Optional random seed
+ * @param seed - Optional random seed for reproducibility
  * @returns Object containing the sampled values and their original indices
  * @throws {Error} If data and strata have different lengths
  * @throws {Error} If sampleSize is not between 1 and the dataset size
+ *
+ * @example
+ * ```ts
+ * const data = [10, 20, 30, 40, 50, 60];
+ * const strata = [0, 0, 0, 1, 1, 1];
+ * const result = stratifiedSample(data, strata, 4, 42);
+ * // result.sample — 4 values proportionally drawn from each stratum
+ * // result.indices — original indices of the drawn values
+ * ```
  */
 export function stratifiedSample(
   data: Dataset,

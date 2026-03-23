@@ -14,13 +14,25 @@
 import type { SurvivalObservation } from "./survival";
 import { invertMatrix, normalCdf } from "./utils/linalg";
 
-/** A survival observation with covariates. */
+/**
+ * A survival observation with covariates for Cox regression.
+ *
+ * Extends the base survival observation (time and event indicator)
+ * with a vector of covariate values.
+ */
 export interface CoxObservation extends SurvivalObservation {
   /** Covariate values */
   covariates: number[];
 }
 
-/** Result of a Cox PH model fit. */
+/**
+ * Result of fitting a Cox Proportional Hazards model.
+ *
+ * Contains regression coefficients, hazard ratios exp(beta), standard errors,
+ * Wald test statistics and p-values, confidence intervals for hazard ratios,
+ * the partial log-likelihood, concordance index, baseline cumulative hazard,
+ * and a prediction function.
+ */
 export interface CoxRegressionResult {
   /** Regression coefficients (beta) */
   coefficients: number[];
@@ -47,11 +59,38 @@ export interface CoxRegressionResult {
 }
 
 /**
- * Fit a Cox Proportional Hazards model.
+ * Fit a Cox Proportional Hazards model via Newton-Raphson.
  *
- * @param observations - Array of {time, event, covariates} observations
+ * The Cox PH model assumes the hazard function has the form:
+ *   h(t | X) = h0(t) * exp(beta' * X)
+ * where h0(t) is an unspecified baseline hazard.
+ *
+ * The partial log-likelihood is maximized using Newton-Raphson optimization.
+ * Tied event times are handled using the Breslow approximation. The baseline
+ * cumulative hazard is estimated via the Breslow estimator.
+ *
+ * @param observations - Array of survival observations with covariates
+ *   (each must have time, event indicator, and covariates array)
  * @param maxIterations - Maximum Newton-Raphson iterations (default 25)
- * @param tolerance - Convergence tolerance (default 1e-9)
+ * @param tolerance - Convergence tolerance for coefficient updates (default 1e-9)
+ * @returns A {@link CoxRegressionResult} with coefficients, hazard ratios, p-values,
+ *   concordance index, baseline hazard, and prediction function
+ * @throws {Error} If fewer than 2 observations
+ * @throws {Error} If no covariates are provided
+ * @throws {Error} If observations have inconsistent numbers of covariates
+ *
+ * @example
+ * ```ts
+ * const observations = [
+ *   { time: 5, event: true, covariates: [1, 65] },
+ *   { time: 10, event: false, covariates: [0, 50] },
+ *   { time: 3, event: true, covariates: [1, 70] },
+ * ];
+ * const result = coxRegression(observations);
+ * console.log(result.hazardRatios);  // exp(beta) for each covariate
+ * console.log(result.concordance);   // C-statistic
+ * console.log(result.predictHazardRatio([1, 60])); // HR for new patient
+ * ```
  */
 export function coxRegression(
   observations: CoxObservation[],

@@ -33,8 +33,28 @@ function ksSurvival2(d: number, n1: number, n2: number): number {
 }
 
 /**
- * One-sample Kolmogorov-Smirnov test.
- * Tests whether data follows a given continuous CDF.
+ * Performs a one-sample Kolmogorov-Smirnov test.
+ *
+ * Tests the null hypothesis that the data are drawn from the continuous
+ * distribution specified by the given CDF. The test statistic D is the
+ * maximum absolute difference between the empirical CDF and the
+ * theoretical CDF. Uses the asymptotic approximation for the p-value.
+ *
+ * @param data - Array of numeric observations (at least 1 required)
+ * @param cdf - The hypothesized cumulative distribution function, mapping
+ *   a value x to its cumulative probability F(x) in [0, 1]
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns A {@link KSTestResult} containing the D statistic, asymptotic
+ *   p-value, and whether the null hypothesis is rejected
+ * @throws {Error} If `data` is empty
+ *
+ * @example
+ * ```ts
+ * // Test against a standard normal CDF
+ * const normalCdf = (x: number) => 0.5 * (1 + erf(x / Math.SQRT2));
+ * const result = ksTest([0.1, -0.3, 0.5, 0.2, -0.1], normalCdf);
+ * console.log(result.statistic, result.pValue);
+ * ```
  */
 export function ksTest(
   data: Dataset,
@@ -60,8 +80,27 @@ export function ksTest(
 }
 
 /**
- * Two-sample Kolmogorov-Smirnov test.
- * Tests whether two samples come from the same distribution.
+ * Performs a two-sample Kolmogorov-Smirnov test.
+ *
+ * Tests the null hypothesis that two independent samples are drawn from
+ * the same continuous distribution. The test statistic D is the maximum
+ * absolute difference between the two empirical CDFs. Uses the asymptotic
+ * approximation for the p-value based on the effective sample size.
+ *
+ * @param data1 - First sample of numeric observations (at least 1 required)
+ * @param data2 - Second sample of numeric observations (at least 1 required)
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns A {@link KSTestResult} containing the D statistic, asymptotic
+ *   p-value, and whether the null hypothesis is rejected
+ * @throws {Error} If either sample is empty
+ *
+ * @example
+ * ```ts
+ * const sample1 = [1.2, 2.3, 3.1, 4.5, 5.0];
+ * const sample2 = [1.8, 2.9, 3.7, 4.1, 5.5];
+ * const result = ksTwoSampleTest(sample1, sample2);
+ * console.log(result.statistic, result.rejected);
+ * ```
  */
 export function ksTwoSampleTest(
   data1: Dataset,

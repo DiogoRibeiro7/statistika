@@ -19,6 +19,12 @@ export class SeededRng {
   private s0: number;
   private s1: number;
 
+  /**
+   * Create a new seeded random number generator.
+   *
+   * @param seed - Seed value (must be a finite number)
+   * @throws {Error} If seed is NaN or Infinity
+   */
   constructor(seed: number) {
     if (!Number.isFinite(seed)) throw new Error("Seed must be a finite number");
     this.s0 = seed | 0 || 1;

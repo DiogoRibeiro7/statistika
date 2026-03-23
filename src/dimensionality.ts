@@ -4,7 +4,11 @@ import { euclidean } from "./distance";
 import { createRng } from "./utils/linalg";
 
 /**
- * t-SNE (t-distributed Stochastic Neighbor Embedding) result.
+ * Result of t-SNE dimensionality reduction.
+ *
+ * Contains the 2D embedding coordinates, the final KL divergence
+ * (measuring how well the embedding preserves the original neighborhood
+ * structure), and the number of iterations performed.
  */
 export interface TSNEResult {
   /** Embedded 2D coordinates. */
@@ -16,17 +20,34 @@ export interface TSNEResult {
 }
 
 /**
- * t-SNE for nonlinear dimensionality reduction.
+ * t-SNE (t-distributed Stochastic Neighbor Embedding) for nonlinear
+ * dimensionality reduction.
  *
- * Reduces high-dimensional data to 2D while preserving local structure.
- * Uses the exact O(n^2) algorithm suitable for small-to-medium datasets.
- * Includes early stopping if KL divergence stops improving.
+ * Reduces high-dimensional data to 2D by minimizing the KL divergence
+ * between pairwise probability distributions in the original and embedded
+ * spaces. Uses a Student-t distribution with 1 degree of freedom in the
+ * low-dimensional space to model heavy tails and avoid the crowding problem.
+ *
+ * Uses the exact O(n^2) algorithm with adaptive learning rate gains,
+ * momentum, and early stopping if KL divergence stops improving.
  *
  * @param data - Data matrix (n observations x p features)
- * @param options - Configuration
- * @returns TSNEResult containing the 2D embedding, final KL divergence, and iteration count
+ * @param options - Configuration options
+ * @param options.perplexity - Perplexity parameter controlling neighborhood size
+ *   (default: min(30, floor(n/3)))
+ * @param options.learningRate - Gradient descent learning rate (default: 200)
+ * @param options.iterations - Maximum number of iterations (default: 500)
+ * @param options.seed - Random seed for reproducibility (optional)
+ * @returns A {@link TSNEResult} with the 2D embedding, final KL divergence, and iteration count
  * @throws {Error} If fewer than 4 observations
  * @throws {Error} If any data value is NaN or Infinity
+ *
+ * @example
+ * ```ts
+ * const data = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
+ * const result = tsne(data, { perplexity: 2, seed: 42 });
+ * console.log(result.embedding); // [[x1, y1], [x2, y2], ...]
+ * ```
  */
 export function tsne(
   data: number[][],

@@ -1,5 +1,11 @@
 /**
- * Robust regression: Huber and RANSAC methods for outlier-resistant fitting.
+ * Robust regression methods for outlier-resistant linear fitting.
+ *
+ * Provides two approaches:
+ * - **Huber M-estimator**: Uses IRLS with the Huber loss function, which is
+ *   quadratic for small residuals and linear for large residuals.
+ * - **RANSAC**: Random Sample Consensus, which repeatedly fits models to
+ *   random subsets and selects the one with the most inlier support.
  */
 
 import { mean } from "../utils/descriptive";
@@ -7,34 +13,65 @@ import { solveLinearSystem, randomSample } from "../utils/linalg";
 
 // ---- Huber Regression ----
 
-/** Result of a Huber robust regression. */
+/**
+ * Result of a Huber robust regression fit.
+ */
 export interface HuberRegressionResult {
-  /** Regression coefficients (including intercept as first element) */
+  /** Full coefficient vector including intercept as the first element. */
   coefficients: number[];
-  /** Intercept */
+  /** Intercept (constant) term of the fitted model. */
   intercept: number;
-  /** Slope(s) */
+  /** Slope coefficients (one per predictor, excludes intercept). */
   slopes: number[];
-  /** Robust scale estimate */
+  /** Robust scale estimate based on the Median Absolute Deviation (MAD). */
   scale: number;
-  /** Number of IRLS iterations */
+  /** Number of IRLS iterations performed until convergence or limit. */
   iterations: number;
-  /** Predict y for given x */
+  /**
+   * Predicts the response for a given input.
+   * @param x - A single predictor value (simple regression) or feature vector (multiple regression).
+   * @returns The predicted response value.
+   */
   predict: (x: number | number[]) => number;
 }
 
 /**
- * Huber M-estimator regression.
+ * Fits a Huber M-estimator regression using Iteratively Reweighted Least Squares (IRLS).
  *
- * Uses Iteratively Reweighted Least Squares (IRLS) with the Huber
- * loss function, which is quadratic for small residuals and linear
- * for large residuals, providing robustness to outliers.
+ * The Huber loss function is defined as:
  *
- * @param X - Predictor matrix (n x p) or vector (n x 1 for simple regression)
- * @param y - Response variable
- * @param delta - Huber threshold (default 1.345 for 95% efficiency at normal)
- * @param maxIterations - Maximum IRLS iterations (default 50)
- * @param tolerance - Convergence tolerance (default 1e-6)
+ *   L(u) = u^2 / 2           if |u| <= delta
+ *   L(u) = delta * |u| - delta^2 / 2  if |u| > delta
+ *
+ * This provides a smooth transition between quadratic loss (for small residuals)
+ * and linear loss (for large residuals / outliers). The scale is estimated
+ * robustly via MAD (Median Absolute Deviation) / 0.6745.
+ *
+ * Accepts either a 1D array (simple regression) or a 2D matrix (multiple regression).
+ * An intercept column is prepended internally.
+ *
+ * @param X - Predictor values: a numeric array of length n for simple regression,
+ *   or an (n x p) matrix for multiple regression.
+ * @param y - Response variable (length n).
+ * @param delta - Huber threshold controlling the transition from quadratic to
+ *   linear loss. Default is 1.345, which yields 95% asymptotic efficiency
+ *   at the normal distribution.
+ * @param maxIterations - Maximum number of IRLS iterations (default 50).
+ * @param tolerance - Convergence tolerance on the maximum absolute change
+ *   in coefficients (default 1e-6).
+ * @returns A {@link HuberRegressionResult} with coefficients, slopes, scale estimate,
+ *   iteration count, and a `predict` function.
+ * @throws {Error} If `X` and `y` have different lengths.
+ * @throws {Error} If fewer than 2 observations are provided.
+ * @throws {Error} If `delta` is not positive.
+ *
+ * @example
+ * ```ts
+ * const x = [1, 2, 3, 4, 100]; // outlier at index 4
+ * const y = [2, 4, 6, 8, 200];
+ * const result = huberRegression(x, y);
+ * result.predict(5); // robust prediction, less affected by the outlier
+ * ```
  */
 export function huberRegression(
   X: number[] | number[][],
@@ -134,36 +171,67 @@ export function huberRegression(
 
 // ---- RANSAC Regression ----
 
-/** Result of a RANSAC regression. */
+/**
+ * Result of a RANSAC (Random Sample Consensus) regression fit.
+ */
 export interface RANSACResult {
-  /** Regression coefficients (including intercept as first element) */
+  /** Full coefficient vector including intercept as the first element. */
   coefficients: number[];
-  /** Intercept */
+  /** Intercept (constant) term of the fitted model. */
   intercept: number;
-  /** Slope(s) */
+  /** Slope coefficients (one per predictor, excludes intercept). */
   slopes: number[];
-  /** Indices of inlier observations */
+  /** 0-based indices of observations identified as inliers by the best model. */
   inlierIndices: number[];
-  /** Number of inliers */
+  /** Total number of inlier observations in the best model. */
   nInliers: number;
-  /** Number of iterations run */
+  /** Number of random trials performed. */
   iterations: number;
-  /** Predict y for given x */
+  /**
+   * Predicts the response for a given input.
+   * @param x - A single predictor value (simple regression) or feature vector (multiple regression).
+   * @returns The predicted response value.
+   */
   predict: (x: number | number[]) => number;
 }
 
 /**
- * RANSAC (Random Sample Consensus) robust regression.
+ * Fits a RANSAC (Random Sample Consensus) robust regression model.
  *
- * Repeatedly fits models to random subsets, identifies inliers, and
- * selects the model with the most inlier support.
+ * The algorithm proceeds by:
+ * 1. Randomly sampling `minSamples` observations.
+ * 2. Fitting an OLS model to the subsample.
+ * 3. Counting inliers (observations with |residual| <= residualThreshold).
+ * 4. Repeating for `maxTrials` iterations, keeping the model with the most inliers.
+ * 5. Refitting OLS on all inliers of the best model.
  *
- * @param X - Predictor(s)
- * @param y - Response variable
- * @param residualThreshold - Max residual to be considered an inlier
- * @param maxTrials - Maximum number of random trials (default 100)
- * @param minSamples - Minimum samples per trial (default p+1)
- * @param random - Random number generator for reproducibility
+ * Accepts either a 1D array (simple regression) or a 2D matrix (multiple regression).
+ * An intercept column is prepended internally.
+ *
+ * @param X - Predictor values: a numeric array of length n for simple regression,
+ *   or an (n x p) matrix for multiple regression.
+ * @param y - Response variable (length n).
+ * @param residualThreshold - Maximum absolute residual for an observation to be
+ *   classified as an inlier. If omitted, defaults to 3 * MAD / 0.6745 of the
+ *   OLS residuals.
+ * @param maxTrials - Maximum number of random sampling trials (default 100).
+ * @param minSamples - Number of observations to sample per trial. Defaults to
+ *   the number of parameters (including intercept).
+ * @param random - Random number generator function returning values in [0, 1),
+ *   useful for reproducibility. Defaults to `Math.random`.
+ * @returns A {@link RANSACResult} with coefficients, inlier information, and
+ *   a `predict` function.
+ * @throws {Error} If `X` and `y` have different lengths.
+ * @throws {Error} If there are not enough observations for the minimum sample size.
+ *
+ * @example
+ * ```ts
+ * const x = [1, 2, 3, 4, 5, 100]; // outlier at index 5
+ * const y = [2, 4, 6, 8, 10, 999];
+ * const result = ransacRegression(x, y);
+ * result.nInliers; // 5 (the outlier is excluded)
+ * result.predict(6); // ~12
+ * ```
  */
 export function ransacRegression(
   X: number[] | number[][],
@@ -278,7 +346,11 @@ export function ransacRegression(
 // ---- Helper Functions ----
 
 /**
- * Solve ordinary least squares: beta = (X'X)^{-1} X'y
+ * Solves ordinary least squares: beta = (X^T X)^{-1} X^T y.
+ *
+ * @param X - Design matrix of shape (n x p).
+ * @param y - Response vector of length n.
+ * @returns The OLS coefficient vector of length p.
  */
 function olsSolve(X: number[][], y: number[]): number[] {
   const n = X.length;
@@ -308,7 +380,13 @@ function olsSolve(X: number[][], y: number[]): number[] {
 }
 
 /**
- * Solve weighted least squares: beta = (X'WX)^{-1} X'Wy
+ * Solves weighted least squares: beta = (X^T W X)^{-1} X^T W y,
+ * where W = diag(w) is the diagonal weight matrix.
+ *
+ * @param X - Design matrix of shape (n x p).
+ * @param y - Response vector of length n.
+ * @param w - Weight vector of length n (non-negative).
+ * @returns The WLS coefficient vector of length p.
  */
 function wlsSolve(X: number[][], y: number[], w: number[]): number[] {
   const n = X.length;

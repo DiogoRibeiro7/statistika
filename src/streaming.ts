@@ -177,7 +177,18 @@ export class OnlineStats {
 /**
  * Online covariance and correlation between two streams.
  *
- * Uses a numerically stable one-pass algorithm.
+ * Uses a numerically stable one-pass algorithm based on Welford's method
+ * extended to two variables. Computes running covariance, correlation,
+ * and means without storing individual observations.
+ *
+ * @example
+ * ```ts
+ * const cov = new OnlineCovariance();
+ * cov.push(1, 2);
+ * cov.push(2, 4);
+ * cov.push(3, 6);
+ * cov.correlation; // 1.0 (perfect positive correlation)
+ * ```
  */
 export class OnlineCovariance {
   private _count = 0;
@@ -288,11 +299,21 @@ export class OnlineCovariance {
 }
 
 /**
- * P² algorithm for online quantile estimation.
+ * P-squared algorithm for online quantile estimation.
  *
  * Estimates a quantile (e.g., median) from a stream without storing
- * all data points. Uses piecewise parabolic interpolation.
+ * all data points. Uses piecewise parabolic interpolation with 5 markers.
  * For fewer than 5 observations, falls back to a simple sort-based estimate.
+ *
+ * Reference: Jain, R. and Chlamtac, I. (1985). "The P-squared Algorithm for
+ * Dynamic Calculation of Quantiles and Histograms Without Storing Observations."
+ *
+ * @example
+ * ```ts
+ * const q = new OnlineQuantile(0.5); // track median
+ * for (let i = 0; i < 1000; i++) q.push(Math.random());
+ * q.estimate; // approximately 0.5
+ * ```
  */
 export class OnlineQuantile {
   private readonly p: number;

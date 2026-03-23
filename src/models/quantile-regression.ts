@@ -2,34 +2,66 @@ import { Dataset } from "../types";
 import { mean } from "../utils/descriptive";
 
 /**
- * Result of a quantile regression fit.
+ * Result of a multiple quantile regression fit.
  */
 export interface QuantileRegressionResult {
+  /** The quantile level that was estimated (between 0 and 1). */
   tau: number;
+  /** Regression coefficients for each predictor variable. */
   coefficients: number[];
+  /** Intercept term of the fitted model. */
   intercept: number;
+  /**
+   * Predicts the conditional quantile for a new feature vector.
+   * @param x - Feature vector of length p.
+   * @returns The predicted quantile value.
+   */
   predict: (x: number[]) => number;
 }
 
 /**
- * Simple quantile regression result (single predictor).
+ * Result of a simple (single-predictor) quantile regression fit.
  */
 export interface SimpleQuantileRegressionResult {
+  /** The quantile level that was estimated (between 0 and 1). */
   tau: number;
+  /** Slope coefficient for the single predictor. */
   slope: number;
+  /** Intercept term of the fitted model. */
   intercept: number;
+  /**
+   * Predicts the conditional quantile for a new x value.
+   * @param x - A single predictor value.
+   * @returns The predicted quantile value.
+   */
   predict: (x: number) => number;
 }
 
 /**
- * Simple quantile regression for a single predictor.
- * Minimizes the "check" (pinball) loss via iteratively reweighted least squares.
+ * Fits a simple (single-predictor) quantile regression model.
  *
- * @param x - Predictor values
- * @param y - Response values
- * @param tau - Quantile to estimate (0 < tau < 1), default 0.5 (median)
- * @param maxIterations - Maximum IRLS iterations
- * @param tolerance - Convergence tolerance
+ * Minimizes the check (pinball) loss function:
+ *
+ *   rho_tau(u) = u * (tau - I(u < 0))
+ *
+ * via iteratively reweighted least squares (IRLS) using the Hunter-Lange
+ * MM algorithm approach.
+ *
+ * @param x - Predictor values (length n).
+ * @param y - Response values (length n).
+ * @param tau - Quantile to estimate, must be in (0, 1). Default is 0.5 (median regression).
+ * @param maxIterations - Maximum number of IRLS iterations (default 100).
+ * @param tolerance - Convergence tolerance on coefficient changes (default 1e-6).
+ * @returns A {@link SimpleQuantileRegressionResult} with slope, intercept, and `predict` function.
+ * @throws {Error} If `x` and `y` have different lengths.
+ * @throws {Error} If fewer than 2 observations are provided.
+ * @throws {Error} If `tau` is not in the open interval (0, 1).
+ *
+ * @example
+ * ```ts
+ * const result = quantileRegression([1, 2, 3, 4, 5], [2, 4, 5, 4, 5], 0.5);
+ * result.predict(3); // predicted median of y at x=3
+ * ```
  */
 export function quantileRegression(
   x: Dataset,
@@ -53,14 +85,30 @@ export function quantileRegression(
 }
 
 /**
- * Multiple quantile regression for multiple predictors.
- * Minimizes the check (pinball) loss via IRLS.
+ * Fits a multiple quantile regression model for several predictors.
  *
- * @param X - Feature matrix (n × p)
- * @param y - Response values
- * @param tau - Quantile to estimate (0 < tau < 1)
- * @param maxIterations - Maximum IRLS iterations
- * @param tolerance - Convergence tolerance
+ * Minimizes the check (pinball) loss rho_tau(u) = u * (tau - I(u < 0))
+ * via iteratively reweighted least squares (IRLS). An intercept column
+ * is prepended to X internally.
+ *
+ * @param X - Feature matrix of shape (n x p).
+ * @param y - Response values (length n).
+ * @param tau - Quantile to estimate, must be in (0, 1). Default is 0.5.
+ * @param maxIterations - Maximum number of IRLS iterations (default 100).
+ * @param tolerance - Convergence tolerance on coefficient changes (default 1e-6).
+ * @returns A {@link QuantileRegressionResult} with coefficients, intercept, and `predict` function.
+ * @throws {Error} If `X` and `y` have different lengths.
+ * @throws {Error} If fewer than 2 observations are provided.
+ * @throws {Error} If `tau` is not in the open interval (0, 1).
+ * @throws {Error} If rows of `X` have inconsistent lengths.
+ *
+ * @example
+ * ```ts
+ * const X = [[1, 2], [3, 4], [5, 6]];
+ * const y = [3, 7, 11];
+ * const result = multipleQuantileRegression(X, y, 0.75);
+ * result.predict([4, 5]); // predicted 75th percentile at the given features
+ * ```
  */
 export function multipleQuantileRegression(
   X: number[][],
@@ -102,11 +150,22 @@ export function multipleQuantileRegression(
 }
 
 /**
- * IRLS (Iteratively Reweighted Least Squares) for quantile regression.
- * Solves: min_beta sum rho_tau(y_i - x_i'beta)
- * where rho_tau(u) = u * (tau - I(u < 0))
+ * IRLS (Iteratively Reweighted Least Squares) solver for quantile regression.
  *
- * Uses the Hunter-Lange MM algorithm approach.
+ * Solves: min_beta sum_i rho_tau(y_i - x_i' beta)
+ * where rho_tau(u) = u * (tau - I(u < 0)) is the check/pinball loss.
+ *
+ * Uses the Hunter-Lange MM (majorization-minimization) algorithm, which
+ * constructs quadratic upper bounds and iteratively solves weighted least
+ * squares subproblems with weights w_i = tau / |r_i| for r_i >= 0 and
+ * w_i = (1 - tau) / |r_i| for r_i < 0.
+ *
+ * @param X - Design matrix of shape (n x p), including intercept column if desired.
+ * @param y - Response values (length n).
+ * @param tau - Quantile level in (0, 1).
+ * @param maxIterations - Maximum number of IRLS iterations.
+ * @param tolerance - Convergence tolerance.
+ * @returns The fitted coefficient vector of length p.
  */
 function irlsQuantile(
   X: number[][],
@@ -172,7 +231,13 @@ function irlsQuantile(
 }
 
 /**
- * Initialize with OLS solution.
+ * Computes an initial OLS (ordinary least squares) estimate for the IRLS algorithm.
+ *
+ * Solves (X^T X) beta = X^T y via Gaussian elimination.
+ *
+ * @param X - Design matrix of shape (n x p).
+ * @param y - Response vector of length n.
+ * @returns The OLS coefficient vector of length p.
  */
 function olsInitialize(X: number[][], y: Dataset): number[] {
   const n = X.length;
@@ -196,7 +261,12 @@ function olsInitialize(X: number[][], y: Dataset): number[] {
 }
 
 /**
- * Gaussian elimination with partial pivoting.
+ * Solves the linear system A*x = b using Gaussian elimination with partial pivoting.
+ *
+ * @param A - Square coefficient matrix of shape (n x n).
+ * @param b - Right-hand side vector of length n.
+ * @returns The solution vector x of length n.
+ * @throws {Error} If the matrix is singular (pivot element below 1e-12).
  */
 function solveSystem(A: number[][], b: number[]): number[] {
   const n = A.length;
@@ -234,6 +304,14 @@ function solveSystem(A: number[][], b: number[]): number[] {
   return x;
 }
 
+/**
+ * Validates inputs for simple quantile regression.
+ *
+ * @param x - Predictor values.
+ * @param y - Response values.
+ * @param tau - Quantile level.
+ * @throws {Error} If `x` and `y` differ in length, have fewer than 2 elements, or `tau` is not in (0, 1).
+ */
 function validateInputs(x: Dataset, y: Dataset, tau: number): void {
   if (x.length !== y.length) {
     throw new Error("x and y must have the same length");
