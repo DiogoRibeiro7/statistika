@@ -144,12 +144,21 @@ export function fourierBasis(nBasis: number, domain: [number, number] = [0, 1]):
 }
 
 /**
- * Create a B-spline basis system.
+ * Create a cubic B-spline basis system with evenly spaced knots.
  *
- * Uses cubic B-splines with evenly spaced knots.
+ * Uses Cox-de Boor recursion for evaluation. The extended knot sequence
+ * includes repeated boundary knots (order 4) and uniformly spaced interior knots.
  *
- * @param nBasis  Number of basis functions (≥ 4).
- * @param domain  [a, b] domain.
+ * @param nBasis - Number of basis functions (must be >= 4 for cubic splines)
+ * @param domain - Domain [a, b] for the basis (default: [0, 1])
+ * @returns A {@link BasisSystem} with cubic B-spline basis functions
+ * @throws {Error} If nBasis is less than 4
+ *
+ * @example
+ * ```ts
+ * const basis = bsplineBasis(10, [0, 1]);
+ * const values = basis.evaluate(0.5); // 10-element vector of B-spline values
+ * ```
  */
 export function bsplineBasis(nBasis: number, domain: [number, number] = [0, 1]): BasisSystem {
   if (nBasis < 4) throw new Error("nBasis must be at least 4 for cubic B-splines");
@@ -184,14 +193,26 @@ export function bsplineBasis(nBasis: number, domain: [number, number] = [0, 1]):
 // ── Basis Expansion ───────────────────────────────────────────────────────
 
 /**
- * Fit a functional object to discrete data via least squares.
+ * Fit a functional object to discrete data via penalised least squares.
  *
- * Finds coefficients c such that Σ(y(tⱼ) − Σ cᵢ φᵢ(tⱼ))² is minimized.
+ * Finds coefficients c minimizing sum((y(tj) - sum(ci*phi_i(tj)))^2) + lambda * ||c||^2.
+ * Solves the system (Phi'Phi + lambda*I) c = Phi'y.
  *
- * @param tValues  Observation points (length m).
- * @param yValues  Observed values at those points (length m).
- * @param basis  Basis system to use.
- * @param lambda  Roughness penalty (default 0, no penalty).
+ * @param tValues - Observation time points (length m)
+ * @param yValues - Observed values at those points (length m, must match tValues)
+ * @param basis - Basis system to project onto
+ * @param lambda - Ridge/roughness penalty parameter (default 0 for no penalty)
+ * @returns A {@link FunctionalObject} with fitted coefficients and evaluate function
+ * @throws {Error} If tValues and yValues have different lengths
+ *
+ * @example
+ * ```ts
+ * const t = [0, 0.25, 0.5, 0.75, 1.0];
+ * const y = [0, 1, 0, -1, 0];
+ * const basis = fourierBasis(5);
+ * const f = smoothBasisExpansion(t, y, basis, 0.01);
+ * console.log(f.evaluate(0.3)); // smoothed value at t=0.3
+ * ```
  */
 export function smoothBasisExpansion(
   tValues: number[],

@@ -234,7 +234,17 @@ export function powering(x: number[], alpha: number): number[] {
 }
 
 /**
- * Aitchison inner product: ⟨x, y⟩_A = (1/D) Σᵢ<ⱼ ln(xᵢ/xⱼ) ln(yᵢ/yⱼ).
+ * Aitchison inner product on the simplex.
+ *
+ * <x, y>_A = (1/D) * sum_{i<j} ln(x_i/x_j) * ln(y_i/y_j)
+ *
+ * This inner product induces the Aitchison distance and norm, and is
+ * invariant under permutation and scaling of the components.
+ *
+ * @param x - First composition (length D)
+ * @param y - Second composition (length D)
+ * @returns The Aitchison inner product (a scalar)
+ * @throws {Error} If x and y have different lengths
  */
 export function aitchisonInnerProduct(x: number[], y: number[]): number {
   const D = x.length;
@@ -249,8 +259,17 @@ export function aitchisonInnerProduct(x: number[], y: number[]): number {
 }
 
 /**
- * Aitchison distance: d_A(x, y) = √⟨x⊖y, x⊖y⟩_A
- * where x⊖y = perturbation(x, powering(y, -1)).
+ * Aitchison distance between two compositions.
+ *
+ * d_A(x, y) = sqrt( (1/D) * sum_{i<j} [ln(x_i/x_j) - ln(y_i/y_j)]^2 )
+ *
+ * This is the natural distance metric in Aitchison geometry and is equivalent
+ * to the Euclidean distance in CLR-transformed space.
+ *
+ * @param x - First composition (length D)
+ * @param y - Second composition (length D)
+ * @returns The Aitchison distance (non-negative scalar)
+ * @throws {Error} If x and y have different lengths
  */
 export function aitchisonDistance(x: number[], y: number[]): number {
   const D = x.length;
@@ -266,7 +285,15 @@ export function aitchisonDistance(x: number[], y: number[]): number {
 }
 
 /**
- * Aitchison norm: ‖x‖_A = √⟨x, x⟩_A.
+ * Aitchison norm of a composition.
+ *
+ * ||x||_A = sqrt(<x, x>_A)
+ *
+ * Measures the "size" of a composition in Aitchison geometry relative
+ * to the uniform composition.
+ *
+ * @param x - Composition (length D)
+ * @returns The Aitchison norm (non-negative scalar)
  */
 export function aitchisonNorm(x: number[]): number {
   return Math.sqrt(aitchisonInnerProduct(x, x));
@@ -277,9 +304,14 @@ export function aitchisonNorm(x: number[]): number {
 /**
  * Compositional centre (geometric mean composition).
  *
- * centre(X) = C(g₁, g₂, ..., gD) where gⱼ = (∏ᵢ xᵢⱼ)^{1/n}.
+ * Computes the Aitchison centre of a set of compositions:
+ *   centre(X) = C(g_1, g_2, ..., g_D)
+ * where g_j = exp( (1/n) * sum_i ln(x_{ij}) ) is the geometric mean
+ * of the j-th component across all compositions.
  *
- * @param compositions  Array of compositions (n × D).
+ * @param compositions - Array of compositions (n x D), all parts must be positive
+ * @returns The centred composition on the simplex (sums to 1)
+ * @throws {Error} If the array is empty
  */
 export function compositionalCentre(compositions: number[][]): number[] {
   const n = compositions.length;

@@ -72,7 +72,7 @@ export function trimmedMean(data: Dataset, proportion = 0.1): number {
  * Winsorized mean.
  *
  * Replaces extreme values with the nearest non-extreme values rather
- * than removing them. Retains the original sample size.
+ * than removing them. Retains the original sample size, unlike trimmed mean.
  *
  * @param data - Input dataset
  * @param proportion - Proportion to winsorize from each tail (0 to 0.5, default: 0.1)
@@ -80,6 +80,12 @@ export function trimmedMean(data: Dataset, proportion = 0.1): number {
  * @throws Error if dataset is empty
  * @throws Error if dataset contains NaN values
  * @throws Error if proportion is not in [0, 0.5)
+ *
+ * @example
+ * ```ts
+ * const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 100];
+ * winsorizedMean(data, 0.1); // replaces 1 and 100 with 2 and 9, then averages
+ * ```
  */
 export function winsorizedMean(data: Dataset, proportion = 0.1): number {
   if (data.length === 0) throw new Error("Dataset must not be empty");
@@ -109,13 +115,19 @@ export function winsorizedMean(data: Dataset, proportion = 0.1): number {
 /**
  * Interquartile Range (IQR).
  *
- * The range between the 25th and 75th percentiles — a robust measure
- * of spread.
+ * The range between the 25th and 75th percentiles -- a robust measure
+ * of spread. IQR = Q3 - Q1.
  *
  * @param data - Input dataset
  * @returns The difference Q3 - Q1
  * @throws Error if dataset has fewer than 4 elements
  * @throws Error if dataset contains NaN values
+ *
+ * @example
+ * ```ts
+ * const data = [1, 3, 5, 7, 9, 11, 13, 15];
+ * iqr(data); // Q3 - Q1
+ * ```
  */
 export function iqr(data: Dataset): number {
   if (data.length < 4) throw new Error("Dataset must have at least 4 elements");
@@ -128,7 +140,7 @@ export function iqr(data: Dataset): number {
 }
 
 /**
- * Detect outliers using the IQR method.
+ * Detect outliers using the IQR method (Tukey's fences).
  *
  * Points below Q1 - k*IQR or above Q3 + k*IQR are flagged as outliers.
  *
@@ -137,6 +149,15 @@ export function iqr(data: Dataset): number {
  * @returns Object with outlier values, their indices, and the lower/upper fences
  * @throws Error if dataset has fewer than 4 elements
  * @throws Error if dataset contains NaN values
+ *
+ * @example
+ * ```ts
+ * const data = [1, 2, 3, 4, 5, 100];
+ * const result = detectOutliers(data);
+ * // result.outliers — [100]
+ * // result.indices — [5]
+ * // result.lower, result.upper — fence boundaries
+ * ```
  */
 export function detectOutliers(
   data: Dataset,

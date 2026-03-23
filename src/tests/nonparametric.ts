@@ -2,23 +2,50 @@ import { Dataset, HypothesisTestResult } from "../types";
 import { normalCdf } from "../utils/linalg";
 
 /**
- * Two-tailed p-value from a z-score.
+ * Computes a two-tailed p-value from a z-score using the standard normal CDF.
+ *
+ * p = 2 * (1 - Phi(|z|))
+ *
+ * @param z - The z-score (test statistic).
+ * @returns The two-tailed p-value in [0, 1].
  */
 function zPValue(z: number): number {
   return 2 * (1 - normalCdf(Math.abs(z)));
 }
 
 /**
- * Mann-Whitney U test (two-tailed).
+ * Performs the Mann-Whitney U test (Wilcoxon rank-sum test), two-tailed.
  *
- * Non-parametric test to assess whether two independent samples come from
- * the same distribution. Uses the normal approximation with continuity
- * correction and tie correction.
+ * A non-parametric test for assessing whether two independent samples come
+ * from the same distribution (i.e., whether one sample tends to have larger
+ * values than the other).
  *
- * @param data1 - First sample
- * @param data2 - Second sample
- * @param alpha - Significance level (default 0.05)
- * @returns HypothesisTestResult where statistic is U, degreesOfFreedom is 0
+ * The test statistic U is the smaller of U1 and U2, where:
+ *   U1 = R1 - n1*(n1+1)/2
+ *   U2 = n1*n2 - U1
+ *
+ * and R1 is the sum of ranks assigned to the first sample in the combined
+ * ranking. Uses the normal approximation with continuity correction:
+ *   z = (|U - mean(U)| - 0.5) / sqrt(Var(U))
+ *
+ * The variance includes a tie correction factor:
+ *   Var(U) = n1*n2*(N+1)/12 - n1*n2 * sum(t^3 - t) / (12*N*(N-1))
+ *
+ * @param data1 - First sample (at least 1 observation).
+ * @param data2 - Second sample (at least 1 observation).
+ * @param alpha - Significance level for the hypothesis test (default 0.05).
+ * @returns A {@link HypothesisTestResult} where:
+ *   - `statistic` is the U statistic (min of U1, U2)
+ *   - `pValue` is the two-tailed p-value from the normal approximation
+ *   - `degreesOfFreedom` is 0 (non-parametric test)
+ *   - `rejected` is true if pValue < alpha
+ * @throws {Error} If either sample is empty.
+ *
+ * @example
+ * ```ts
+ * const result = mannWhitneyU([1, 2, 3, 4], [5, 6, 7, 8]);
+ * result.pValue; // small p-value indicating the samples differ
+ * ```
  */
 export function mannWhitneyU(
   data1: Dataset,
@@ -81,15 +108,38 @@ export function mannWhitneyU(
 }
 
 /**
- * Wilcoxon signed-rank test (two-tailed).
+ * Performs the Wilcoxon signed-rank test (two-tailed) for paired samples.
  *
- * Non-parametric test for paired samples. Tests whether the median
- * difference is zero. Uses normal approximation with tie correction.
+ * A non-parametric test for whether the median of paired differences is zero.
+ * Pairs with zero difference are excluded. The remaining absolute differences
+ * are ranked, and the test statistic W is the smaller of:
+ *   - W+: sum of ranks where difference > 0
+ *   - W-: sum of ranks where difference < 0
  *
- * @param data1 - First paired sample
- * @param data2 - Second paired sample
- * @param alpha - Significance level (default 0.05)
- * @returns HypothesisTestResult where statistic is W (smaller of W+, W-), degreesOfFreedom is 0
+ * Uses the normal approximation with continuity correction:
+ *   z = (|W - mean(W)| - 0.5) / sqrt(Var(W))
+ *
+ * where mean(W) = n*(n+1)/4 and the variance includes a tie correction:
+ *   Var(W) = n*(n+1)*(2n+1)/24 - sum(t^3 - t)/48
+ *
+ * @param data1 - First paired sample.
+ * @param data2 - Second paired sample (must have the same length as data1).
+ * @param alpha - Significance level for the hypothesis test (default 0.05).
+ * @returns A {@link HypothesisTestResult} where:
+ *   - `statistic` is W (min of W+, W-)
+ *   - `pValue` is the two-tailed p-value from the normal approximation
+ *   - `degreesOfFreedom` is 0 (non-parametric test)
+ *   - `rejected` is true if pValue < alpha
+ * @throws {Error} If paired samples have different lengths.
+ * @throws {Error} If fewer than 2 paired observations are provided.
+ *
+ * @example
+ * ```ts
+ * const before = [125, 115, 130, 140, 140, 115, 140, 125, 140, 135];
+ * const after  = [110, 122, 125, 120, 140, 124, 123, 137, 135, 145];
+ * const result = wilcoxonSignedRank(before, after);
+ * result.pValue; // two-tailed p-value for H0: median difference = 0
+ * ```
  */
 export function wilcoxonSignedRank(
   data1: Dataset,
@@ -157,7 +207,15 @@ export function wilcoxonSignedRank(
   };
 }
 
-/** Assign ranks with tie averaging (input must be sorted). */
+/**
+ * Assigns 1-based ranks with tie averaging to a pre-sorted array.
+ *
+ * When multiple values are equal (ties), each tied element receives the
+ * average of the ranks they would have occupied.
+ *
+ * @param sorted - A numeric array that must already be sorted in ascending order.
+ * @returns An array of ranks with the same length as the input.
+ */
 function assignRanks(sorted: number[]): number[] {
   const n = sorted.length;
   const ranks = new Array(n);
