@@ -1,10 +1,11 @@
 import { BaseContinuous } from "../base";
+import { RandomFn } from "../../types";
 
 export class Exponential extends BaseContinuous {
   readonly name: string;
 
-  constructor(public readonly lambda: number = 1) {
-    super();
+  constructor(public readonly lambda: number = 1, rng?: RandomFn) {
+    super(rng);
     if (lambda <= 0) throw new Error("lambda must be positive");
     this.name = `Exponential(${lambda})`;
   }
@@ -32,6 +33,6 @@ export class Exponential extends BaseContinuous {
   }
 
   sample(): number {
-    return -Math.log(1 - Math.random()) / this.lambda;
+    return -Math.log(1 - this.rng()) / this.lambda;
   }
 }

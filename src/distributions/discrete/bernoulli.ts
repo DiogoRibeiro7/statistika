@@ -1,10 +1,11 @@
 import { BaseDiscrete } from "../base";
+import { RandomFn } from "../../types";
 
 export class Bernoulli extends BaseDiscrete {
   readonly name: string;
 
-  constructor(public readonly p: number = 0.5) {
-    super();
+  constructor(public readonly p: number = 0.5, rng?: RandomFn) {
+    super(rng);
     if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
     this.name = `Bernoulli(${p})`;
   }
@@ -35,6 +36,6 @@ export class Bernoulli extends BaseDiscrete {
   }
 
   sample(): number {
-    return Math.random() < this.p ? 1 : 0;
+    return this.rng() < this.p ? 1 : 0;
   }
 }

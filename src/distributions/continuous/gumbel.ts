@@ -1,4 +1,5 @@
 import { BaseContinuous } from "../base";
+import { RandomFn } from "../../types";
 
 /**
  * Gumbel distribution (Type I extreme value distribution).
@@ -16,8 +17,9 @@ export class Gumbel extends BaseContinuous {
   constructor(
     public readonly mu: number = 0,
     public readonly beta: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (beta <= 0) throw new Error("beta must be positive");
     this.name = `Gumbel(${mu}, ${beta})`;
   }
@@ -49,6 +51,6 @@ export class Gumbel extends BaseContinuous {
   }
 
   sample(): number {
-    return this.quantile(Math.random());
+    return this.quantile(this.rng());
   }
 }

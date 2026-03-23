@@ -1,10 +1,11 @@
 import { BaseDiscrete } from "../base";
+import { RandomFn } from "../../types";
 
 export class Geometric extends BaseDiscrete {
   readonly name: string;
 
-  constructor(public readonly p: number = 0.5) {
-    super();
+  constructor(public readonly p: number = 0.5, rng?: RandomFn) {
+    super(rng);
     if (p <= 0 || p > 1) throw new Error("p must be in (0, 1]");
     this.name = `Geometric(${p})`;
   }
@@ -36,6 +37,6 @@ export class Geometric extends BaseDiscrete {
   }
 
   sample(): number {
-    return Math.floor(Math.log(1 - Math.random()) / Math.log(1 - this.p));
+    return Math.floor(Math.log(1 - this.rng()) / Math.log(1 - this.p));
   }
 }

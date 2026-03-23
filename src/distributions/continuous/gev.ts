@@ -1,5 +1,6 @@
 import { BaseContinuous } from "../base";
 import { gamma, quantileBisect } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 /**
  * Generalized Extreme Value (GEV) distribution.
@@ -21,8 +22,9 @@ export class GEV extends BaseContinuous {
     public readonly mu: number = 0,
     public readonly sigma: number = 1,
     public readonly xi: number = 0,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (sigma <= 0) throw new Error("sigma must be positive");
     this.name = `GEV(${mu}, ${sigma}, ${xi})`;
   }
@@ -90,6 +92,6 @@ export class GEV extends BaseContinuous {
   }
 
   sample(): number {
-    return this.quantile(Math.random());
+    return this.quantile(this.rng());
   }
 }

@@ -7,6 +7,7 @@
  */
 
 import { gammaLn } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 /**
  * Cholesky decomposition of a symmetric positive-definite matrix.
@@ -69,15 +70,19 @@ export class MultivariateNormal {
   readonly dim: number;
   private readonly L: number[][];
   private readonly logDet: number;
+  private rng: RandomFn;
 
   /**
    * @param mean - Mean vector (length k)
    * @param covariance - Covariance matrix (k × k, symmetric positive-definite)
+   * @param rng - Optional random number generator (defaults to Math.random).
    */
   constructor(
     public readonly mean: number[],
     public readonly covariance: number[][],
+    rng?: RandomFn,
   ) {
+    this.rng = rng ?? Math.random;
     const k = mean.length;
     if (k < 1) throw new Error("Dimension must be at least 1");
     if (covariance.length !== k || covariance.some((r) => r.length !== k)) {
@@ -123,8 +128,8 @@ export class MultivariateNormal {
     const z = new Array(k);
     for (let i = 0; i < k; i++) {
       // Box-Muller
-      const u1 = Math.random();
-      const u2 = Math.random();
+      const u1 = this.rng();
+      const u2 = this.rng();
       z[i] = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     }
 

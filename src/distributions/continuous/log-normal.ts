@@ -1,5 +1,6 @@
 import { BaseContinuous } from "../base";
 import { Normal } from "./normal";
+import { RandomFn } from "../../types";
 
 export class LogNormal extends BaseContinuous {
   readonly name: string;
@@ -8,11 +9,12 @@ export class LogNormal extends BaseContinuous {
   constructor(
     public readonly mu: number = 0,
     public readonly sigma: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (sigma <= 0) throw new Error("sigma must be positive");
     this.name = `LogNormal(${mu}, ${sigma})`;
-    this.normalDist = new Normal(mu, sigma);
+    this.normalDist = new Normal(mu, sigma, rng);
   }
 
   mean(): number {

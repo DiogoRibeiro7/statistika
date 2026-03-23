@@ -1,5 +1,6 @@
 import { BaseContinuous } from "../base";
 import { gamma } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 /**
  * Fréchet distribution (Type II extreme value distribution).
@@ -19,8 +20,9 @@ export class Frechet extends BaseContinuous {
     public readonly alpha: number = 1,
     public readonly s: number = 1,
     public readonly m: number = 0,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (alpha <= 0) throw new Error("alpha must be positive");
     if (s <= 0) throw new Error("s must be positive");
     this.name = `Frechet(${alpha}, ${s}, ${m})`;
@@ -62,6 +64,6 @@ export class Frechet extends BaseContinuous {
   }
 
   sample(): number {
-    return this.quantile(Math.random());
+    return this.quantile(this.rng());
   }
 }

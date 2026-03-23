@@ -1,11 +1,12 @@
 import { BaseDiscrete } from "../base";
 import { logFactorial, regularizedGammaP } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 export class Poisson extends BaseDiscrete {
   readonly name: string;
 
-  constructor(public readonly lambda: number = 1) {
-    super();
+  constructor(public readonly lambda: number = 1, rng?: RandomFn) {
+    super(rng);
     if (lambda <= 0) throw new Error("lambda must be positive");
     this.name = `Poisson(${lambda})`;
   }
@@ -54,11 +55,11 @@ export class Poisson extends BaseDiscrete {
       let p = 1;
       do {
         k++;
-        p *= Math.random();
+        p *= this.rng();
       } while (p > L);
       return k - 1;
     }
     // For large lambda, use inverse transform
-    return this.quantile(Math.random());
+    return this.quantile(this.rng());
   }
 }

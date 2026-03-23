@@ -1,6 +1,7 @@
 import { BaseContinuous } from "../base";
 import { gammaLn, regularizedBeta, quantileBisect } from "../../utils/math";
 import { GammaDistribution } from "./gamma";
+import { RandomFn } from "../../types";
 
 export class BetaDistribution extends BaseContinuous {
   readonly name: string;
@@ -8,8 +9,9 @@ export class BetaDistribution extends BaseContinuous {
   constructor(
     public readonly alpha: number = 1,
     public readonly beta: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (alpha <= 0) throw new Error("alpha must be positive");
     if (beta <= 0) throw new Error("beta must be positive");
     this.name = `Beta(${alpha}, ${beta})`;
@@ -57,8 +59,8 @@ export class BetaDistribution extends BaseContinuous {
   }
 
   sample(): number {
-    const x = new GammaDistribution(this.alpha, 1).sample();
-    const y = new GammaDistribution(this.beta, 1).sample();
+    const x = new GammaDistribution(this.alpha, 1, this.rng).sample();
+    const y = new GammaDistribution(this.beta, 1, this.rng).sample();
     return x / (x + y);
   }
 }

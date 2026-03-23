@@ -1,5 +1,6 @@
 import { BaseDiscrete } from "../base";
 import { logFactorial } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 export class Hypergeometric extends BaseDiscrete {
   readonly name: string;
@@ -8,8 +9,9 @@ export class Hypergeometric extends BaseDiscrete {
     public readonly N: number,
     public readonly K: number,
     public readonly n: number,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (N < 0 || !Number.isInteger(N)) throw new Error("N must be a non-negative integer");
     if (K < 0 || K > N || !Number.isInteger(K)) throw new Error("K must be an integer in [0, N]");
     if (n < 0 || n > N || !Number.isInteger(n)) throw new Error("n must be an integer in [0, N]");
@@ -75,7 +77,7 @@ export class Hypergeometric extends BaseDiscrete {
     let remaining = N;
     let kRemaining = K;
     for (let i = 0; i < n; i++) {
-      if (Math.random() < kRemaining / remaining) {
+      if (this.rng() < kRemaining / remaining) {
         successes++;
         kRemaining--;
       }

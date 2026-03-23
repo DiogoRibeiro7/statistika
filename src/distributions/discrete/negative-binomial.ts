@@ -1,5 +1,6 @@
 import { BaseDiscrete } from "../base";
 import { logFactorial, regularizedBeta } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 export class NegativeBinomial extends BaseDiscrete {
   readonly name: string;
@@ -7,8 +8,9 @@ export class NegativeBinomial extends BaseDiscrete {
   constructor(
     public readonly r: number,
     public readonly p: number,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (r <= 0 || !Number.isInteger(r)) throw new Error("r must be a positive integer");
     if (p <= 0 || p > 1) throw new Error("p must be in (0, 1]");
     this.name = `NegBin(${r}, ${p})`;
@@ -59,7 +61,7 @@ export class NegativeBinomial extends BaseDiscrete {
     let total = 0;
     for (let i = 0; i < this.r; i++) {
       let k = 0;
-      while (Math.random() >= this.p) k++;
+      while (this.rng() >= this.p) k++;
       total += k;
     }
     return total;

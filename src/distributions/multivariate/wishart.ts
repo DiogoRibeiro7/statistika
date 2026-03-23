@@ -8,6 +8,7 @@
  */
 
 import { gammaLn } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 /**
  * Cholesky decomposition of a symmetric positive-definite matrix.
@@ -49,15 +50,19 @@ export class Wishart {
   readonly dim: number;
   private readonly L: number[][]; // Cholesky of V
   private readonly logNormConst: number;
+  private rng: RandomFn;
 
   /**
    * @param df - Degrees of freedom (must be >= dim)
    * @param scale - Scale matrix V (p × p, symmetric positive-definite)
+   * @param rng - Optional random number generator (defaults to Math.random).
    */
   constructor(
     public readonly df: number,
     public readonly scale: number[][],
+    rng?: RandomFn,
   ) {
+    this.rng = rng ?? Math.random;
     const p = scale.length;
     if (p < 1) throw new Error("Dimension must be at least 1");
     if (scale.some((r) => r.length !== p)) {
@@ -160,11 +165,11 @@ export class Wishart {
 
     for (let i = 0; i < p; i++) {
       // Diagonal: sqrt of chi-squared(df - i) = sqrt of Gamma((df-i)/2, 1/2)
-      A[i][i] = Math.sqrt(sampleChiSquared(this.df - i));
+      A[i][i] = Math.sqrt(sampleChiSquared(this.df - i, this.rng));
       for (let j = 0; j < i; j++) {
         // Off-diagonal: standard normal
-        const u1 = Math.random();
-        const u2 = Math.random();
+        const u1 = this.rng();
+        const u2 = this.rng();
         A[i][j] = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
       }
     }
@@ -208,27 +213,27 @@ export class Wishart {
 }
 
 /** Sample from Chi-squared(df) = Gamma(df/2, 1/2) * 2 = Gamma(df/2, 1) * 2 */
-function sampleChiSquared(df: number): number {
-  return 2 * sampleGamma(df / 2);
+function sampleChiSquared(df: number, rng: RandomFn): number {
+  return 2 * sampleGamma(df / 2, rng);
 }
 
 /** Marsaglia-Tsang method for Gamma(shape, 1). */
-function sampleGamma(shape: number): number {
+function sampleGamma(shape: number, rng: RandomFn): number {
   if (shape < 1) {
-    return sampleGamma(shape + 1) * Math.pow(Math.random(), 1 / shape);
+    return sampleGamma(shape + 1, rng) * Math.pow(rng(), 1 / shape);
   }
   const d = shape - 1 / 3;
   const c = 1 / Math.sqrt(9 * d);
   while (true) {
     let x: number, v: number;
     do {
-      const u1 = Math.random();
-      const u2 = Math.random();
+      const u1 = rng();
+      const u2 = rng();
       x = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
       v = 1 + c * x;
     } while (v <= 0);
     v = v * v * v;
-    const u = Math.random();
+    const u = rng();
     if (
       u < 1 - 0.0331 * (x * x) * (x * x) ||
       Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))

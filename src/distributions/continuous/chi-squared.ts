@@ -1,17 +1,18 @@
 import { BaseContinuous } from "../base";
 import { GammaDistribution } from "./gamma";
+import { RandomFn } from "../../types";
 
 export class ChiSquared extends BaseContinuous {
   readonly name: string;
   private readonly gammaDistribution: GammaDistribution;
 
-  constructor(public readonly k: number = 1) {
-    super();
+  constructor(public readonly k: number = 1, rng?: RandomFn) {
+    super(rng);
     if (k <= 0 || !Number.isInteger(k)) {
       throw new Error("k (degrees of freedom) must be a positive integer");
     }
     this.name = `ChiSquared(${k})`;
-    this.gammaDistribution = new GammaDistribution(k / 2, 0.5);
+    this.gammaDistribution = new GammaDistribution(k / 2, 0.5, rng);
   }
 
   mean(): number {

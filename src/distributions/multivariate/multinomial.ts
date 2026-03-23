@@ -6,19 +6,24 @@
  */
 
 import { gammaLn, logFactorial } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 export class Multinomial {
   readonly name: string;
   readonly k: number;
+  private rng: RandomFn;
 
   /**
    * @param n - Number of trials (positive integer).
    * @param probs - Probability vector (must sum to 1, all non-negative).
+   * @param rng - Optional random number generator (defaults to Math.random).
    */
   constructor(
     public readonly n: number,
     public readonly probs: number[],
+    rng?: RandomFn,
   ) {
+    this.rng = rng ?? Math.random;
     if (!Number.isInteger(n) || n < 1) {
       throw new Error("n must be a positive integer");
     }
@@ -97,7 +102,7 @@ export class Multinomial {
     for (let i = 0; i < this.k - 1; i++) {
       if (remaining === 0) break;
       const p = probRemaining > 0 ? this.probs[i] / probRemaining : 0;
-      result[i] = sampleBinomial(remaining, Math.min(1, p));
+      result[i] = sampleBinomial(remaining, Math.min(1, p), this.rng);
       remaining -= result[i];
       probRemaining -= this.probs[i];
     }
@@ -121,10 +126,10 @@ export class Multinomial {
 }
 
 /** Sample from Binomial(n, p) via simple trial simulation. */
-function sampleBinomial(n: number, p: number): number {
+function sampleBinomial(n: number, p: number, rng: RandomFn): number {
   let count = 0;
   for (let i = 0; i < n; i++) {
-    if (Math.random() < p) count++;
+    if (rng() < p) count++;
   }
   return count;
 }

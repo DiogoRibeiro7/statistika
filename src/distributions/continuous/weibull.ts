@@ -1,5 +1,6 @@
 import { BaseContinuous } from "../base";
 import { gamma } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 /**
  * Weibull distribution.
@@ -18,8 +19,9 @@ export class Weibull extends BaseContinuous {
   constructor(
     public readonly k: number = 1,
     public readonly lambda: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (k <= 0) throw new Error("k (shape) must be positive");
     if (lambda <= 0) throw new Error("lambda (scale) must be positive");
     this.name = `Weibull(${k}, ${lambda})`;
@@ -63,6 +65,6 @@ export class Weibull extends BaseContinuous {
   }
 
   sample(): number {
-    return this.quantile(Math.random());
+    return this.quantile(this.rng());
   }
 }

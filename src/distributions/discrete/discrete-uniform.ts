@@ -1,4 +1,5 @@
 import { BaseDiscrete } from "../base";
+import { RandomFn } from "../../types";
 
 export class DiscreteUniform extends BaseDiscrete {
   readonly name: string;
@@ -7,8 +8,9 @@ export class DiscreteUniform extends BaseDiscrete {
   constructor(
     public readonly a: number = 0,
     public readonly b: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (!Number.isInteger(a) || !Number.isInteger(b)) {
       throw new Error("a and b must be integers");
     }
@@ -44,6 +46,6 @@ export class DiscreteUniform extends BaseDiscrete {
   }
 
   sample(): number {
-    return this.a + Math.floor(Math.random() * this.range);
+    return this.a + Math.floor(this.rng() * this.range);
   }
 }

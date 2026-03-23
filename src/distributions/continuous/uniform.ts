@@ -1,4 +1,5 @@
 import { BaseContinuous } from "../base";
+import { RandomFn } from "../../types";
 
 export class Uniform extends BaseContinuous {
   readonly name: string;
@@ -6,8 +7,9 @@ export class Uniform extends BaseContinuous {
   constructor(
     public readonly a: number = 0,
     public readonly b: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (a >= b) throw new Error("a must be less than b");
     this.name = `Uniform(${a}, ${b})`;
   }
@@ -36,6 +38,6 @@ export class Uniform extends BaseContinuous {
   }
 
   sample(): number {
-    return this.a + Math.random() * (this.b - this.a);
+    return this.a + this.rng() * (this.b - this.a);
   }
 }

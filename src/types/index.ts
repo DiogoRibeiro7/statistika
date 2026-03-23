@@ -12,6 +12,9 @@ export interface DescriptiveStats {
   max: number;
 }
 
+/** A function that returns a random number in [0, 1). */
+export type RandomFn = () => number;
+
 /** Common interface for all probability distributions. */
 export interface Distribution {
   readonly name: string;

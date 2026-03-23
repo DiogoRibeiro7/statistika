@@ -1,4 +1,5 @@
 import { BaseContinuous } from "../base";
+import { RandomFn } from "../../types";
 
 export class Pareto extends BaseContinuous {
   readonly name: string;
@@ -6,8 +7,9 @@ export class Pareto extends BaseContinuous {
   constructor(
     public readonly alpha: number,
     public readonly xm: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (alpha <= 0) throw new Error("alpha must be positive");
     if (xm <= 0) throw new Error("xm must be positive");
     this.name = `Pareto(${alpha}, ${xm})`;
@@ -43,7 +45,7 @@ export class Pareto extends BaseContinuous {
   }
 
   sample(): number {
-    const u = Math.random();
+    const u = this.rng();
     return this.quantile(u);
   }
 }

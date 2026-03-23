@@ -1,4 +1,5 @@
 import { BaseContinuous } from "../base";
+import { RandomFn } from "../../types";
 
 /**
  * Generalized Pareto Distribution (GPD).
@@ -21,8 +22,9 @@ export class GPD extends BaseContinuous {
     public readonly mu: number = 0,
     public readonly sigma: number = 1,
     public readonly xi: number = 0,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (sigma <= 0) throw new Error("sigma must be positive");
     this.name = `GPD(${mu}, ${sigma}, ${xi})`;
   }
@@ -77,6 +79,6 @@ export class GPD extends BaseContinuous {
   }
 
   sample(): number {
-    return this.quantile(Math.random());
+    return this.quantile(this.rng());
   }
 }

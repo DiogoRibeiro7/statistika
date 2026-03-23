@@ -1,5 +1,6 @@
 import { BaseContinuous } from "../base";
 import { erf, quantileBisect } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 export class Normal extends BaseContinuous {
   readonly name: string;
@@ -7,8 +8,9 @@ export class Normal extends BaseContinuous {
   constructor(
     public readonly mu: number = 0,
     public readonly sigma: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (sigma <= 0) throw new Error("sigma must be positive");
     this.name = `Normal(${mu}, ${sigma})`;
   }
@@ -40,8 +42,8 @@ export class Normal extends BaseContinuous {
 
   sample(): number {
     // Box-Muller transform
-    const u1 = Math.random();
-    const u2 = Math.random();
+    const u1 = this.rng();
+    const u2 = this.rng();
     const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     return this.mu + this.sigma * z;
   }

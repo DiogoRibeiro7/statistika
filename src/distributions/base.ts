@@ -1,7 +1,19 @@
-import { ContinuousDistribution, DiscreteDistribution } from "../types";
+import {
+  ContinuousDistribution,
+  DiscreteDistribution,
+  RandomFn,
+} from "../types";
 
 export abstract class BaseContinuous implements ContinuousDistribution {
   abstract readonly name: string;
+
+  /** Random number generator used by `sample()`. Defaults to `Math.random`. */
+  protected rng: RandomFn;
+
+  constructor(rng?: RandomFn) {
+    this.rng = rng ?? Math.random;
+  }
+
   abstract mean(): number;
   abstract variance(): number;
   abstract pdf(x: number): number;
@@ -26,6 +38,14 @@ export abstract class BaseContinuous implements ContinuousDistribution {
 
 export abstract class BaseDiscrete implements DiscreteDistribution {
   abstract readonly name: string;
+
+  /** Random number generator used by `sample()`. Defaults to `Math.random`. */
+  protected rng: RandomFn;
+
+  constructor(rng?: RandomFn) {
+    this.rng = rng ?? Math.random;
+  }
+
   abstract mean(): number;
   abstract variance(): number;
   abstract pmf(k: number): number;

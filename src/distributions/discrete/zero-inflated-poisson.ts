@@ -10,6 +10,7 @@
 
 import { BaseDiscrete } from "../base";
 import { logFactorial, regularizedGammaP } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 export class ZeroInflatedPoisson extends BaseDiscrete {
   readonly name: string;
@@ -21,8 +22,9 @@ export class ZeroInflatedPoisson extends BaseDiscrete {
   constructor(
     public readonly lambda: number,
     public readonly pi: number,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (lambda <= 0) throw new Error("lambda must be positive");
     if (pi < 0 || pi >= 1) throw new Error("pi must be in [0, 1)");
     this.name = `ZIP(${lambda}, ${pi})`;
@@ -74,7 +76,7 @@ export class ZeroInflatedPoisson extends BaseDiscrete {
 
   sample(): number {
     // With probability pi, return 0 (structural zero)
-    if (Math.random() < this.pi) return 0;
+    if (this.rng() < this.pi) return 0;
     // Otherwise sample from Poisson(lambda)
     if (this.lambda < 30) {
       const L = Math.exp(-this.lambda);
@@ -82,10 +84,10 @@ export class ZeroInflatedPoisson extends BaseDiscrete {
       let p = 1;
       do {
         count++;
-        p *= Math.random();
+        p *= this.rng();
       } while (p > L);
       return count - 1;
     }
-    return this.quantile(Math.random());
+    return this.quantile(this.rng());
   }
 }

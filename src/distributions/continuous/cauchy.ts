@@ -1,4 +1,5 @@
 import { BaseContinuous } from "../base";
+import { RandomFn } from "../../types";
 
 export class Cauchy extends BaseContinuous {
   readonly name: string;
@@ -6,8 +7,9 @@ export class Cauchy extends BaseContinuous {
   constructor(
     public readonly x0: number = 0,
     public readonly gammaParam: number = 1,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (gammaParam <= 0) throw new Error("gamma must be positive");
     this.name = `Cauchy(${x0}, ${gammaParam})`;
   }
@@ -38,7 +40,7 @@ export class Cauchy extends BaseContinuous {
 
   sample(): number {
     // Inverse CDF method
-    const u = Math.random();
+    const u = this.rng();
     return this.quantile(u);
   }
 }

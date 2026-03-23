@@ -5,11 +5,34 @@
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/cjs/index.d.ts",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "exports": {
     ".": {
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js",
       "types": "./dist/cjs/index.d.ts"
+    },
+    "./distributions": {
+      "import": "./dist/esm/distributions/index.js",
+      "require": "./dist/cjs/distributions/index.js",
+      "types": "./dist/cjs/distributions/index.d.ts"
+    },
+    "./models": {
+      "import": "./dist/esm/models/index.js",
+      "require": "./dist/cjs/models/index.js",
+      "types": "./dist/cjs/models/index.d.ts"
+    },
+    "./tests": {
+      "import": "./dist/esm/tests/index.js",
+      "require": "./dist/cjs/tests/index.js",
+      "types": "./dist/cjs/tests/index.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/esm/utils/index.js",
+      "require": "./dist/cjs/utils/index.js",
+      "types": "./dist/cjs/utils/index.d.ts"
     }
   },
   "files": [

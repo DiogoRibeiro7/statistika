@@ -7,17 +7,21 @@
  */
 
 import { gammaLn } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 export class Dirichlet {
   readonly name: string;
   readonly dim: number;
   private readonly alphaSum: number;
   private readonly lnBeta: number;
+  private rng: RandomFn;
 
   /**
    * @param alpha - Concentration parameters (all must be positive)
+   * @param rng - Optional random number generator (defaults to Math.random).
    */
-  constructor(public readonly alpha: number[]) {
+  constructor(public readonly alpha: number[], rng?: RandomFn) {
+    this.rng = rng ?? Math.random;
     const k = alpha.length;
     if (k < 2) throw new Error("Dirichlet requires at least 2 dimensions");
     for (let i = 0; i < k; i++) {
@@ -88,7 +92,7 @@ export class Dirichlet {
     let sum = 0;
 
     for (let i = 0; i < k; i++) {
-      y[i] = sampleGamma(this.alpha[i]);
+      y[i] = sampleGamma(this.alpha[i], this.rng);
       sum += y[i];
     }
 
@@ -116,22 +120,22 @@ export class Dirichlet {
 }
 
 /** Sample from Gamma(shape, 1) using Marsaglia-Tsang. */
-function sampleGamma(shape: number): number {
+function sampleGamma(shape: number, rng: RandomFn): number {
   if (shape < 1) {
-    return sampleGamma(shape + 1) * Math.pow(Math.random(), 1 / shape);
+    return sampleGamma(shape + 1, rng) * Math.pow(rng(), 1 / shape);
   }
   const d = shape - 1 / 3;
   const c = 1 / Math.sqrt(9 * d);
   while (true) {
     let x: number, v: number;
     do {
-      const u1 = Math.random();
-      const u2 = Math.random();
+      const u1 = rng();
+      const u2 = rng();
       x = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
       v = 1 + c * x;
     } while (v <= 0);
     v = v * v * v;
-    const u = Math.random();
+    const u = rng();
     if (
       u < 1 - 0.0331 * (x * x) * (x * x) ||
       Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))

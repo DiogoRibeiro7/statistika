@@ -1,5 +1,6 @@
 import { BaseContinuous } from "../base";
 import { betaFn, regularizedBeta, quantileBisect } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 export class FDistribution extends BaseContinuous {
   readonly name: string;
@@ -7,8 +8,9 @@ export class FDistribution extends BaseContinuous {
   constructor(
     public readonly d1: number,
     public readonly d2: number,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (d1 <= 0 || !Number.isInteger(d1)) throw new Error("d1 must be a positive integer");
     if (d2 <= 0 || !Number.isInteger(d2)) throw new Error("d2 must be a positive integer");
     this.name = `F(${d1}, ${d2})`;
@@ -51,17 +53,17 @@ export class FDistribution extends BaseContinuous {
 
   sample(): number {
     // Ratio of two chi-squared samples
-    const x1 = sampleChiSq(this.d1);
-    const x2 = sampleChiSq(this.d2);
+    const x1 = sampleChiSq(this.d1, this.rng);
+    const x2 = sampleChiSq(this.d2, this.rng);
     return (x1 / this.d1) / (x2 / this.d2);
   }
 }
 
-function sampleChiSq(k: number): number {
+function sampleChiSq(k: number, rng: RandomFn): number {
   let sum = 0;
   for (let i = 0; i < k; i++) {
-    const u1 = Math.random();
-    const u2 = Math.random();
+    const u1 = rng();
+    const u2 = rng();
     const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     sum += z * z;
   }

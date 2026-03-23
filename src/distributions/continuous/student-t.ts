@@ -1,12 +1,13 @@
 import { BaseContinuous } from "../base";
 import { gammaLn, regularizedBeta, quantileBisect } from "../../utils/math";
 import { GammaDistribution } from "./gamma";
+import { RandomFn } from "../../types";
 
 export class StudentT extends BaseContinuous {
   readonly name: string;
 
-  constructor(public readonly nu: number = 1) {
-    super();
+  constructor(public readonly nu: number = 1, rng?: RandomFn) {
+    super(rng);
     if (nu <= 0) throw new Error("nu (degrees of freedom) must be positive");
     this.name = `StudentT(${nu})`;
   }
@@ -49,12 +50,12 @@ export class StudentT extends BaseContinuous {
 
   sample(): number {
     // Ratio of standard normal to sqrt(chi-squared / nu)
-    const u1 = Math.random();
-    const u2 = Math.random();
+    const u1 = this.rng();
+    const u2 = this.rng();
     const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     // Chi-squared with nu degrees of freedom via sum of squared normals
     // For efficiency, use gamma sampling
-    const chi2 = new GammaDistribution(this.nu / 2, 0.5).sample();
+    const chi2 = new GammaDistribution(this.nu / 2, 0.5, this.rng).sample();
     return z / Math.sqrt(chi2 / this.nu);
   }
 }

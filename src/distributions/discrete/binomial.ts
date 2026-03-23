@@ -1,5 +1,6 @@
 import { BaseDiscrete } from "../base";
 import { logFactorial, regularizedBeta } from "../../utils/math";
+import { RandomFn } from "../../types";
 
 export class Binomial extends BaseDiscrete {
   readonly name: string;
@@ -7,8 +8,9 @@ export class Binomial extends BaseDiscrete {
   constructor(
     public readonly n: number = 1,
     public readonly p: number = 0.5,
+    rng?: RandomFn,
   ) {
-    super();
+    super(rng);
     if (n < 1 || !Number.isInteger(n)) throw new Error("n must be a positive integer");
     if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
     this.name = `Binomial(${n}, ${p})`;
@@ -59,7 +61,7 @@ export class Binomial extends BaseDiscrete {
   sample(): number {
     let successes = 0;
     for (let i = 0; i < this.n; i++) {
-      if (Math.random() < this.p) successes++;
+      if (this.rng() < this.p) successes++;
     }
     return successes;
   }
