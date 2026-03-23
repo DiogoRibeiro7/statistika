@@ -25,6 +25,8 @@ export {
   hasNativeLinalg,
 } from "./linalg";
 export type { Matrix } from "./linalg";
+export { Mat } from "./matrix";
+export type { LUResult, QRResult, SVDResult } from "./matrix";
 export {
   hasNativeStats,
   pairwiseEuclidean,
