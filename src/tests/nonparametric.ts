@@ -234,7 +234,15 @@ function assignRanks(sorted: number[]): number[] {
   return ranks;
 }
 
-/** Count tie group sizes for an already-sorted array. */
+/**
+ * Counts the sizes of tie groups in a pre-sorted array.
+ *
+ * Only groups of size > 1 (i.e., actual ties) are included in the result.
+ * Used for computing tie correction factors in rank-based tests.
+ *
+ * @param sorted - A numeric array that must already be sorted in ascending order.
+ * @returns An array of tie group sizes (each > 1).
+ */
 function countTieGroups(sorted: number[]): number[] {
   const groups: number[] = [];
   let i = 0;

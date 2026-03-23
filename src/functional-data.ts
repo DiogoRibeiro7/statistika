@@ -260,16 +260,29 @@ export function smoothBasisExpansion(
 // ── Functional PCA ────────────────────────────────────────────────────────
 
 /**
- * Functional Principal Component Analysis.
+ * Functional Principal Component Analysis (FPCA).
  *
- * 1. Smooth each curve onto a common basis.
- * 2. Compute the covariance matrix of coefficients.
- * 3. Eigendecompose to get functional PCs.
+ * Steps:
+ * 1. Smooth each curve onto a common basis via {@link smoothBasisExpansion}.
+ * 2. Compute the sample covariance matrix of the basis coefficients.
+ * 3. Eigendecompose to obtain functional principal components.
+ * 4. Project each curve onto the eigenfunctions to get scores.
  *
- * @param curves  Array of curves, each as { t: number[], y: number[] }.
- * @param basis  Common basis system.
- * @param nComponents  Number of PCs to retain (default: all).
- * @param lambda  Smoothing penalty (default 0).
+ * @param curves - Array of curves, each with observation times `t` and values `y`
+ * @param basis - Common basis system for all curves
+ * @param nComponents - Number of PCs to retain (default: min(nBasis, nCurves))
+ * @param lambda - Smoothing penalty for basis expansion (default: 0)
+ * @returns A {@link FPCAResult} with eigenvalues, eigenfunctions, scores,
+ *   and variance explained
+ * @throws {Error} If fewer than 2 curves are provided
+ *
+ * @example
+ * ```ts
+ * const curves = data.map(d => ({ t: d.time, y: d.value }));
+ * const basis = bsplineBasis(10, [0, 1]);
+ * const fpca = functionalPCA(curves, basis, 3);
+ * console.log(fpca.varianceExplained); // [0.7, 0.15, 0.05]
+ * ```
  */
 export function functionalPCA(
   curves: { t: number[]; y: number[] }[],
@@ -360,8 +373,12 @@ export function functionalPCA(
 /**
  * Compute the pointwise mean function from multiple curves.
  *
- * @param curves  Array of curves (each as { t, y } on a common grid).
- * @param tGrid  Common evaluation grid.
+ * For each point on the evaluation grid, linearly interpolates each curve
+ * and averages the values across all curves.
+ *
+ * @param curves - Array of curves, each with observation times `t` and values `y`
+ * @param tGrid - Common evaluation grid of time points
+ * @returns Array of mean values at each point in tGrid
  */
 export function functionalMean(
   curves: { t: number[]; y: number[] }[],
@@ -383,9 +400,15 @@ export function functionalMean(
 }
 
 /**
- * Compute the L² inner product between two functional objects.
+ * Compute the L2 inner product between two functional objects.
  *
- * ⟨f, g⟩ = ∫ f(t) g(t) dt (approximated by trapezoidal rule).
+ * <f, g> = integral from a to b of f(t)*g(t) dt, approximated by the
+ * trapezoidal rule over `nPoints` equally spaced subintervals.
+ *
+ * @param f - First functional object
+ * @param g - Second functional object (must share the same domain as f)
+ * @param nPoints - Number of subintervals for numerical integration (default: 100)
+ * @returns The approximate L2 inner product value
  */
 export function l2InnerProduct(
   f: FunctionalObject,
@@ -406,7 +429,13 @@ export function l2InnerProduct(
 }
 
 /**
- * Compute the L² norm of a functional object.
+ * Compute the L2 norm of a functional object.
+ *
+ * ||f|| = sqrt(<f, f>) = sqrt(integral of f(t)^2 dt).
+ *
+ * @param f - Functional object to compute the norm of
+ * @param nPoints - Number of subintervals for numerical integration (default: 100)
+ * @returns The L2 norm (always non-negative)
  */
 export function l2Norm(f: FunctionalObject, nPoints = 100): number {
   return Math.sqrt(l2InnerProduct(f, f, nPoints));

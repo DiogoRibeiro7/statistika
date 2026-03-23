@@ -191,8 +191,9 @@ export function detectOutliers(
  * Huber M-estimate of location.
  *
  * Iteratively re-weighted mean that downweights observations far from
- * the center. Robust to outliers while being more efficient than the
- * median for normally distributed data.
+ * the center. The Huber weight function assigns w = 1 when |r| <= k
+ * and w = k / |r| otherwise, where r = (x - mu) / s. Robust to outliers
+ * while being more efficient than the median for normally distributed data.
  *
  * @param data - Input dataset
  * @param k - Huber tuning constant (default: 1.345 for 95% efficiency at normal)
@@ -201,6 +202,12 @@ export function detectOutliers(
  * @returns The Huber M-estimate of location
  * @throws Error if dataset is empty
  * @throws Error if dataset contains NaN values
+ *
+ * @example
+ * ```ts
+ * const data = [1, 2, 3, 4, 5, 100];
+ * huberMean(data); // robust mean, not pulled toward 100
+ * ```
  */
 export function huberMean(
   data: Dataset,
@@ -241,12 +248,21 @@ export function huberMean(
  * Biweight (Tukey's biweight) midvariance.
  *
  * A robust estimator of scale that is highly resistant to outliers.
+ * Observations with u_i = (x_i - median) / (c * MAD) satisfying |u_i| >= 1
+ * are given zero weight. The formula is:
+ * S^2 = n * sum(d_i^2 * (1-u_i^2)^4) / (sum((1-u_i^2)(1-5u_i^2)))^2
  *
  * @param data - Input dataset
  * @param c - Tuning constant (default: 9.0)
  * @returns The biweight midvariance estimate
  * @throws Error if dataset has fewer than 2 elements
  * @throws Error if dataset contains NaN values
+ *
+ * @example
+ * ```ts
+ * const data = [1, 2, 3, 4, 5, 100];
+ * biweightMidvariance(data); // robust variance estimate, resistant to 100
+ * ```
  */
 export function biweightMidvariance(data: Dataset, c = 9.0): number {
   if (data.length < 2) throw new Error("Dataset must have at least 2 elements");

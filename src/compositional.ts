@@ -330,9 +330,17 @@ export function compositionalCentre(compositions: number[][]): number[] {
 }
 
 /**
- * Variation matrix: T[i][j] = Var(ln(xᵢ/xⱼ)).
+ * Variation matrix of a set of compositions.
  *
- * @param compositions  Array of compositions (n × D).
+ * T[i][j] = Var( ln(x_i / x_j) )
+ *
+ * The variation matrix summarizes the relative variability between all
+ * pairs of components. Small values indicate components that vary together;
+ * large values indicate components that vary independently.
+ *
+ * @param compositions - Array of compositions (n x D, need n >= 2)
+ * @returns A D x D symmetric matrix of pairwise log-ratio variances (diagonal is zero)
+ * @throws {Error} If fewer than 2 compositions are provided
  */
 export function variationMatrix(compositions: number[][]): number[][] {
   const n = compositions.length;
