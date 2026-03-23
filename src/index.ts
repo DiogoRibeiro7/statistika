@@ -33,3 +33,6 @@ export * from "./distribution-fitting";
 export * from "./causal-inference";
 export * from "./survey";
 export * from "./dataframe";
+export * from "./spatial";
+export * from "./graph";
+export * from "./viz-data";
