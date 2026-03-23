@@ -148,6 +148,43 @@ subroutine fortran_normal_cdf(x, result) bind(C, name="fortran_normal_cdf")
   result = 0.0d0
 end subroutine
 
+subroutine fortran_lu(a, lu_out, ipiv_out, n, info) bind(C, name="fortran_lu")
+  use iso_c_binding
+  real(c_double), intent(in) :: a(*)
+  real(c_double), intent(out) :: lu_out(*)
+  integer(c_int), intent(out) :: ipiv_out(*)
+  integer(c_int), intent(in) :: n
+  integer(c_int), intent(out) :: info
+  info = -999
+end subroutine
+
+subroutine fortran_qr(a, q_out, r_out, m, n, info) bind(C, name="fortran_qr")
+  use iso_c_binding
+  real(c_double), intent(in) :: a(*)
+  real(c_double), intent(out) :: q_out(*), r_out(*)
+  integer(c_int), intent(in) :: m, n
+  integer(c_int), intent(out) :: info
+  info = -999
+end subroutine
+
+subroutine fortran_cholesky(a, l_out, n, info) bind(C, name="fortran_cholesky")
+  use iso_c_binding
+  real(c_double), intent(in) :: a(*)
+  real(c_double), intent(out) :: l_out(*)
+  integer(c_int), intent(in) :: n
+  integer(c_int), intent(out) :: info
+  info = -999
+end subroutine
+
+subroutine fortran_svd(a, u_out, s_out, vt_out, m, n, info) bind(C, name="fortran_svd")
+  use iso_c_binding
+  real(c_double), intent(in) :: a(*)
+  real(c_double), intent(out) :: u_out(*), s_out(*), vt_out(*)
+  integer(c_int), intent(in) :: m, n
+  integer(c_int), intent(out) :: info
+  info = -999
+end subroutine
+
 subroutine fortran_pairwise_euclidean(data, dist, n, p) bind(C, name="fortran_pairwise_euclidean")
   use iso_c_binding
   real(c_double), intent(in) :: data(*)

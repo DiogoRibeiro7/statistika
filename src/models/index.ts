@@ -20,3 +20,15 @@ export type {
   HuberRegressionResult,
   RANSACResult,
 } from "./robust-regression";
+export {
+  stepwiseSelection,
+  ridgeRegression,
+  lassoRegression,
+  elasticNet,
+} from "./feature-selection";
+export type {
+  StepwiseResult,
+  RegularisedResult,
+  StepwiseCriterion,
+  StepwiseDirection,
+} from "./feature-selection";

@@ -26,6 +26,14 @@ extern "C" {
   void fortran_sym_eigen(const double* a, double* eigenvalues,
                          double* eigenvectors, const int* n, int* info);
   void fortran_normal_cdf(double x, double* result);
+  void fortran_lu(const double* a, double* lu_out, int* ipiv_out,
+                  const int* n, int* info);
+  void fortran_qr(const double* a, double* q_out, double* r_out,
+                  const int* m, const int* n, int* info);
+  void fortran_cholesky(const double* a, double* l_out, const int* n,
+                        int* info);
+  void fortran_svd(const double* a, double* u_out, double* s_out,
+                   double* vt_out, const int* m, const int* n, int* info);
 }
 
 // Fortran function declarations — statistics.f90
@@ -47,6 +55,16 @@ extern "C" {
                               int* count_out, double* mean_out,
                               double* m2_out, double* min_out,
                               double* max_out);
+  void fortran_elastic_net_cd(const double* X, const double* yc,
+                               double* beta, double* residuals,
+                               const double* col_norms,
+                               double lambda, double alpha,
+                               int max_iter, double tol,
+                               const int* n, const int* p,
+                               int* iters_out);
+  void fortran_ridge_solve(const double* X, const double* yc,
+                            double* beta_out, double lambda,
+                            const int* n, const int* p, int* info);
 }
 
 // ==========================================================================
@@ -290,6 +308,111 @@ Napi::Value NormalCdf(const Napi::CallbackInfo& info) {
 }
 
 // ==========================================================================
+// Matrix decomposition wrappers (LAPACK-backed)
+// ==========================================================================
+
+// lu(A, n) -> { lu, ipiv, info }
+// A: n×n array-of-arrays -> lu: flat col-major n*n, ipiv: int[n]
+Napi::Value LU(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array jsA = info[0].As<Napi::Array>();
+  int n = info[1].As<Napi::Number>().Int32Value();
+
+  std::vector<double> a = jsMatrixToColMajor(env, jsA, n, n);
+  std::vector<double> lu_out(n * n);
+  std::vector<int> ipiv(n);
+  int lapack_info = 0;
+
+  fortran_lu(a.data(), lu_out.data(), ipiv.data(), &n, &lapack_info);
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("lu", colMajorToJsMatrix(env, lu_out.data(), n, n));
+
+  Napi::Array jsIpiv = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsIpiv.Set(static_cast<uint32_t>(i), Napi::Number::New(env, ipiv[i]));
+  }
+  result.Set("ipiv", jsIpiv);
+  result.Set("info", Napi::Number::New(env, lapack_info));
+  return result;
+}
+
+// qr(A, m, n) -> { Q, R, info }
+// A: m×n array-of-arrays -> Q: m×n, R: n×n
+Napi::Value QR(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array jsA = info[0].As<Napi::Array>();
+  int m = info[1].As<Napi::Number>().Int32Value();
+  int n = info[2].As<Napi::Number>().Int32Value();
+
+  std::vector<double> a = jsMatrixToColMajor(env, jsA, m, n);
+  std::vector<double> q_out(m * n);
+  std::vector<double> r_out(n * n);
+  int lapack_info = 0;
+
+  fortran_qr(a.data(), q_out.data(), r_out.data(), &m, &n, &lapack_info);
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("Q", colMajorToJsMatrix(env, q_out.data(), m, n));
+  result.Set("R", colMajorToJsMatrix(env, r_out.data(), n, n));
+  result.Set("info", Napi::Number::New(env, lapack_info));
+  return result;
+}
+
+// cholesky(A, n) -> { L, info }
+// A: n×n SPD array-of-arrays -> L: n×n lower triangular
+Napi::Value Cholesky(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array jsA = info[0].As<Napi::Array>();
+  int n = info[1].As<Napi::Number>().Int32Value();
+
+  std::vector<double> a = jsMatrixToColMajor(env, jsA, n, n);
+  std::vector<double> l_out(n * n);
+  int lapack_info = 0;
+
+  fortran_cholesky(a.data(), l_out.data(), &n, &lapack_info);
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("L", colMajorToJsMatrix(env, l_out.data(), n, n));
+  result.Set("info", Napi::Number::New(env, lapack_info));
+  return result;
+}
+
+// svd(A, m, n) -> { U, S, Vt, info }
+// A: m×n array-of-arrays -> U: m×k, S: k, Vt: k×n where k = min(m,n)
+Napi::Value SVD(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array jsA = info[0].As<Napi::Array>();
+  int m = info[1].As<Napi::Number>().Int32Value();
+  int n = info[2].As<Napi::Number>().Int32Value();
+  int k = std::min(m, n);
+
+  std::vector<double> a = jsMatrixToColMajor(env, jsA, m, n);
+  std::vector<double> u_out(m * k);
+  std::vector<double> s_out(k);
+  std::vector<double> vt_out(k * n);
+  int lapack_info = 0;
+
+  fortran_svd(a.data(), u_out.data(), s_out.data(), vt_out.data(),
+              &m, &n, &lapack_info);
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("U", colMajorToJsMatrix(env, u_out.data(), m, k));
+
+  Napi::Array jsS = Napi::Array::New(env, k);
+  for (int i = 0; i < k; i++) {
+    jsS.Set(static_cast<uint32_t>(i), Napi::Number::New(env, s_out[i]));
+  }
+  result.Set("S", jsS);
+
+  // V^T is k×n, but caller typically wants V (n×k), so return Vt as-is
+  // and let the TypeScript layer transpose if needed.
+  result.Set("Vt", colMajorToJsMatrix(env, vt_out.data(), k, n));
+  result.Set("info", Napi::Number::New(env, lapack_info));
+  return result;
+}
+
+// ==========================================================================
 // Statistics module wrappers (statistics.f90)
 // ==========================================================================
 
@@ -408,6 +531,87 @@ Napi::Value WelfordBatch(const Napi::CallbackInfo& info) {
 }
 
 // ==========================================================================
+// Feature selection wrappers (statistics.f90)
+// ==========================================================================
+
+// elasticNetCd(X: number[][], yc: number[], beta: number[], residuals: number[],
+//              colNorms: number[], lambda, alpha, maxIter, tol)
+// => { beta: number[], residuals: number[], iterations: number }
+Napi::Value ElasticNetCd(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[0].As<Napi::Array>().Length();
+  Napi::Array jsX = info[0].As<Napi::Array>();
+  Napi::Array jsYc = info[1].As<Napi::Array>();
+  Napi::Array jsBeta = info[2].As<Napi::Array>();
+  Napi::Array jsResid = info[3].As<Napi::Array>();
+  Napi::Array jsColNorms = info[4].As<Napi::Array>();
+  double lambda = info[5].As<Napi::Number>().DoubleValue();
+  double alpha = info[6].As<Napi::Number>().DoubleValue();
+  int maxIter = info[7].As<Napi::Number>().Int32Value();
+  double tol = info[8].As<Napi::Number>().DoubleValue();
+
+  int p = jsX.Get(static_cast<uint32_t>(0)).As<Napi::Array>().Length();
+
+  auto X = jsMatrixToColMajor(env, jsX, n, p);
+  auto yc = jsArrayToVector(env, jsYc, n);
+  auto beta = jsArrayToVector(env, jsBeta, p);
+  auto residuals = jsArrayToVector(env, jsResid, n);
+  auto colNorms = jsArrayToVector(env, jsColNorms, p);
+  int itersOut = 0;
+
+  fortran_elastic_net_cd(X.data(), yc.data(), beta.data(), residuals.data(),
+                          colNorms.data(), lambda, alpha, maxIter, tol,
+                          &n, &p, &itersOut);
+
+  Napi::Object result = Napi::Object::New(env);
+
+  Napi::Array jsBetaOut = Napi::Array::New(env, p);
+  for (int i = 0; i < p; i++) {
+    jsBetaOut.Set(static_cast<uint32_t>(i), Napi::Number::New(env, beta[i]));
+  }
+  result.Set("beta", jsBetaOut);
+
+  Napi::Array jsResidOut = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResidOut.Set(static_cast<uint32_t>(i), Napi::Number::New(env, residuals[i]));
+  }
+  result.Set("residuals", jsResidOut);
+  result.Set("iterations", Napi::Number::New(env, itersOut));
+
+  return result;
+}
+
+// ridgeSolve(X: number[][], yc: number[], lambda: number)
+// => { beta: number[], info: number }
+Napi::Value RidgeSolve(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array jsX = info[0].As<Napi::Array>();
+  Napi::Array jsYc = info[1].As<Napi::Array>();
+  double lambda = info[2].As<Napi::Number>().DoubleValue();
+
+  int n = jsX.Length();
+  int p = jsX.Get(static_cast<uint32_t>(0)).As<Napi::Array>().Length();
+
+  auto X = jsMatrixToColMajor(env, jsX, n, p);
+  auto yc = jsArrayToVector(env, jsYc, n);
+  std::vector<double> betaOut(p);
+  int lapack_info = 0;
+
+  fortran_ridge_solve(X.data(), yc.data(), betaOut.data(), lambda,
+                       &n, &p, &lapack_info);
+
+  Napi::Object result = Napi::Object::New(env);
+  Napi::Array jsBeta = Napi::Array::New(env, p);
+  for (int i = 0; i < p; i++) {
+    jsBeta.Set(static_cast<uint32_t>(i), Napi::Number::New(env, betaOut[i]));
+  }
+  result.Set("beta", jsBeta);
+  result.Set("info", Napi::Number::New(env, lapack_info));
+
+  return result;
+}
+
+// ==========================================================================
 // Module initialization
 // ==========================================================================
 
@@ -431,12 +635,22 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("symEigen", Napi::Function::New(env, SymEigen));
   exports.Set("normalCdf", Napi::Function::New(env, NormalCdf));
 
+  // Matrix decompositions (LAPACK-backed)
+  exports.Set("lu", Napi::Function::New(env, LU));
+  exports.Set("qr", Napi::Function::New(env, QR));
+  exports.Set("cholesky", Napi::Function::New(env, Cholesky));
+  exports.Set("svd", Napi::Function::New(env, SVD));
+
   // Statistics (Fortran-accelerated)
   exports.Set("pairwiseEuclidean", Napi::Function::New(env, PairwiseEuclidean));
   exports.Set("gaussianPdfBatch", Napi::Function::New(env, GaussianPdfBatch));
   exports.Set("kdeGaussian", Napi::Function::New(env, KdeGaussian));
   exports.Set("weightedCrossProducts", Napi::Function::New(env, WeightedCrossProducts));
   exports.Set("welfordBatch", Napi::Function::New(env, WelfordBatch));
+
+  // Feature selection (Fortran-accelerated)
+  exports.Set("elasticNetCd", Napi::Function::New(env, ElasticNetCd));
+  exports.Set("ridgeSolve", Napi::Function::New(env, RidgeSolve));
 
   return exports;
 }
