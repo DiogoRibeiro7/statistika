@@ -61,7 +61,11 @@ try {
   // Native decompositions not available — pure TypeScript fallbacks will be used.
 }
 
-/** Whether native LAPACK acceleration is active for Mat decompositions. */
+/**
+ * Whether native LAPACK acceleration is active for Mat decompositions.
+ * When true, LU, QR, Cholesky, SVD, and matrix multiplication use
+ * LAPACK/BLAS routines for improved speed and numerical precision.
+ */
 export const hasNativeMatDecomps: boolean = native !== null;
 
 // ── Helper: convert 2D array to Mat ──────────────────────────────────────
@@ -78,6 +82,26 @@ function fromArray(data: number[][], rows: number, cols: number): Mat {
 
 // ── Matrix class ─────────────────────────────────────────────────────────
 
+/**
+ * Dense matrix class with decompositions and solvers.
+ *
+ * Data is stored in row-major flat Float64Array for cache-friendly access.
+ * Supports LU, QR, Cholesky, and SVD decompositions, as well as linear
+ * system solving, least squares, determinant, inverse, pseudoinverse,
+ * rank, and condition number.
+ *
+ * When the native Fortran/LAPACK addon is available, decompositions use
+ * LAPACK routines for production-grade speed and numerical precision.
+ * Otherwise, pure TypeScript fallbacks are used automatically.
+ *
+ * @example
+ * ```ts
+ * const A = Mat.from([[1, 2], [3, 4]]);
+ * const b = [5, 6];
+ * const x = A.solve(b); // solves Ax = b
+ * const { U, S, V } = A.svd(); // singular value decomposition
+ * ```
+ */
 export class Mat {
   /** Row-major flat storage. */
   readonly data: Float64Array;
@@ -86,6 +110,12 @@ export class Mat {
   /** Number of columns. */
   readonly cols: number;
 
+  /**
+   * @param rows - Number of rows (must be positive)
+   * @param cols - Number of columns (must be positive)
+   * @param data - Optional pre-allocated Float64Array of length rows * cols
+   * @throws Error if dimensions are not positive
+   */
   private constructor(rows: number, cols: number, data?: Float64Array) {
     if (rows <= 0 || cols <= 0) {
       throw new Error("Matrix dimensions must be positive");
