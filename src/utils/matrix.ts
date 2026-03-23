@@ -132,7 +132,19 @@ export class Mat {
 
   // ── Factories ────────────────────────────────────────────────────────
 
-  /** Create a matrix from a 2D array of numbers. */
+  /**
+   * Create a matrix from a 2D array of numbers.
+   *
+   * @param data - 2D array of numbers where data[i][j] is element at row i, column j
+   * @returns A new Mat instance
+   * @throws Error if array is empty, has no columns, or rows have inconsistent lengths
+   *
+   * @example
+   * ```ts
+   * const A = Mat.from([[1, 2], [3, 4]]);
+   * A.get(0, 1); // 2
+   * ```
+   */
   static from(data: number[][]): Mat {
     const rows = data.length;
     if (rows === 0) throw new Error("Matrix must have at least one row");
@@ -150,18 +162,35 @@ export class Mat {
     return new Mat(rows, cols, flat);
   }
 
-  /** Create a matrix of zeros. */
+  /**
+   * Create a matrix of zeros.
+   *
+   * @param rows - Number of rows
+   * @param cols - Number of columns
+   * @returns A new Mat filled with zeros
+   */
   static zeros(rows: number, cols: number): Mat {
     return new Mat(rows, cols);
   }
 
-  /** Create a matrix of ones. */
+  /**
+   * Create a matrix of ones.
+   *
+   * @param rows - Number of rows
+   * @param cols - Number of columns
+   * @returns A new Mat filled with ones
+   */
   static ones(rows: number, cols: number): Mat {
     const flat = new Float64Array(rows * cols).fill(1);
     return new Mat(rows, cols, flat);
   }
 
-  /** Create an identity matrix. */
+  /**
+   * Create an n x n identity matrix.
+   *
+   * @param n - Matrix dimension
+   * @returns A new n x n identity Mat
+   */
   static identity(n: number): Mat {
     const m = new Mat(n, n);
     for (let i = 0; i < n; i++) m.data[i * n + i] = 1;
