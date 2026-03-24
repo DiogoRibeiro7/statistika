@@ -53,11 +53,11 @@ export function autocorrelation(
   maxLag?: number,
 ): AutocorrelationResult {
   const n = series.length;
-  if (n < 2) throw new Error("Series must have at least 2 observations");
+  if (n < 2) throw new Error(`Invalid parameter 'series': expected at least 2 observations, received ${n}`);
 
   const defaultMaxLag = Math.min(n - 1, Math.floor(10 * Math.log10(n)));
   const lag = maxLag ?? defaultMaxLag;
-  if (lag < 1) throw new Error("maxLag must be at least 1");
+  if (lag < 1) throw new Error(`Invalid parameter 'maxLag': expected at least 1, received ${lag}`);
   const effectiveLag = Math.min(lag, n - 1);
 
   // Use Fortran-accelerated ACF/PACF when available
@@ -159,10 +159,10 @@ export function simpleMovingAverage(
   window: number,
 ): MovingAverageResult {
   if (!Number.isInteger(window) || window < 1) {
-    throw new Error("Window must be a positive integer");
+    throw new Error(`Invalid parameter 'window': expected a positive integer, received ${window}`);
   }
   if (window > series.length) {
-    throw new Error("Window must not exceed series length");
+    throw new Error(`Invalid parameter 'window': expected at most ${series.length} (series length), received ${window}`);
   }
 
   const result: number[] = [];
@@ -200,10 +200,10 @@ export function exponentialMovingAverage(
   alpha: number,
 ): MovingAverageResult {
   if (alpha <= 0 || alpha > 1) {
-    throw new Error("Alpha must be in (0, 1]");
+    throw new Error(`Invalid parameter 'alpha': expected a value in (0, 1], received ${alpha}`);
   }
   if (series.length === 0) {
-    throw new Error("Series must not be empty");
+    throw new Error(`Invalid parameter 'series': expected a non-empty array, received length 0`);
   }
 
   const result: number[] = new Array(series.length);
@@ -233,10 +233,10 @@ export function weightedMovingAverage(
   window: number,
 ): MovingAverageResult {
   if (!Number.isInteger(window) || window < 1) {
-    throw new Error("Window must be a positive integer");
+    throw new Error(`Invalid parameter 'window': expected a positive integer, received ${window}`);
   }
   if (window > series.length) {
-    throw new Error("Window must not exceed series length");
+    throw new Error(`Invalid parameter 'window': expected at most ${series.length} (series length), received ${window}`);
   }
 
   const weights: number[] = [];
@@ -274,7 +274,7 @@ export function weightedMovingAverage(
  */
 export function difference(series: number[], d = 1): number[] {
   if (d < 0 || !Number.isInteger(d)) {
-    throw new Error("d must be a non-negative integer");
+    throw new Error(`Invalid parameter 'd': expected a non-negative integer, received ${d}`);
   }
 
   let result = series;
@@ -348,13 +348,13 @@ export function arima(
   q: number,
 ): ARIMAResult {
   if (series.length < p + d + q + 2) {
-    throw new Error("Series too short for the specified ARIMA order");
+    throw new Error(`Invalid parameter 'series': expected at least ${p + d + q + 2} observations for ARIMA(${p},${d},${q}), received ${series.length}`);
   }
   if (p < 0 || d < 0 || q < 0) {
-    throw new Error("p, d, q must be non-negative");
+    throw new Error(`Invalid parameters 'p', 'd', 'q': expected non-negative values, received p=${p}, d=${d}, q=${q}`);
   }
   if (!Number.isInteger(p) || !Number.isInteger(d) || !Number.isInteger(q)) {
-    throw new Error("p, d, q must be integers");
+    throw new Error(`Invalid parameters 'p', 'd', 'q': expected integers, received p=${p}, d=${d}, q=${q}`);
   }
 
   // Step 1: Difference

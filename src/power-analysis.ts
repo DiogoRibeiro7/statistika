@@ -733,6 +733,12 @@ export function proportionTestPower(
  * @returns SampleSizeResult with the minimum sample size per group and achieved power
  * @throws Error if proportions are equal
  * @throws Error if power is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = proportionTestSampleSize(0.5, 0.3);
+ * console.log(result.sampleSize); // n per group for 80% power
+ * ```
  */
 export function proportionTestSampleSize(
   p1: number,
@@ -776,6 +782,12 @@ export function proportionTestSampleSize(
  * @throws Error if |r| >= 1
  * @throws Error if n < 4
  * @throws Error if alpha is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = correlationPower(0.3, 50);
+ * console.log(result.power); // power to detect r=0.3 with n=50
+ * ```
  */
 export function correlationPower(
   r: number,
@@ -822,6 +834,12 @@ export function correlationPower(
  * @returns SampleSizeResult with the minimum sample size and achieved power
  * @throws Error if r is zero
  * @throws Error if power is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const result = correlationSampleSize(0.3);
+ * console.log(result.sampleSize); // minimum n for 80% power at r=0.3
+ * ```
  */
 export function correlationSampleSize(
   r: number,

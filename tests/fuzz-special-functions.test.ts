@@ -251,7 +251,12 @@ describe('Fuzz: binomialCoeff', () => {
     for (let i = 0; i < FUZZ_COUNT; i++) {
       const n = randomInt(0, 100);
       const k = randomInt(0, n);
-      expect(binomialCoeff(n, k)).toBeCloseTo(binomialCoeff(n, n - k), 4);
+      const a = binomialCoeff(n, k);
+      const b = binomialCoeff(n, n - k);
+      if (a === 0 && b === 0) continue;
+      // Use relative tolerance for large values
+      const relErr = Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1);
+      expect(relErr).toBeLessThan(1e-8);
     }
   });
 

@@ -695,7 +695,7 @@ export function timeSeriesCV(
   const scorer = options.scorer ?? mse;
 
   if (minTrainSize + horizon > n) {
-    throw new Error("minTrainSize + horizon exceeds data length");
+    throw new Error(`Invalid parameters 'minTrainSize', 'horizon': expected minTrainSize + horizon <= ${n}, received ${minTrainSize} + ${horizon} = ${minTrainSize + horizon}`);
   }
 
   const scores: number[] = [];
@@ -757,9 +757,9 @@ export function nestedCV(
   },
 ): NestedCVResult {
   const n = X.length;
-  if (n !== y.length) throw new Error("X and y must have the same length");
+  if (n !== y.length) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${n}, y.length=${y.length}`);
   if (!options.paramGrid || options.paramGrid.length === 0) {
-    throw new Error("paramGrid must not be empty");
+    throw new Error(`Invalid parameter 'paramGrid': expected a non-empty array, received ${options.paramGrid ? 'length 0' : 'undefined'}`);
   }
 
   const outerK = options.outerK ?? 5;
@@ -852,12 +852,12 @@ export function monteCarloCV(
   } = {},
 ): CrossValidationResult {
   const n = X.length;
-  if (n !== y.length) throw new Error("X and y must have the same length");
+  if (n !== y.length) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${n}, y.length=${y.length}`);
 
   const nSplits = options.nSplits ?? 100;
   const testFraction = options.testFraction ?? 0.2;
   if (testFraction <= 0 || testFraction >= 1) {
-    throw new Error("testFraction must be between 0 and 1 (exclusive)");
+    throw new Error(`Invalid parameter 'testFraction': expected a value in (0, 1), received ${testFraction}`);
   }
 
   const scorer = options.scorer ?? mse;

@@ -68,3 +68,5 @@ export * from "./irt";
 export * from "./sensitivity";
 export * from "./lazy-dataframe";
 export * from "./utils/typed-matrix";
+export * from "./observable";
+export * from "./schemas";
