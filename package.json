@@ -113,6 +113,191 @@
       "import": "./dist/esm/diagnostics.js",
       "require": "./dist/cjs/diagnostics.js",
       "types": "./dist/cjs/diagnostics.d.ts"
+    },
+    "./bayesian-network": {
+      "import": "./dist/esm/bayesian-network.js",
+      "require": "./dist/cjs/bayesian-network.js",
+      "types": "./dist/cjs/bayesian-network.d.ts"
+    },
+    "./categorical": {
+      "import": "./dist/esm/categorical.js",
+      "require": "./dist/cjs/categorical.js",
+      "types": "./dist/cjs/categorical.d.ts"
+    },
+    "./compositional": {
+      "import": "./dist/esm/compositional.js",
+      "require": "./dist/cjs/compositional.js",
+      "types": "./dist/cjs/compositional.d.ts"
+    },
+    "./confidence-intervals": {
+      "import": "./dist/esm/confidence-intervals.js",
+      "require": "./dist/cjs/confidence-intervals.js",
+      "types": "./dist/cjs/confidence-intervals.d.ts"
+    },
+    "./cox-regression": {
+      "import": "./dist/esm/cox-regression.js",
+      "require": "./dist/cjs/cox-regression.js",
+      "types": "./dist/cjs/cox-regression.d.ts"
+    },
+    "./dataframe": {
+      "import": "./dist/esm/dataframe.js",
+      "require": "./dist/cjs/dataframe.js",
+      "types": "./dist/cjs/dataframe.d.ts"
+    },
+    "./distance": {
+      "import": "./dist/esm/distance.js",
+      "require": "./dist/cjs/distance.js",
+      "types": "./dist/cjs/distance.d.ts"
+    },
+    "./distribution-fitting": {
+      "import": "./dist/esm/distribution-fitting.js",
+      "require": "./dist/cjs/distribution-fitting.js",
+      "types": "./dist/cjs/distribution-fitting.d.ts"
+    },
+    "./effect-size": {
+      "import": "./dist/esm/effect-size.js",
+      "require": "./dist/cjs/effect-size.js",
+      "types": "./dist/cjs/effect-size.d.ts"
+    },
+    "./experimental-design": {
+      "import": "./dist/esm/experimental-design.js",
+      "require": "./dist/cjs/experimental-design.js",
+      "types": "./dist/cjs/experimental-design.d.ts"
+    },
+    "./forecasting": {
+      "import": "./dist/esm/forecasting.js",
+      "require": "./dist/cjs/forecasting.js",
+      "types": "./dist/cjs/forecasting.d.ts"
+    },
+    "./functional-data": {
+      "import": "./dist/esm/functional-data.js",
+      "require": "./dist/cjs/functional-data.js",
+      "types": "./dist/cjs/functional-data.d.ts"
+    },
+    "./graph": {
+      "import": "./dist/esm/graph.js",
+      "require": "./dist/cjs/graph.js",
+      "types": "./dist/cjs/graph.d.ts"
+    },
+    "./information-theory": {
+      "import": "./dist/esm/information-theory.js",
+      "require": "./dist/cjs/information-theory.js",
+      "types": "./dist/cjs/information-theory.d.ts"
+    },
+    "./irt": {
+      "import": "./dist/esm/irt.js",
+      "require": "./dist/cjs/irt.js",
+      "types": "./dist/cjs/irt.d.ts"
+    },
+    "./missing-data": {
+      "import": "./dist/esm/missing-data.js",
+      "require": "./dist/cjs/missing-data.js",
+      "types": "./dist/cjs/missing-data.d.ts"
+    },
+    "./mixed-models": {
+      "import": "./dist/esm/mixed-models.js",
+      "require": "./dist/cjs/mixed-models.js",
+      "types": "./dist/cjs/mixed-models.d.ts"
+    },
+    "./mixture-models": {
+      "import": "./dist/esm/mixture-models.js",
+      "require": "./dist/cjs/mixture-models.js",
+      "types": "./dist/cjs/mixture-models.d.ts"
+    },
+    "./model-selection": {
+      "import": "./dist/esm/model-selection.js",
+      "require": "./dist/cjs/model-selection.js",
+      "types": "./dist/cjs/model-selection.d.ts"
+    },
+    "./multiple-testing": {
+      "import": "./dist/esm/multiple-testing.js",
+      "require": "./dist/cjs/multiple-testing.js",
+      "types": "./dist/cjs/multiple-testing.d.ts"
+    },
+    "./multivariate": {
+      "import": "./dist/esm/multivariate.js",
+      "require": "./dist/cjs/multivariate.js",
+      "types": "./dist/cjs/multivariate.d.ts"
+    },
+    "./nonparametric": {
+      "import": "./dist/esm/nonparametric.js",
+      "require": "./dist/cjs/nonparametric.js",
+      "types": "./dist/cjs/nonparametric.d.ts"
+    },
+    "./power-analysis": {
+      "import": "./dist/esm/power-analysis.js",
+      "require": "./dist/cjs/power-analysis.js",
+      "types": "./dist/cjs/power-analysis.d.ts"
+    },
+    "./random": {
+      "import": "./dist/esm/random.js",
+      "require": "./dist/cjs/random.js",
+      "types": "./dist/cjs/random.d.ts"
+    },
+    "./robust-statistics": {
+      "import": "./dist/esm/robust-statistics.js",
+      "require": "./dist/cjs/robust-statistics.js",
+      "types": "./dist/cjs/robust-statistics.d.ts"
+    },
+    "./sem": {
+      "import": "./dist/esm/sem.js",
+      "require": "./dist/cjs/sem.js",
+      "types": "./dist/cjs/sem.d.ts"
+    },
+    "./sensitivity": {
+      "import": "./dist/esm/sensitivity.js",
+      "require": "./dist/cjs/sensitivity.js",
+      "types": "./dist/cjs/sensitivity.d.ts"
+    },
+    "./smoothing": {
+      "import": "./dist/esm/smoothing.js",
+      "require": "./dist/cjs/smoothing.js",
+      "types": "./dist/cjs/smoothing.d.ts"
+    },
+    "./streaming": {
+      "import": "./dist/esm/streaming.js",
+      "require": "./dist/cjs/streaming.js",
+      "types": "./dist/cjs/streaming.d.ts"
+    },
+    "./survey": {
+      "import": "./dist/esm/survey.js",
+      "require": "./dist/cjs/survey.js",
+      "types": "./dist/cjs/survey.d.ts"
+    },
+    "./variational": {
+      "import": "./dist/esm/variational.js",
+      "require": "./dist/cjs/variational.js",
+      "types": "./dist/cjs/variational.d.ts"
+    },
+    "./viz-data": {
+      "import": "./dist/esm/viz-data.js",
+      "require": "./dist/cjs/viz-data.js",
+      "types": "./dist/cjs/viz-data.d.ts"
+    },
+    "./observable": {
+      "import": "./dist/esm/observable.js",
+      "require": "./dist/cjs/observable.js",
+      "types": "./dist/cjs/observable.d.ts"
+    },
+    "./lazy-dataframe": {
+      "import": "./dist/esm/lazy-dataframe.js",
+      "require": "./dist/cjs/lazy-dataframe.js",
+      "types": "./dist/cjs/lazy-dataframe.d.ts"
+    },
+    "./worker-threads": {
+      "import": "./dist/esm/worker-threads.js",
+      "require": "./dist/cjs/worker-threads.js",
+      "types": "./dist/cjs/worker-threads.d.ts"
+    },
+    "./wasm": {
+      "import": "./dist/esm/wasm/index.js",
+      "require": "./dist/cjs/wasm/index.js",
+      "types": "./dist/cjs/wasm/index.d.ts"
+    },
+    "./schemas": {
+      "import": "./dist/esm/schemas/index.js",
+      "require": "./dist/cjs/schemas/index.js",
+      "types": "./dist/cjs/schemas/index.d.ts"
     }
   },
   "files": [
@@ -132,7 +317,7 @@
     "bench:linalg": "npx ts-node benchmark/linalg.ts",
     "bench:regression": "npx ts-node benchmark/regression-glm.ts",
     "bench:mcmc": "npx ts-node benchmark/mcmc-clustering.ts",
-    "bench:all": "npx ts-node benchmark/special-functions.ts && npx ts-node benchmark/linalg.ts && npx ts-node benchmark/regression-glm.ts && npx ts-node benchmark/mcmc-clustering.ts",
+    "bench:all": "node scripts/run-benchmarks.js",
     "docs": "typedoc",
     "install": "node scripts/build-native.js",
     "prepublishOnly": "yarn build"

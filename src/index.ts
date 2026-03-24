@@ -66,3 +66,5 @@ export * from "./variational";
 export * from "./meta-analysis";
 export * from "./irt";
 export * from "./sensitivity";
+export * from "./lazy-dataframe";
+export * from "./utils/typed-matrix";

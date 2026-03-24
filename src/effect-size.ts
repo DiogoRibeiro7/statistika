@@ -200,6 +200,13 @@ export function etaSquared(anovaResult: AnovaResult): EffectSizeResult {
  *
  * @param anovaResult - Result object from a one-way ANOVA
  * @returns An {@link EffectSizeResult} with the partial eta-squared value and interpretation
+ *
+ * @example
+ * ```ts
+ * const anova = oneWayAnova([group1, group2, group3]);
+ * const es = partialEtaSquared(anova);
+ * console.log(es.value); // proportion of variance explained (same as eta-squared for one-way)
+ * ```
  */
 export function partialEtaSquared(anovaResult: AnovaResult): EffectSizeResult {
   const eta2p =
@@ -221,6 +228,13 @@ export function partialEtaSquared(anovaResult: AnovaResult): EffectSizeResult {
  *
  * @param anovaResult - Result object from a one-way ANOVA
  * @returns An {@link EffectSizeResult} with the omega-squared value (>= 0) and interpretation
+ *
+ * @example
+ * ```ts
+ * const anova = oneWayAnova([group1, group2, group3]);
+ * const es = omegaSquared(anova);
+ * console.log(es.value); // less biased than eta-squared
+ * ```
  */
 export function omegaSquared(anovaResult: AnovaResult): EffectSizeResult {
   const ssTotal = anovaResult.ssBetween + anovaResult.ssWithin;

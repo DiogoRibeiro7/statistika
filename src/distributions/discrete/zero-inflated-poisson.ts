@@ -53,8 +53,8 @@ export class ZeroInflatedPoisson extends BaseDiscrete {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (lambda <= 0) throw new Error("lambda must be positive");
-    if (pi < 0 || pi >= 1) throw new Error("pi must be in [0, 1)");
+    if (lambda <= 0) throw new Error(`Invalid parameter 'lambda': expected a positive number, received ${lambda}`);
+    if (pi < 0 || pi >= 1) throw new Error(`Invalid parameter 'pi': expected a value in [0, 1), received ${pi}`);
     this.name = `ZIP(${lambda}, ${pi})`;
   }
 
@@ -163,7 +163,7 @@ export class ZeroInflatedPoisson extends BaseDiscrete {
    * ```
    */
   quantile(prob: number): number {
-    if (prob < 0 || prob > 1) throw new Error("p must be in [0, 1]");
+    if (prob < 0 || prob > 1) throw new Error(`Invalid parameter 'prob': expected a value in [0, 1], received ${prob}`);
     if (prob === 0) return 0;
     if (prob === 1) return Infinity;
     let cumulative = 0;
