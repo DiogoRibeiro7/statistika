@@ -21,6 +21,13 @@ export interface MissingDataSummary {
  *
  * @param data - Dataset to analyze
  * @returns A summary of missing data including counts, proportion, and indices
+ *
+ * @example
+ * ```ts
+ * const summary = analyzeMissing([1, null, 3, undefined, 5]);
+ * console.log(summary.missingCount); // 2
+ * console.log(summary.missingIndices); // [1, 3]
+ * ```
  */
 export function analyzeMissing(data: MaybeDataset): MissingDataSummary {
   const missingIndices: number[] = [];
@@ -49,6 +56,12 @@ export function analyzeMissing(data: MaybeDataset): MissingDataSummary {
  * @returns Filtered columns with only complete rows
  * @throws {Error} If no columns are provided
  * @throws {Error} If columns have different lengths
+ *
+ * @example
+ * ```ts
+ * const [a, b] = listwiseDeletion([1, null, 3], [4, 5, 6]);
+ * // a = [1, 3], b = [4, 6] — row 1 dropped due to null in first column
+ * ```
  */
 export function listwiseDeletion(...columns: MaybeDataset[]): number[][] {
   if (columns.length === 0) throw new Error("Must provide at least one column");
@@ -85,6 +98,12 @@ export function listwiseDeletion(...columns: MaybeDataset[]): number[][] {
  * @param b - Second dataset
  * @returns Object with filtered arrays and the indices used
  * @throws {Error} If datasets have different lengths
+ *
+ * @example
+ * ```ts
+ * const result = pairwiseDeletion([1, null, 3], [4, 5, null]);
+ * // result.a = [1], result.b = [4], result.indices = [0]
+ * ```
  */
 export function pairwiseDeletion(
   a: MaybeDataset,
@@ -148,6 +167,11 @@ export function meanImputation(data: MaybeDataset): number[] {
  * @param data - Dataset with possible missing values
  * @returns A new array with missing values replaced by the median of observed values
  * @throws {Error} If there are no observed (non-missing) values
+ *
+ * @example
+ * ```ts
+ * medianImputation([1, null, 3, null, 5]); // [1, 3, 3, 3, 5]
+ * ```
  */
 export function medianImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
@@ -168,6 +192,11 @@ export function medianImputation(data: MaybeDataset): number[] {
  * @param data - Dataset with possible missing values
  * @returns A new array with missing values replaced by the mode of observed values
  * @throws {Error} If there are no observed (non-missing) values
+ *
+ * @example
+ * ```ts
+ * modeImputation([1, 1, null, 2]); // [1, 1, 1, 2]
+ * ```
  */
 export function modeImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
@@ -266,6 +295,11 @@ export function linearInterpolation(data: MaybeDataset): number[] {
  * @returns A new array with missing values replaced by the last observed value.
  *   Leading missing values are filled with the first observed value.
  * @throws {Error} If all values in the dataset are missing
+ *
+ * @example
+ * ```ts
+ * forwardFill([1, null, null, 4, null]); // [1, 1, 1, 4, 4]
+ * ```
  */
 export function forwardFill(data: MaybeDataset): number[] {
   if (data.length === 0) return [];

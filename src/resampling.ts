@@ -288,7 +288,7 @@ export function stratifiedSample(
  * @throws {Error} If arrays have different lengths
  */
 export function mse(actual: Dataset, predicted: Dataset): number {
-  if (actual.length !== predicted.length) throw new Error("Arrays must have same length");
+  if (actual.length !== predicted.length) throw new Error(`Invalid parameters 'actual', 'predicted': expected same length, received actual.length=${actual.length}, predicted.length=${predicted.length}`);
   let sum = 0;
   for (let i = 0; i < actual.length; i++) sum += (actual[i] - predicted[i]) ** 2;
   return sum / actual.length;
@@ -315,7 +315,7 @@ export function rmse(actual: Dataset, predicted: Dataset): number {
  * @throws {Error} If arrays have different lengths
  */
 export function mae(actual: Dataset, predicted: Dataset): number {
-  if (actual.length !== predicted.length) throw new Error("Arrays must have same length");
+  if (actual.length !== predicted.length) throw new Error(`Invalid parameters 'actual', 'predicted': expected same length, received actual.length=${actual.length}, predicted.length=${predicted.length}`);
   let sum = 0;
   for (let i = 0; i < actual.length; i++) sum += Math.abs(actual[i] - predicted[i]);
   return sum / actual.length;
@@ -330,7 +330,7 @@ export function mae(actual: Dataset, predicted: Dataset): number {
  * @throws {Error} If arrays have different lengths
  */
 export function r2Score(actual: Dataset, predicted: Dataset): number {
-  if (actual.length !== predicted.length) throw new Error("Arrays must have same length");
+  if (actual.length !== predicted.length) throw new Error(`Invalid parameters 'actual', 'predicted': expected same length, received actual.length=${actual.length}, predicted.length=${predicted.length}`);
   const yMean = mean(actual);
   let ssRes = 0;
   let ssTot = 0;

@@ -216,6 +216,11 @@ export function klDivergence(p: Dataset, q: Dataset, base = 2): number {
  * @throws Error if distributions have different lengths
  * @throws Error if either distribution is invalid (empty, negative, or doesn't sum to ~1)
  * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * jsDivergence([0.5, 0.5], [0.9, 0.1]); // symmetric divergence in [0, 1]
+ * ```
  */
 export function jsDivergence(p: Dataset, q: Dataset, base = 2): number {
   if (p.length !== q.length) throw new Error("Distributions must have the same length");
@@ -243,6 +248,11 @@ export function jsDivergence(p: Dataset, q: Dataset, base = 2): number {
  * @throws Error if either distribution is invalid (empty, negative, or doesn't sum to ~1)
  * @throws Error if q(x) = 0 for any x where p(x) > 0
  * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * crossEntropy([0.5, 0.5], [0.5, 0.5]); // 1.0 (equals entropy when p === q)
+ * ```
  */
 export function crossEntropy(p: Dataset, q: Dataset, base = 2): number {
   if (p.length !== q.length) throw new Error("Distributions must have the same length");

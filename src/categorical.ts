@@ -94,6 +94,12 @@ export function contingencyTable(observed: number[][]): ContingencyTableSummary 
  * @param alpha - Significance level (default: 0.05)
  * @returns Object with test statistic, p-value, and rejection decision
  * @throws Error if the table is not exactly 2x2
+ *
+ * @example
+ * ```ts
+ * const result = mcnemarsTest([[20, 5], [10, 15]]);
+ * console.log(result.pValue); // p-value for marginal homogeneity
+ * ```
  */
 export function mcnemarsTest(
   table: number[][],
@@ -128,6 +134,12 @@ export function mcnemarsTest(
  * @returns Object with test statistic, p-value, common odds ratio, and rejection decision
  * @throws Error if no tables are provided
  * @throws Error if any table is not exactly 2x2
+ *
+ * @example
+ * ```ts
+ * const result = cochranMantelHaenszel([[[10, 5], [3, 12]], [[8, 6], [4, 10]]]);
+ * console.log(result.commonOddsRatio); // pooled odds ratio across strata
+ * ```
  */
 export function cochranMantelHaenszel(
   tables: number[][][],
@@ -176,6 +188,13 @@ export function cochranMantelHaenszel(
  * @param alpha - Significance level (default: 0.05)
  * @returns Object with G statistic, p-value, degrees of freedom, and rejection decision
  * @throws Error if the table is empty, has inconsistent row lengths, or contains negative counts
+ *
+ * @example
+ * ```ts
+ * const result = gTest([[10, 20], [30, 40]]);
+ * console.log(result.statistic); // G statistic
+ * console.log(result.pValue);    // p-value
+ * ```
  */
 export function gTest(
   observed: number[][],
@@ -207,6 +226,12 @@ export function gTest(
  * @param observed - Contingency table of observed counts
  * @returns 2D array of standardized residuals (O - E) / sqrt(E)
  * @throws Error if the table is empty, has inconsistent row lengths, or contains negative counts
+ *
+ * @example
+ * ```ts
+ * const resid = standardizedResiduals([[10, 20], [30, 40]]);
+ * // resid[i][j] > 2 or < -2 indicates significant deviation
+ * ```
  */
 export function standardizedResiduals(observed: number[][]): number[][] {
   const ct = contingencyTable(observed);
@@ -228,6 +253,12 @@ export function standardizedResiduals(observed: number[][]): number[][] {
  * @param observed - Contingency table of observed counts
  * @returns 2D array of adjusted standardized residuals
  * @throws Error if the table is empty, has inconsistent row lengths, or contains negative counts
+ *
+ * @example
+ * ```ts
+ * const resid = adjustedResiduals([[10, 20], [30, 40]]);
+ * // Approximately standard normal under independence
+ * ```
  */
 export function adjustedResiduals(observed: number[][]): number[][] {
   const ct = contingencyTable(observed);

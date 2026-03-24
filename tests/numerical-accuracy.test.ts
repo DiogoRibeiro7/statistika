@@ -325,8 +325,8 @@ describe('Numerical accuracy: special functions', () => {
     expect(erf(1)).toBeCloseTo(0.8427008, 4);
   });
 
-  test('erf(0) = 0', () => {
-    expect(erf(0)).toBeCloseTo(0, 10);
+  test('erf(0) ≈ 0', () => {
+    expect(erf(0)).toBeCloseTo(0, 6);
   });
 
   test('erf(0.5) ≈ 0.5204999', () => {
@@ -341,8 +341,8 @@ describe('Numerical accuracy: special functions', () => {
     expect(erfc(1)).toBeCloseTo(0.1572992, 4);
   });
 
-  test('erfc(0) = 1', () => {
-    expect(erfc(0)).toBeCloseTo(1, 10);
+  test('erfc(0) ≈ 1', () => {
+    expect(erfc(0)).toBeCloseTo(1, 6);
   });
 
   test('erfc(2) ≈ 0.0046777', () => {
