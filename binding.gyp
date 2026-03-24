@@ -10,8 +10,12 @@
       ],
       "libraries": [
         "<(module_root_dir)/native/fortran/special_functions.o",
+        "<(module_root_dir)/native/fortran/distributions.o",
         "<(module_root_dir)/native/fortran/linalg.o",
         "<(module_root_dir)/native/fortran/statistics.o",
+        "<(module_root_dir)/native/fortran/time_series.o",
+        "<(module_root_dir)/native/fortran/kalman.o",
+        "<(module_root_dir)/native/fortran/optimization.o",
         "-llapack",
         "-lblas",
         "-lgfortran"

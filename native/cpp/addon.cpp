@@ -67,6 +67,86 @@ extern "C" {
                             const int* n, const int* p, int* info);
 }
 
+// Fortran function declarations — time_series.f90
+extern "C" {
+  void fortran_autocovariance(const double* series, const int* n,
+                               double mu, double* gamma_out,
+                               const int* maxlag);
+  void fortran_acf(const double* series, const int* n,
+                    double* acf_out, const int* maxlag);
+  void fortran_pacf_durbin_levinson(const double* acf_in,
+                                     double* pacf_out, const int* maxlag);
+  void fortran_exponential_smoothing(const double* series, const int* n,
+                                      double alpha, double* smoothed);
+  void fortran_holt_winters(const double* series, const int* n,
+                             double alpha, double beta,
+                             double* level_out, double* trend_out,
+                             double* fitted_out);
+  void fortran_difference(const double* series, const int* n,
+                           const int* d, double* result);
+}
+
+// Fortran function declarations — kalman.f90
+extern "C" {
+  void fortran_kalman_predict(const double* F, double* x, double* P,
+                               const double* Q, const int* m);
+  void fortran_kalman_update(const double* H, const double* R,
+                              const double* y, double* x, double* P,
+                              double* innovation_out, double* S_out,
+                              double* loglik_out, const int* m,
+                              const int* p);
+  void fortran_kalman_filter_univariate(const double* F, const double* H,
+                                         const double* Q, double R_scalar,
+                                         const double* y, const double* x0,
+                                         const double* P0,
+                                         double* states_out,
+                                         double* loglik_out,
+                                         const int* T, const int* m);
+}
+
+// Fortran function declarations — distributions.f90
+extern "C" {
+  void fortran_chi2_cdf(double x, double df, double* result);
+  void fortran_chi2_pdf(double x, double df, double* result);
+  void fortran_t_cdf(double x, double df, double* result);
+  void fortran_t_pdf(double x, double df, double* result);
+  void fortran_f_cdf(double x, double d1, double d2, double* result);
+  void fortran_f_pdf(double x, double d1, double d2, double* result);
+  void fortran_normal_cdf_dist(double x, double* result);
+  void fortran_normal_pdf(double x, double* result);
+  void fortran_gamma_cdf(double x, double shape, double scale, double* result);
+  void fortran_beta_cdf(double x, double a, double b, double* result);
+  void fortran_chi2_cdf_batch(const double* x, const int* n, double df,
+                                double* result);
+  void fortran_t_cdf_batch(const double* x, const int* n, double df,
+                             double* result);
+  void fortran_normal_cdf_batch(const double* x, const int* n,
+                                  double* result);
+}
+
+// Fortran function declarations — optimization.f90
+extern "C" {
+  void fortran_garch11_loglik(const double* eps, const int* T,
+                                double omega, double alpha1, double beta1,
+                                double* sigma2_out, double* loglik_out);
+  void fortran_garch_pq_loglik(const double* eps, const int* T,
+                                 double omega, const double* alpha,
+                                 const double* beta, double* sigma2_out,
+                                 double* loglik_out, const int* p,
+                                 const int* q);
+  void fortran_gjr_garch11_loglik(const double* eps, const int* T,
+                                    double omega, double alpha1,
+                                    double beta1, double gamma1,
+                                    double* sigma2_out, double* loglik_out);
+  void fortran_egarch11_loglik(const double* eps, const int* T,
+                                 double omega, double alpha1,
+                                 double beta1, double gamma1,
+                                 double* sigma2_out, double* loglik_out);
+  void fortran_garch11_forecast(double last_eps2, double last_sigma2,
+                                  double omega, double alpha1, double beta1,
+                                  double* forecast_out, const int* h);
+}
+
 // ==========================================================================
 // Helpers: JS row-major array-of-arrays <-> Fortran column-major flat array
 // ==========================================================================
@@ -612,6 +692,443 @@ Napi::Value RidgeSolve(const Napi::CallbackInfo& info) {
 }
 
 // ==========================================================================
+// Time series wrappers (time_series.f90)
+// ==========================================================================
+
+// acf(series: number[], maxLag: number) => number[]
+Napi::Value Acf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array seriesArr = info[0].As<Napi::Array>();
+  int maxLag = info[1].As<Napi::Number>().Int32Value();
+  int n = seriesArr.Length();
+
+  auto series = jsArrayToVector(env, seriesArr, n);
+  std::vector<double> acf_out(maxLag + 1);
+
+  fortran_acf(series.data(), &n, acf_out.data(), &maxLag);
+
+  Napi::Array jsResult = Napi::Array::New(env, maxLag + 1);
+  for (int i = 0; i <= maxLag; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, acf_out[i]));
+  }
+  return jsResult;
+}
+
+// pacfDurbinLevinson(acf: number[], maxLag: number) => number[]
+Napi::Value PacfDurbinLevinson(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array acfArr = info[0].As<Napi::Array>();
+  int maxLag = info[1].As<Napi::Number>().Int32Value();
+
+  auto acf_in = jsArrayToVector(env, acfArr, maxLag + 1);
+  std::vector<double> pacf_out(maxLag + 1);
+
+  fortran_pacf_durbin_levinson(acf_in.data(), pacf_out.data(), &maxLag);
+
+  Napi::Array jsResult = Napi::Array::New(env, maxLag + 1);
+  for (int i = 0; i <= maxLag; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, pacf_out[i]));
+  }
+  return jsResult;
+}
+
+// exponentialSmoothing(series: number[], alpha: number) => number[]
+Napi::Value ExponentialSmoothing(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array seriesArr = info[0].As<Napi::Array>();
+  double alpha = info[1].As<Napi::Number>().DoubleValue();
+  int n = seriesArr.Length();
+
+  auto series = jsArrayToVector(env, seriesArr, n);
+  std::vector<double> smoothed(n);
+
+  fortran_exponential_smoothing(series.data(), &n, alpha, smoothed.data());
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, smoothed[i]));
+  }
+  return jsResult;
+}
+
+// holtWinters(series: number[], alpha: number, beta: number)
+// => { level: number[], trend: number[], fitted: number[] }
+Napi::Value HoltWinters(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array seriesArr = info[0].As<Napi::Array>();
+  double alpha = info[1].As<Napi::Number>().DoubleValue();
+  double beta = info[2].As<Napi::Number>().DoubleValue();
+  int n = seriesArr.Length();
+
+  auto series = jsArrayToVector(env, seriesArr, n);
+  std::vector<double> level(n), trend(n), fitted(n);
+
+  fortran_holt_winters(series.data(), &n, alpha, beta,
+                        level.data(), trend.data(), fitted.data());
+
+  Napi::Object result = Napi::Object::New(env);
+  Napi::Array jsLevel = Napi::Array::New(env, n);
+  Napi::Array jsTrend = Napi::Array::New(env, n);
+  Napi::Array jsFitted = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsLevel.Set(static_cast<uint32_t>(i), Napi::Number::New(env, level[i]));
+    jsTrend.Set(static_cast<uint32_t>(i), Napi::Number::New(env, trend[i]));
+    jsFitted.Set(static_cast<uint32_t>(i), Napi::Number::New(env, fitted[i]));
+  }
+  result.Set("level", jsLevel);
+  result.Set("trend", jsTrend);
+  result.Set("fitted", jsFitted);
+  return result;
+}
+
+// difference(series: number[], d: number) => number[]
+Napi::Value Difference(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array seriesArr = info[0].As<Napi::Array>();
+  int d = info[1].As<Napi::Number>().Int32Value();
+  int n = seriesArr.Length();
+
+  auto series = jsArrayToVector(env, seriesArr, n);
+  int resultLen = n - d;
+  if (resultLen <= 0) return Napi::Array::New(env, 0);
+
+  std::vector<double> result(resultLen);
+  fortran_difference(series.data(), &n, &d, result.data());
+
+  Napi::Array jsResult = Napi::Array::New(env, resultLen);
+  for (int i = 0; i < resultLen; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+// ==========================================================================
+// Kalman filter wrappers (kalman.f90)
+// ==========================================================================
+
+// kalmanFilterUnivariate(F, H, Q, R, y, x0, P0, T, m)
+// => { states: number[][], logLikelihood: number }
+Napi::Value KalmanFilterUnivariate(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array jsF = info[0].As<Napi::Array>();
+  Napi::Array jsH = info[1].As<Napi::Array>();
+  Napi::Array jsQ = info[2].As<Napi::Array>();
+  double R_scalar = info[3].As<Napi::Number>().DoubleValue();
+  Napi::Array jsY = info[4].As<Napi::Array>();
+  Napi::Array jsX0 = info[5].As<Napi::Array>();
+  Napi::Array jsP0 = info[6].As<Napi::Array>();
+  int T = info[7].As<Napi::Number>().Int32Value();
+  int m = info[8].As<Napi::Number>().Int32Value();
+
+  auto F = jsMatrixToColMajor(env, jsF, m, m);
+  auto H = jsArrayToVector(env, jsH, m);
+  auto Q = jsMatrixToColMajor(env, jsQ, m, m);
+  auto y = jsArrayToVector(env, jsY, T);
+  auto x0 = jsArrayToVector(env, jsX0, m);
+  auto P0 = jsMatrixToColMajor(env, jsP0, m, m);
+
+  std::vector<double> states_out(T * m);
+  double loglik_out = 0.0;
+
+  fortran_kalman_filter_univariate(F.data(), H.data(), Q.data(), R_scalar,
+                                    y.data(), x0.data(), P0.data(),
+                                    states_out.data(), &loglik_out,
+                                    &T, &m);
+
+  // Convert states to array-of-arrays (T x m, row-major)
+  Napi::Array jsStates = Napi::Array::New(env, T);
+  for (int t = 0; t < T; t++) {
+    Napi::Array jsRow = Napi::Array::New(env, m);
+    for (int i = 0; i < m; i++) {
+      jsRow.Set(static_cast<uint32_t>(i),
+                Napi::Number::New(env, states_out[t * m + i]));
+    }
+    jsStates.Set(static_cast<uint32_t>(t), jsRow);
+  }
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("states", jsStates);
+  result.Set("logLikelihood", Napi::Number::New(env, loglik_out));
+  return result;
+}
+
+// ==========================================================================
+// Distribution wrappers (distributions.f90)
+// ==========================================================================
+
+Napi::Value Chi2Cdf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double x = info[0].As<Napi::Number>().DoubleValue();
+  double df = info[1].As<Napi::Number>().DoubleValue();
+  double result;
+  fortran_chi2_cdf(x, df, &result);
+  return Napi::Number::New(env, result);
+}
+
+Napi::Value Chi2Pdf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double x = info[0].As<Napi::Number>().DoubleValue();
+  double df = info[1].As<Napi::Number>().DoubleValue();
+  double result;
+  fortran_chi2_pdf(x, df, &result);
+  return Napi::Number::New(env, result);
+}
+
+Napi::Value TCdf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double x = info[0].As<Napi::Number>().DoubleValue();
+  double df = info[1].As<Napi::Number>().DoubleValue();
+  double result;
+  fortran_t_cdf(x, df, &result);
+  return Napi::Number::New(env, result);
+}
+
+Napi::Value TPdf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double x = info[0].As<Napi::Number>().DoubleValue();
+  double df = info[1].As<Napi::Number>().DoubleValue();
+  double result;
+  fortran_t_pdf(x, df, &result);
+  return Napi::Number::New(env, result);
+}
+
+Napi::Value FCdf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double x = info[0].As<Napi::Number>().DoubleValue();
+  double d1 = info[1].As<Napi::Number>().DoubleValue();
+  double d2 = info[2].As<Napi::Number>().DoubleValue();
+  double result;
+  fortran_f_cdf(x, d1, d2, &result);
+  return Napi::Number::New(env, result);
+}
+
+Napi::Value FPdf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double x = info[0].As<Napi::Number>().DoubleValue();
+  double d1 = info[1].As<Napi::Number>().DoubleValue();
+  double d2 = info[2].As<Napi::Number>().DoubleValue();
+  double result;
+  fortran_f_pdf(x, d1, d2, &result);
+  return Napi::Number::New(env, result);
+}
+
+Napi::Value NormalPdf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double x = info[0].As<Napi::Number>().DoubleValue();
+  double result;
+  fortran_normal_pdf(x, &result);
+  return Napi::Number::New(env, result);
+}
+
+Napi::Value GammaCdf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double x = info[0].As<Napi::Number>().DoubleValue();
+  double shape = info[1].As<Napi::Number>().DoubleValue();
+  double scale = info[2].As<Napi::Number>().DoubleValue();
+  double result;
+  fortran_gamma_cdf(x, shape, scale, &result);
+  return Napi::Number::New(env, result);
+}
+
+Napi::Value BetaCdf(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double x = info[0].As<Napi::Number>().DoubleValue();
+  double a = info[1].As<Napi::Number>().DoubleValue();
+  double b = info[2].As<Napi::Number>().DoubleValue();
+  double result;
+  fortran_beta_cdf(x, a, b, &result);
+  return Napi::Number::New(env, result);
+}
+
+// Batch CDF evaluations
+Napi::Value Chi2CdfBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array xArr = info[0].As<Napi::Array>();
+  double df = info[1].As<Napi::Number>().DoubleValue();
+  int n = xArr.Length();
+
+  auto x = jsArrayToVector(env, xArr, n);
+  std::vector<double> result(n);
+  fortran_chi2_cdf_batch(x.data(), &n, df, result.data());
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+Napi::Value TCdfBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array xArr = info[0].As<Napi::Array>();
+  double df = info[1].As<Napi::Number>().DoubleValue();
+  int n = xArr.Length();
+
+  auto x = jsArrayToVector(env, xArr, n);
+  std::vector<double> result(n);
+  fortran_t_cdf_batch(x.data(), &n, df, result.data());
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+Napi::Value NormalCdfBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array xArr = info[0].As<Napi::Array>();
+  int n = xArr.Length();
+
+  auto x = jsArrayToVector(env, xArr, n);
+  std::vector<double> result(n);
+  fortran_normal_cdf_batch(x.data(), &n, result.data());
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+// ==========================================================================
+// GARCH/optimization wrappers (optimization.f90)
+// ==========================================================================
+
+// garch11Loglik(eps: number[], omega, alpha1, beta1)
+// => { sigma2: number[], logLikelihood: number }
+Napi::Value Garch11Loglik(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array epsArr = info[0].As<Napi::Array>();
+  double omega = info[1].As<Napi::Number>().DoubleValue();
+  double alpha1 = info[2].As<Napi::Number>().DoubleValue();
+  double beta1 = info[3].As<Napi::Number>().DoubleValue();
+  int T = epsArr.Length();
+
+  auto eps = jsArrayToVector(env, epsArr, T);
+  std::vector<double> sigma2(T);
+  double loglik = 0.0;
+
+  fortran_garch11_loglik(eps.data(), &T, omega, alpha1, beta1,
+                          sigma2.data(), &loglik);
+
+  Napi::Object result = Napi::Object::New(env);
+  Napi::Array jsSigma2 = Napi::Array::New(env, T);
+  for (int i = 0; i < T; i++) {
+    jsSigma2.Set(static_cast<uint32_t>(i), Napi::Number::New(env, sigma2[i]));
+  }
+  result.Set("sigma2", jsSigma2);
+  result.Set("logLikelihood", Napi::Number::New(env, loglik));
+  return result;
+}
+
+// garchPqLoglik(eps: number[], omega, alpha: number[], beta: number[])
+// => { sigma2: number[], logLikelihood: number }
+Napi::Value GarchPqLoglik(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array epsArr = info[0].As<Napi::Array>();
+  double omega = info[1].As<Napi::Number>().DoubleValue();
+  Napi::Array alphaArr = info[2].As<Napi::Array>();
+  Napi::Array betaArr = info[3].As<Napi::Array>();
+  int T = epsArr.Length();
+  int q = alphaArr.Length();
+  int p = betaArr.Length();
+
+  auto eps = jsArrayToVector(env, epsArr, T);
+  auto alpha = jsArrayToVector(env, alphaArr, q);
+  auto beta = jsArrayToVector(env, betaArr, p);
+  std::vector<double> sigma2(T);
+  double loglik = 0.0;
+
+  fortran_garch_pq_loglik(eps.data(), &T, omega, alpha.data(), beta.data(),
+                            sigma2.data(), &loglik, &p, &q);
+
+  Napi::Object result = Napi::Object::New(env);
+  Napi::Array jsSigma2 = Napi::Array::New(env, T);
+  for (int i = 0; i < T; i++) {
+    jsSigma2.Set(static_cast<uint32_t>(i), Napi::Number::New(env, sigma2[i]));
+  }
+  result.Set("sigma2", jsSigma2);
+  result.Set("logLikelihood", Napi::Number::New(env, loglik));
+  return result;
+}
+
+// gjrGarch11Loglik(eps, omega, alpha1, beta1, gamma1)
+Napi::Value GjrGarch11Loglik(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array epsArr = info[0].As<Napi::Array>();
+  double omega = info[1].As<Napi::Number>().DoubleValue();
+  double alpha1 = info[2].As<Napi::Number>().DoubleValue();
+  double beta1 = info[3].As<Napi::Number>().DoubleValue();
+  double gamma1 = info[4].As<Napi::Number>().DoubleValue();
+  int T = epsArr.Length();
+
+  auto eps = jsArrayToVector(env, epsArr, T);
+  std::vector<double> sigma2(T);
+  double loglik = 0.0;
+
+  fortran_gjr_garch11_loglik(eps.data(), &T, omega, alpha1, beta1, gamma1,
+                               sigma2.data(), &loglik);
+
+  Napi::Object result = Napi::Object::New(env);
+  Napi::Array jsSigma2 = Napi::Array::New(env, T);
+  for (int i = 0; i < T; i++) {
+    jsSigma2.Set(static_cast<uint32_t>(i), Napi::Number::New(env, sigma2[i]));
+  }
+  result.Set("sigma2", jsSigma2);
+  result.Set("logLikelihood", Napi::Number::New(env, loglik));
+  return result;
+}
+
+// egarch11Loglik(eps, omega, alpha1, beta1, gamma1)
+Napi::Value Egarch11Loglik(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Array epsArr = info[0].As<Napi::Array>();
+  double omega = info[1].As<Napi::Number>().DoubleValue();
+  double alpha1 = info[2].As<Napi::Number>().DoubleValue();
+  double beta1 = info[3].As<Napi::Number>().DoubleValue();
+  double gamma1 = info[4].As<Napi::Number>().DoubleValue();
+  int T = epsArr.Length();
+
+  auto eps = jsArrayToVector(env, epsArr, T);
+  std::vector<double> sigma2(T);
+  double loglik = 0.0;
+
+  fortran_egarch11_loglik(eps.data(), &T, omega, alpha1, beta1, gamma1,
+                            sigma2.data(), &loglik);
+
+  Napi::Object result = Napi::Object::New(env);
+  Napi::Array jsSigma2 = Napi::Array::New(env, T);
+  for (int i = 0; i < T; i++) {
+    jsSigma2.Set(static_cast<uint32_t>(i), Napi::Number::New(env, sigma2[i]));
+  }
+  result.Set("sigma2", jsSigma2);
+  result.Set("logLikelihood", Napi::Number::New(env, loglik));
+  return result;
+}
+
+// garch11Forecast(lastEps2, lastSigma2, omega, alpha1, beta1, h)
+Napi::Value Garch11Forecast(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  double lastEps2 = info[0].As<Napi::Number>().DoubleValue();
+  double lastSigma2 = info[1].As<Napi::Number>().DoubleValue();
+  double omega = info[2].As<Napi::Number>().DoubleValue();
+  double alpha1 = info[3].As<Napi::Number>().DoubleValue();
+  double beta1 = info[4].As<Napi::Number>().DoubleValue();
+  int h = info[5].As<Napi::Number>().Int32Value();
+
+  std::vector<double> forecast(h);
+  fortran_garch11_forecast(lastEps2, lastSigma2, omega, alpha1, beta1,
+                             forecast.data(), &h);
+
+  Napi::Array jsResult = Napi::Array::New(env, h);
+  for (int i = 0; i < h; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, forecast[i]));
+  }
+  return jsResult;
+}
+
+// ==========================================================================
 // Module initialization
 // ==========================================================================
 
@@ -651,6 +1168,37 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   // Feature selection (Fortran-accelerated)
   exports.Set("elasticNetCd", Napi::Function::New(env, ElasticNetCd));
   exports.Set("ridgeSolve", Napi::Function::New(env, RidgeSolve));
+
+  // Time series (Fortran-accelerated)
+  exports.Set("acf", Napi::Function::New(env, Acf));
+  exports.Set("pacfDurbinLevinson", Napi::Function::New(env, PacfDurbinLevinson));
+  exports.Set("exponentialSmoothing", Napi::Function::New(env, ExponentialSmoothing));
+  exports.Set("holtWinters", Napi::Function::New(env, HoltWinters));
+  exports.Set("difference", Napi::Function::New(env, Difference));
+
+  // Kalman filter (Fortran-accelerated)
+  exports.Set("kalmanFilterUnivariate", Napi::Function::New(env, KalmanFilterUnivariate));
+
+  // Distributions (Fortran-accelerated)
+  exports.Set("chi2Cdf", Napi::Function::New(env, Chi2Cdf));
+  exports.Set("chi2Pdf", Napi::Function::New(env, Chi2Pdf));
+  exports.Set("tCdf", Napi::Function::New(env, TCdf));
+  exports.Set("tPdf", Napi::Function::New(env, TPdf));
+  exports.Set("fCdf", Napi::Function::New(env, FCdf));
+  exports.Set("fPdf", Napi::Function::New(env, FPdf));
+  exports.Set("normalPdf", Napi::Function::New(env, NormalPdf));
+  exports.Set("gammaCdf", Napi::Function::New(env, GammaCdf));
+  exports.Set("betaCdf", Napi::Function::New(env, BetaCdf));
+  exports.Set("chi2CdfBatch", Napi::Function::New(env, Chi2CdfBatch));
+  exports.Set("tCdfBatch", Napi::Function::New(env, TCdfBatch));
+  exports.Set("normalCdfBatch", Napi::Function::New(env, NormalCdfBatch));
+
+  // GARCH/optimization (Fortran-accelerated)
+  exports.Set("garch11Loglik", Napi::Function::New(env, Garch11Loglik));
+  exports.Set("garchPqLoglik", Napi::Function::New(env, GarchPqLoglik));
+  exports.Set("gjrGarch11Loglik", Napi::Function::New(env, GjrGarch11Loglik));
+  exports.Set("egarch11Loglik", Napi::Function::New(env, Egarch11Loglik));
+  exports.Set("garch11Forecast", Napi::Function::New(env, Garch11Forecast));
 
   return exports;
 }

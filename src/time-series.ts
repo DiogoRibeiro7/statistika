@@ -3,6 +3,11 @@
  */
 
 import { mean } from "./utils/descriptive";
+import {
+  acf as nativeAcf,
+  pacfDurbinLevinson as nativePacf,
+  hasNativeTimeSeries,
+} from "./utils/native-timeseries";
 
 // ---- Autocorrelation ----
 
@@ -54,6 +59,18 @@ export function autocorrelation(
   const lag = maxLag ?? defaultMaxLag;
   if (lag < 1) throw new Error("maxLag must be at least 1");
   const effectiveLag = Math.min(lag, n - 1);
+
+  // Use Fortran-accelerated ACF/PACF when available
+  if (hasNativeTimeSeries) {
+    const acf = nativeAcf(series, effectiveLag);
+    const pacf = nativePacf(acf, effectiveLag);
+    return {
+      acf,
+      pacf,
+      maxLag: effectiveLag,
+      confidenceBound: 1.96 / Math.sqrt(n),
+    };
+  }
 
   const mu = mean(series);
 
