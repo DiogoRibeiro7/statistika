@@ -255,11 +255,11 @@ export function metropolisHastingsND(
  */
 export function gelmanRubin(chains: number[][]): number {
   const m = chains.length;
-  if (m < 2) throw new Error("Need at least 2 chains");
+  if (m < 2) throw new Error(`Invalid parameter 'chains': expected at least 2 chains, received ${m}`);
 
   const n = chains[0].length;
   if (chains.some((c) => c.length !== n)) {
-    throw new Error("All chains must have the same length");
+    throw new Error(`Invalid parameter 'chains': expected all chains to have the same length (${n}), received chains with different lengths`);
   }
 
   // Chain means
@@ -377,7 +377,7 @@ export function gibbsSampler(
   } = {},
 ): GibbsSamplerResult {
   const numParams = conditionals.length;
-  if (numParams === 0) throw new Error("conditionals array must not be empty");
+  if (numParams === 0) throw new Error(`Invalid parameter 'conditionals': expected a non-empty array, received length 0`);
 
   const iterations = options.iterations ?? 10000;
   const burnIn = options.burnIn ?? Math.floor(iterations * 0.2);
@@ -462,9 +462,9 @@ export function blockGibbsSampler(
   } = {},
 ): GibbsSamplerResult {
   if (blocks.length !== blockIndices.length) {
-    throw new Error("blocks and blockIndices must have the same length");
+    throw new Error(`Invalid parameters 'blocks', 'blockIndices': expected same length, received blocks.length=${blocks.length}, blockIndices.length=${blockIndices.length}`);
   }
-  if (numParams < 1) throw new Error("numParams must be at least 1");
+  if (numParams < 1) throw new Error(`Invalid parameter 'numParams': expected at least 1, received ${numParams}`);
 
   const iterations = options.iterations ?? 10000;
   const burnIn = options.burnIn ?? Math.floor(iterations * 0.2);

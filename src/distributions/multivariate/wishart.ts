@@ -104,11 +104,11 @@ export class Wishart {
   ) {
     this.rng = rng ?? Math.random;
     const p = scale.length;
-    if (p < 1) throw new Error("Dimension must be at least 1");
+    if (p < 1) throw new Error(`Invalid parameter 'scale': expected at least 1 dimension, received ${p}`);
     if (scale.some((r) => r.length !== p)) {
-      throw new Error("Scale matrix must be square");
+      throw new Error(`Invalid parameter 'scale': expected a square matrix, received non-square matrix`);
     }
-    if (df < p) throw new Error("Degrees of freedom must be >= dimension");
+    if (df < p) throw new Error(`Invalid parameter 'df': expected >= dimension (${p}), received ${df}`);
     this.dim = p;
     this.name = `Wishart(df=${df}, dim=${p})`;
     this.L = cholesky(scale);

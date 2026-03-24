@@ -55,18 +55,18 @@ export class Multinomial {
   ) {
     this.rng = rng ?? Math.random;
     if (!Number.isInteger(n) || n < 1) {
-      throw new Error("n must be a positive integer");
+      throw new Error(`Invalid parameter 'n': expected a positive integer, received ${n}`);
     }
     const k = probs.length;
-    if (k < 2) throw new Error("Must have at least 2 categories");
+    if (k < 2) throw new Error(`Invalid parameter 'probs': expected at least 2 categories, received ${k}`);
 
     let sum = 0;
     for (let i = 0; i < k; i++) {
-      if (probs[i] < 0) throw new Error(`probs[${i}] must be non-negative`);
+      if (probs[i] < 0) throw new Error(`Invalid parameter 'probs[${i}]': expected a non-negative number, received ${probs[i]}`);
       sum += probs[i];
     }
     if (Math.abs(sum - 1) > 1e-8) {
-      throw new Error("probs must sum to 1");
+      throw new Error(`Invalid parameter 'probs': expected values summing to 1, received sum=${sum}`);
     }
 
     this.k = k;

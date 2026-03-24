@@ -94,11 +94,11 @@ export class MultivariateT {
   ) {
     this.rng = rng ?? Math.random;
     const p = mu.length;
-    if (p < 1) throw new Error("Dimension must be at least 1");
+    if (p < 1) throw new Error(`Invalid parameter 'mu': expected at least 1 dimension, received ${p}`);
     if (sigma.length !== p || sigma.some((r) => r.length !== p)) {
-      throw new Error("Sigma must be a square matrix matching the dimension of mu");
+      throw new Error(`Invalid parameter 'sigma': expected a ${p}x${p} square matrix matching the dimension of mu, received ${sigma.length}x${sigma[0]?.length}`);
     }
-    if (df <= 0) throw new Error("Degrees of freedom must be positive");
+    if (df <= 0) throw new Error(`Invalid parameter 'df': expected a positive number, received ${df}`);
     this.dim = p;
     this.name = `MultivariateT(dim=${p}, df=${df})`;
     this.L = cholesky(sigma);
