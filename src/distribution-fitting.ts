@@ -223,6 +223,12 @@ export function fitBeta(data: number[]): FitResult<BetaDistribution> {
  * @returns A {@link FitResult} containing the fitted Log-Normal distribution
  * @throws {Error} If fewer than 2 observations or any value is non-positive
  * @throws {Error} If log-transformed data has zero variance
+ *
+ * @example
+ * ```ts
+ * const result = fitLogNormal([1.5, 2.3, 3.1, 1.8, 4.2]);
+ * console.log(result.distribution.mu); // mean of log(data)
+ * ```
  */
 export function fitLogNormal(data: number[]): FitResult<LogNormal> {
   validateContinuousData(data);
@@ -251,6 +257,12 @@ export function fitLogNormal(data: number[]): FitResult<LogNormal> {
  * @returns A {@link FitResult} containing the fitted Geometric distribution
  * @throws {Error} If fewer than 2 observations or data contains non-integer
  *   or negative values
+ *
+ * @example
+ * ```ts
+ * const result = fitGeometric([0, 1, 0, 2, 1, 3]);
+ * console.log(result.distribution.p); // estimated success probability
+ * ```
  */
 export function fitGeometric(data: number[]): FitResult<Geometric> {
   validateDiscreteData(data);
@@ -273,6 +285,12 @@ export function fitGeometric(data: number[]): FitResult<Geometric> {
  * @returns A {@link FitResult} containing the fitted ZIP distribution
  * @throws {Error} If fewer than 2 observations or data contains non-integer
  *   or negative values
+ *
+ * @example
+ * ```ts
+ * const result = fitZIP([0, 0, 0, 1, 2, 0, 3, 0]);
+ * console.log(result.distribution.lambda); // Poisson rate
+ * ```
  */
 export function fitZIP(data: number[]): FitResult<ZeroInflatedPoisson> {
   validateDiscreteData(data);
