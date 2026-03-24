@@ -1,6 +1,6 @@
 {
-  "name": "node_stats",
-  "version": "1.0.0",
+  "name": "@diogoribeiro7/node_stats",
+  "version": "2.0.0",
   "description": "Comprehensive statistical library for Node.js — distributions, hypothesis tests, regression models, correlation, and special math functions with optional native Fortran acceleration",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -33,6 +33,86 @@
       "import": "./dist/esm/utils/index.js",
       "require": "./dist/cjs/utils/index.js",
       "types": "./dist/cjs/utils/index.d.ts"
+    },
+    "./bayesian": {
+      "import": "./dist/esm/bayesian.js",
+      "require": "./dist/cjs/bayesian.js",
+      "types": "./dist/cjs/bayesian.d.ts"
+    },
+    "./mcmc": {
+      "import": "./dist/esm/mcmc.js",
+      "require": "./dist/cjs/mcmc.js",
+      "types": "./dist/cjs/mcmc.d.ts"
+    },
+    "./time-series": {
+      "import": "./dist/esm/time-series.js",
+      "require": "./dist/cjs/time-series.js",
+      "types": "./dist/cjs/time-series.d.ts"
+    },
+    "./garch": {
+      "import": "./dist/esm/garch.js",
+      "require": "./dist/cjs/garch.js",
+      "types": "./dist/cjs/garch.d.ts"
+    },
+    "./var": {
+      "import": "./dist/esm/var.js",
+      "require": "./dist/cjs/var.js",
+      "types": "./dist/cjs/var.d.ts"
+    },
+    "./glm": {
+      "import": "./dist/esm/glm.js",
+      "require": "./dist/cjs/glm.js",
+      "types": "./dist/cjs/glm.d.ts"
+    },
+    "./gam": {
+      "import": "./dist/esm/gam.js",
+      "require": "./dist/cjs/gam.js",
+      "types": "./dist/cjs/gam.d.ts"
+    },
+    "./survival": {
+      "import": "./dist/esm/survival.js",
+      "require": "./dist/cjs/survival.js",
+      "types": "./dist/cjs/survival.d.ts"
+    },
+    "./state-space": {
+      "import": "./dist/esm/state-space.js",
+      "require": "./dist/cjs/state-space.js",
+      "types": "./dist/cjs/state-space.d.ts"
+    },
+    "./changepoint": {
+      "import": "./dist/esm/changepoint.js",
+      "require": "./dist/cjs/changepoint.js",
+      "types": "./dist/cjs/changepoint.d.ts"
+    },
+    "./causal-inference": {
+      "import": "./dist/esm/causal-inference.js",
+      "require": "./dist/cjs/causal-inference.js",
+      "types": "./dist/cjs/causal-inference.d.ts"
+    },
+    "./dimensionality": {
+      "import": "./dist/esm/dimensionality.js",
+      "require": "./dist/cjs/dimensionality.js",
+      "types": "./dist/cjs/dimensionality.d.ts"
+    },
+    "./spatial": {
+      "import": "./dist/esm/spatial.js",
+      "require": "./dist/cjs/spatial.js",
+      "types": "./dist/cjs/spatial.d.ts"
+    },
+    "./meta-analysis": {
+      "import": "./dist/esm/meta-analysis.js",
+      "require": "./dist/cjs/meta-analysis.js",
+      "types": "./dist/cjs/meta-analysis.d.ts"
+    },
+    "./resampling": {
+      "import": "./dist/esm/resampling.js",
+      "require": "./dist/cjs/resampling.js",
+      "types": "./dist/cjs/resampling.d.ts"
+    },
+    "./diagnostics": {
+      "import": "./dist/esm/diagnostics.js",
+      "require": "./dist/cjs/diagnostics.js",
+      "types": "./dist/cjs/diagnostics.d.ts"
     }
   },
   "files": [
@@ -76,8 +156,25 @@
     "linear-regression",
     "logistic-regression",
     "math",
-    "data-science"
+    "data-science",
+    "bayesian",
+    "mcmc",
+    "time-series",
+    "arima",
+    "garch",
+    "kalman-filter",
+    "survival-analysis",
+    "glm",
+    "gam",
+    "pca",
+    "clustering",
+    "causal-inference",
+    "meta-analysis",
+    "machine-learning"
   ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "author": "Diogo Ribeiro",
   "license": "MIT",
   "devDependencies": {
