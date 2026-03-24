@@ -320,6 +320,9 @@
     "bench:all": "node scripts/run-benchmarks.js",
     "build:wasm": "./scripts/build-wasm.sh",
     "docs": "typedoc",
+    "docs:site": "vitepress dev docs-site",
+    "docs:site:build": "vitepress build docs-site",
+    "docs:site:preview": "vitepress preview docs-site",
     "install": "node scripts/build-native.js",
     "prepublishOnly": "yarn build"
   },
@@ -376,7 +379,8 @@
     "ts-node": "^10.9.2",
     "typedoc": "^0.27.9",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.57.1"
+    "typescript-eslint": "^8.57.1",
+    "vitepress": "^1.6.3"
   },
   "optionalDependencies": {
     "node-addon-api": "^8.6.0",
