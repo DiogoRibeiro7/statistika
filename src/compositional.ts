@@ -49,6 +49,11 @@ export function clr(x: number[]): number[] {
  *
  * @param y - CLR coordinates (length D)
  * @returns Composition on the simplex (sums to 1)
+ *
+ * @example
+ * ```ts
+ * clrInverse([0, 0, 0]); // [0.333, 0.333, 0.333] (uniform)
+ * ```
  */
 export function clrInverse(y: number[]): number[] {
   const exp = y.map(Math.exp);
@@ -97,6 +102,11 @@ export function alr(x: number[], ref?: number): number[] {
  * @param y - ALR coordinates (length D-1)
  * @param ref - Reference component index used in the forward transform (default: D-1)
  * @returns Composition on the simplex (sums to 1, length D = y.length + 1)
+ *
+ * @example
+ * ```ts
+ * alrInverse([0, 0]); // [0.333, 0.333, 0.333] (equal ratios to reference)
+ * ```
  */
 export function alrInverse(y: number[], ref?: number): number[] {
   const D = y.length + 1;
@@ -156,6 +166,11 @@ export function ilr(x: number[]): number[] {
  *
  * @param y - ILR coordinates (length D-1)
  * @returns Composition on the simplex (sums to 1, length D = y.length + 1)
+ *
+ * @example
+ * ```ts
+ * ilrInverse([0, 0]); // [0.333, 0.333, 0.333]
+ * ```
  */
 export function ilrInverse(y: number[]): number[] {
   const D = y.length + 1;
