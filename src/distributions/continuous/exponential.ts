@@ -29,7 +29,7 @@ export class Exponential extends BaseContinuous {
    */
   constructor(public readonly lambda: number = 1, rng?: RandomFn) {
     super(rng);
-    if (lambda <= 0) throw new Error("lambda must be positive");
+    if (lambda <= 0) throw new Error(`Invalid parameter 'lambda': expected a positive number, received ${lambda}`);
     this.name = `Exponential(${lambda})`;
   }
 
@@ -78,7 +78,7 @@ export class Exponential extends BaseContinuous {
    * @throws If `p` is outside [0, 1].
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 1) return Infinity;
     return -Math.log(1 - p) / this.lambda;
   }

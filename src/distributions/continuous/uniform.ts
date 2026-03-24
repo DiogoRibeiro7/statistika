@@ -34,7 +34,7 @@ export class Uniform extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (a >= b) throw new Error("a must be less than b");
+    if (a >= b) throw new Error(`Invalid parameters 'a', 'b': expected a < b, received a=${a}, b=${b}`);
     this.name = `Uniform(${a}, ${b})`;
   }
 
@@ -85,7 +85,7 @@ export class Uniform extends BaseContinuous {
    * @throws If `p` is outside [0, 1].
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     return this.a + p * (this.b - this.a);
   }
 

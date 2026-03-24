@@ -41,7 +41,7 @@ export class Laplace extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (b <= 0) throw new Error("b (scale) must be positive");
+    if (b <= 0) throw new Error(`Invalid parameter 'b': expected a positive number, received ${b}`);
     this.name = `Laplace(${mu}, ${b})`;
   }
 
@@ -105,7 +105,7 @@ export class Laplace extends BaseContinuous {
    * @throws {Error} If p is not in [0, 1].
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return -Infinity;
     if (p === 1) return Infinity;
     if (p <= 0.5) {

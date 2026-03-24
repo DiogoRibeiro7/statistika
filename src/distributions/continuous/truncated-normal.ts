@@ -80,8 +80,8 @@ export class TruncatedNormal extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (sigma <= 0) throw new Error("sigma must be positive");
-    if (a >= b) throw new Error("a must be less than b");
+    if (sigma <= 0) throw new Error(`Invalid parameter 'sigma': expected a positive number, received ${sigma}`);
+    if (a >= b) throw new Error(`Invalid parameters 'a', 'b': expected a < b, received a=${a}, b=${b}`);
     this.name = `TruncatedNormal(${mu}, ${sigma}, ${a}, ${b})`;
     this.alphaStd = (a - mu) / sigma;
     this.betaStd = (b - mu) / sigma;
@@ -156,7 +156,7 @@ export class TruncatedNormal extends BaseContinuous {
    * @throws {Error} If p is not in [0, 1].
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return this.a;
     if (p === 1) return this.b;
     return this.mu + this.sigma * normalQuantile(this.phiAlpha + p * this.Z);

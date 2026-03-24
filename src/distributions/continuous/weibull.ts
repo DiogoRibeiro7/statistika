@@ -55,8 +55,8 @@ export class Weibull extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (k <= 0) throw new Error("k (shape) must be positive");
-    if (lambda <= 0) throw new Error("lambda (scale) must be positive");
+    if (k <= 0) throw new Error(`Invalid parameter 'k': expected a positive number, received ${k}`);
+    if (lambda <= 0) throw new Error(`Invalid parameter 'lambda': expected a positive number, received ${lambda}`);
     this.name = `Weibull(${k}, ${lambda})`;
   }
 
@@ -150,7 +150,7 @@ export class Weibull extends BaseContinuous {
    * ```
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return 0;
     if (p === 1) return Infinity;
     return this.lambda * Math.pow(-Math.log(1 - p), 1 / this.k);

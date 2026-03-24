@@ -48,8 +48,8 @@ export class BetaDistribution extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (alpha <= 0) throw new Error("alpha must be positive");
-    if (beta <= 0) throw new Error("beta must be positive");
+    if (alpha <= 0) throw new Error(`Invalid parameter 'alpha': expected a positive number, received ${alpha}`);
+    if (beta <= 0) throw new Error(`Invalid parameter 'beta': expected a positive number, received ${beta}`);
     this.name = `Beta(${alpha}, ${beta})`;
   }
 
@@ -149,7 +149,7 @@ export class BetaDistribution extends BaseContinuous {
    * ```
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return 0;
     if (p === 1) return 1;
     return quantileBisect((x) => this.cdf(x), p, 0, 1);

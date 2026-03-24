@@ -53,8 +53,8 @@ export class Frechet extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (alpha <= 0) throw new Error("alpha must be positive");
-    if (s <= 0) throw new Error("s must be positive");
+    if (alpha <= 0) throw new Error(`Invalid parameter 'alpha': expected a positive number, received ${alpha}`);
+    if (s <= 0) throw new Error(`Invalid parameter 's': expected a positive number, received ${s}`);
     this.name = `Frechet(${alpha}, ${s}, ${m})`;
   }
 
@@ -141,7 +141,7 @@ export class Frechet extends BaseContinuous {
    * ```
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return this.m;
     if (p === 1) return Infinity;
     return this.m + this.s * Math.pow(-Math.log(p), -1 / this.alpha);

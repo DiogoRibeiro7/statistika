@@ -36,8 +36,8 @@ export class GammaDistribution extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (shape <= 0) throw new Error("shape must be positive");
-    if (rate <= 0) throw new Error("rate must be positive");
+    if (shape <= 0) throw new Error(`Invalid parameter 'shape': expected a positive number, received ${shape}`);
+    if (rate <= 0) throw new Error(`Invalid parameter 'rate': expected a positive number, received ${rate}`);
     this.name = `Gamma(${shape}, ${rate})`;
   }
 
@@ -100,7 +100,7 @@ export class GammaDistribution extends BaseContinuous {
    * @throws If `p` is outside [0, 1].
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return 0;
     if (p === 1) return Infinity;
     // Initial bracket

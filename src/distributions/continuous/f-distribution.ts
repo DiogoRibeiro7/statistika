@@ -46,8 +46,8 @@ export class FDistribution extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (d1 <= 0 || !Number.isInteger(d1)) throw new Error("d1 must be a positive integer");
-    if (d2 <= 0 || !Number.isInteger(d2)) throw new Error("d2 must be a positive integer");
+    if (d1 <= 0 || !Number.isInteger(d1)) throw new Error(`Invalid parameter 'd1': expected a positive integer, received ${d1}`);
+    if (d2 <= 0 || !Number.isInteger(d2)) throw new Error(`Invalid parameter 'd2': expected a positive integer, received ${d2}`);
     this.name = `F(${d1}, ${d2})`;
   }
 
@@ -133,7 +133,7 @@ export class FDistribution extends BaseContinuous {
    * ```
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return 0;
     if (p === 1) return Infinity;
     return quantileBisect((x) => this.cdf(x), p, 0, 1000);
