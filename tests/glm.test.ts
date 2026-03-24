@@ -1,4 +1,4 @@
-import { glm, gaussian, binomial, poisson, gamma, identityLink, logLink, logitLink, probitLink, inverseLink } from "../src/glm";
+import { glm, gaussian, binomial, poisson, gammaFamily, identityLink, logLink, logitLink, probitLink, inverseLink } from "../src/glm";
 
 describe("Generalized Linear Models", () => {
   describe("Gaussian GLM (linear regression)", () => {
@@ -195,7 +195,7 @@ describe("Generalized Linear Models", () => {
     });
 
     it("gamma variance is mu^2", () => {
-      expect(gamma.variance(3)).toBe(9);
+      expect(gammaFamily.variance(3)).toBe(9);
     });
 
     it("gaussian logLikelihood", () => {
@@ -214,7 +214,7 @@ describe("Generalized Linear Models", () => {
     });
 
     it("gamma logLikelihood", () => {
-      const ll = gamma.logLikelihood(2, 2);
+      const ll = gammaFamily.logLikelihood(2, 2);
       expect(Number.isFinite(ll)).toBe(true);
     });
   });
@@ -247,10 +247,10 @@ describe("Generalized Linear Models", () => {
   describe("Gamma GLM with inverse link", () => {
     it("verifies gamma family configuration", () => {
       // The gamma family uses the inverse link and mu^2 variance
-      expect(gamma.name).toBe("gamma");
-      expect(gamma.link).toBe(inverseLink);
-      expect(gamma.variance(3)).toBe(9);
-      expect(gamma.variance(0.5)).toBeCloseTo(0.25);
+      expect(gammaFamily.name).toBe("gamma");
+      expect(gammaFamily.link).toBe(inverseLink);
+      expect(gammaFamily.variance(3)).toBe(9);
+      expect(gammaFamily.variance(0.5)).toBeCloseTo(0.25);
     });
   });
 
@@ -298,7 +298,7 @@ describe("Generalized Linear Models", () => {
     });
 
     it("gamma logLikelihood handles zero mu", () => {
-      const ll = gamma.logLikelihood(1, 0);
+      const ll = gammaFamily.logLikelihood(1, 0);
       expect(Number.isFinite(ll)).toBe(true);
     });
 
@@ -332,9 +332,9 @@ describe("Generalized Linear Models", () => {
     });
 
     it("gamma family properties are correct", () => {
-      expect(gamma.variance(5)).toBe(25);
-      expect(gamma.name).toBe("gamma");
-      expect(gamma.link).toBe(inverseLink);
+      expect(gammaFamily.variance(5)).toBe(25);
+      expect(gammaFamily.name).toBe("gamma");
+      expect(gammaFamily.link).toBe(inverseLink);
     });
 
     it("handles maxIterations=0 gracefully", () => {

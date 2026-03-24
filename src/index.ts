@@ -24,7 +24,22 @@ export * from "./random";
 export * from "./categorical";
 export * from "./glm";
 export * from "./forecasting";
-export * from "./mcmc";
+export {
+  MCMCResultND,
+  metropolisHastingsND,
+  gelmanRubin,
+  estimateESS,
+  GibbsSamplerResult,
+  gibbsSampler,
+  blockGibbsSampler,
+  hierarchicalNormalGibbs,
+  ChainDiagnosticsResult,
+  chainDiagnostics,
+  HMCResult,
+  numericalGradient,
+  hamiltonianMC,
+  nutsSampler,
+} from "./mcmc";
 export * from "./dimensionality";
 export * from "./resampling";
 export * from "./mixture-models";
@@ -42,3 +57,12 @@ export * from "./experimental-design";
 export * from "./functional-data";
 export * from "./compositional";
 export * from "./bayesian-network";
+export * from "./garch";
+export * from "./var";
+export * from "./gam";
+export * from "./state-space";
+export * from "./changepoint";
+export * from "./variational";
+export * from "./meta-analysis";
+export * from "./irt";
+export * from "./sensitivity";

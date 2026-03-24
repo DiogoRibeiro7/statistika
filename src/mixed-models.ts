@@ -525,7 +525,7 @@ export function icc(values: number[], groups: (number | string)[]): ICCResult {
 /**
  * Result of a likelihood ratio test comparing two nested mixed models.
  */
-export interface LRTResult {
+export interface MixedModelLRTResult {
   /** Likelihood ratio statistic: -2*(logLik_restricted - logLik_full). */
   statistic: number;
   /** Degrees of freedom (difference in number of parameters). */
@@ -544,14 +544,14 @@ export interface LRTResult {
  * @param restricted - Log-likelihood of the restricted (null) model
  * @param full - Log-likelihood of the full (alternative) model
  * @param dfDiff - Difference in number of parameters (must be >= 1)
- * @returns An {@link LRTResult} with test statistic, df, and p-value
+ * @returns An {@link MixedModelLRTResult} with test statistic, df, and p-value
  * @throws {Error} If dfDiff is less than 1
  */
 export function lrtTest(
   restricted: number,
   full: number,
   dfDiff: number,
-): LRTResult {
+): MixedModelLRTResult {
   if (dfDiff < 1) throw new Error("dfDiff must be positive");
   const statistic = -2 * (restricted - full);
   // Chi-squared p-value approximation

@@ -1,5 +1,5 @@
 import {
-  distanceMatrix,
+  spatialDistanceMatrix,
   distanceBandWeights,
   knnWeights,
   moranI,
@@ -11,10 +11,10 @@ import {
 
 // ── Distance matrix ───────────────────────────────────────────────────────
 
-describe("distanceMatrix", () => {
+describe("spatialDistanceMatrix", () => {
   it("computes pairwise Euclidean distances", () => {
     const points = [[0, 0], [3, 4], [0, 1]];
-    const D = distanceMatrix(points);
+    const D = spatialDistanceMatrix(points);
     expect(D[0][1]).toBeCloseTo(5, 10);
     expect(D[0][2]).toBeCloseTo(1, 10);
     expect(D[1][2]).toBeCloseTo(Math.sqrt(9 + 9), 10);
