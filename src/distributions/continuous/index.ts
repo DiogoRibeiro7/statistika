@@ -20,3 +20,4 @@ export { InverseGamma } from "./inverse-gamma";
 export { Rayleigh } from "./rayleigh";
 export { LogLogistic } from "./log-logistic";
 export { VonMises } from "./von-mises";
+export { Levy } from "./levy";
