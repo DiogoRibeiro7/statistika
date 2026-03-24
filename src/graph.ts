@@ -385,6 +385,13 @@ export function closenessCentrality(g: Graph): CentralityResult {
  *
  * @param g - Graph to compute centrality for
  * @returns A {@link CentralityResult} mapping each node to its betweenness centrality
+ *
+ * @example
+ * ```ts
+ * const g = Graph.fromEdgeList([[0, 1], [1, 2], [2, 3]]);
+ * const bc = betweennessCentrality(g);
+ * console.log(bc.values.get(1)); // high (bridges 0 to 2,3)
+ * ```
  */
 export function betweennessCentrality(g: Graph): CentralityResult {
   const nodeList = g.nodes;
@@ -459,6 +466,13 @@ export function betweennessCentrality(g: Graph): CentralityResult {
  * @param g - Graph to compute centrality for
  * @param options - Optional iteration limits and convergence tolerance
  * @returns A {@link CentralityResult} mapping each node to its eigenvector centrality
+ *
+ * @example
+ * ```ts
+ * const g = Graph.fromEdgeList([[0, 1], [1, 2], [2, 0]]);
+ * const ec = eigenvectorCentrality(g);
+ * // All nodes have equal centrality in a triangle
+ * ```
  */
 export function eigenvectorCentrality(
   g: Graph,
@@ -512,6 +526,13 @@ export function eigenvectorCentrality(
  * @param options.tolerance - Convergence tolerance (default: 1e-8)
  * @returns A {@link CentralityResult} mapping each node to its PageRank score
  *   (scores sum to 1)
+ *
+ * @example
+ * ```ts
+ * const g = Graph.fromEdgeList([[0, 1], [1, 2], [2, 0]]);
+ * const pr = pageRank(g);
+ * console.log(pr.values.get(0)); // ~0.333 for a symmetric triangle
+ * ```
  */
 export function pageRank(
   g: Graph,
@@ -649,6 +670,13 @@ export function labelPropagation(
  * @param g - The graph
  * @param communities - Map from each node to its community label
  * @returns The modularity Q (typically between -0.5 and 1.0)
+ *
+ * @example
+ * ```ts
+ * const g = Graph.fromEdgeList([[0, 1], [2, 3]]);
+ * const communities = new Map([[0, 0], [1, 0], [2, 1], [3, 1]]);
+ * console.log(modularity(g, communities)); // high Q (good partition)
+ * ```
  */
 export function modularity(g: Graph, communities: Map<number, number>): number {
   const m = g.edgeCount;
