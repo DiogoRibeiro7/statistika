@@ -1,5 +1,5 @@
 {
-  "name": "node_stats",
+  "name": "@diogoribeiro7/node_stats",
   "version": "2.0.0",
   "description": "Comprehensive statistical library for Node.js — distributions, hypothesis tests, regression models, correlation, and special math functions with optional native Fortran acceleration",
   "main": "dist/cjs/index.js",
@@ -172,6 +172,9 @@
     "meta-analysis",
     "machine-learning"
   ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "author": "Diogo Ribeiro",
   "license": "MIT",
   "devDependencies": {
