@@ -115,6 +115,12 @@ function softplusInverse(y: number): number {
  * @param numSamples - Number of Monte Carlo samples for estimation
  * @param transforms - Transformations for each parameter
  * @returns Estimated ELBO value
+ *
+ * @example
+ * ```ts
+ * const logDensity = (p: number[]) => -0.5 * p[0] * p[0]; // standard normal
+ * const elbo = computeELBO(logDensity, [0], [1], new SeededRng(42));
+ * ```
  */
 export function computeELBO(
   logDensity: LogDensityFn,
@@ -170,6 +176,13 @@ export function computeELBO(
  * @param dim - Number of parameters
  * @param options - Configuration options
  * @returns VariationalResult with optimized parameters
+ *
+ * @example
+ * ```ts
+ * const logDensity = (p: number[]) => -0.5 * p[0] * p[0];
+ * const result = meanFieldVI(logDensity, 1, { rng: new SeededRng(42) });
+ * console.log(result.means[0]); // ~0 (posterior mean)
+ * ```
  */
 export function meanFieldVI(
   logDensity: LogDensityFn,
@@ -277,6 +290,13 @@ export function meanFieldVI(
  * @param dim - Number of parameters
  * @param options - Configuration options
  * @returns ADVIResult with optimized parameters and samples
+ *
+ * @example
+ * ```ts
+ * const logDensity = (p: number[]) => -0.5 * p[0] * p[0];
+ * const result = advi(logDensity, 1, { rng: new SeededRng(42) });
+ * console.log(result.means[0]); // approximate posterior mean
+ * ```
  */
 export function advi(
   logDensity: LogDensityFn,
@@ -476,6 +496,13 @@ export function advi(
  * @param rng - Seeded random number generator
  * @param options - Configuration options
  * @returns VariationalResult with optimized mean and std
+ *
+ * @example
+ * ```ts
+ * const logDensity = (x: number) => -0.5 * x * x;
+ * const result = normalVariational(logDensity, new SeededRng(42));
+ * console.log(result.means[0]); // ~0
+ * ```
  */
 export function normalVariational(
   logDensity: (x: number) => number,
@@ -514,6 +541,12 @@ export function normalVariational(
  * @param rng - Seeded random number generator
  * @param options - Configuration options
  * @returns ADVIResult with optimized parameters
+ *
+ * @example
+ * ```ts
+ * const logDensity = (x: number) => -0.5 * (Math.log(x) - 1) ** 2;
+ * const result = logNormalVariational(logDensity, new SeededRng(42));
+ * ```
  */
 export function logNormalVariational(
   logDensity: (x: number) => number,
@@ -557,6 +590,13 @@ export function logNormalVariational(
  * @param rng - Seeded random number generator
  * @param options - Configuration options
  * @returns VariationalResult with optimized parameters
+ *
+ * @example
+ * ```ts
+ * const logDensity = (p: number[]) => -0.5 * (p[0] ** 2 + p[1] ** 2);
+ * const result = multivariateNormalVariational(logDensity, 2, new SeededRng(42));
+ * console.log(result.means); // ~[0, 0]
+ * ```
  */
 export function multivariateNormalVariational(
   logDensity: LogDensityFn,
@@ -591,6 +631,16 @@ export function multivariateNormalVariational(
  * @param models - Array of objects, each containing a logDensity and VI configuration
  * @param rng - Seeded random number generator
  * @returns ModelComparisonResult with ELBO values, best model index, and model weights
+ *
+ * @example
+ * ```ts
+ * const models = [
+ *   { logDensity: (p: number[]) => -0.5 * p[0] ** 2, dim: 1 },
+ *   { logDensity: (p: number[]) => -p[0] ** 2, dim: 1 },
+ * ];
+ * const result = compareModelsVI(models, new SeededRng(42));
+ * console.log(result.bestModelIndex); // index of the better model
+ * ```
  */
 export function compareModelsVI(
   models: Array<{
