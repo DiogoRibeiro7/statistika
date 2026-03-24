@@ -70,3 +70,5 @@ export * from "./lazy-dataframe";
 export * from "./utils/typed-matrix";
 export * from "./observable";
 export * from "./schemas";
+export * from "./worker-threads";
+export { WasmModule, hasWasm, loadWasm, getWasm, getAccelerated, tsFallback } from "./wasm";

@@ -318,6 +318,7 @@
     "bench:regression": "npx ts-node benchmark/regression-glm.ts",
     "bench:mcmc": "npx ts-node benchmark/mcmc-clustering.ts",
     "bench:all": "node scripts/run-benchmarks.js",
+    "build:wasm": "./scripts/build-wasm.sh",
     "docs": "typedoc",
     "install": "node scripts/build-native.js",
     "prepublishOnly": "yarn build"

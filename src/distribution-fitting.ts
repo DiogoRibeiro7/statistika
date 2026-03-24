@@ -82,6 +82,12 @@ export function fitNormal(data: number[]): FitResult<Normal> {
  * @returns A {@link FitResult} containing the fitted Exponential distribution
  * @throws {Error} If fewer than 2 observations or any value is negative
  * @throws {Error} If any value is not finite
+ *
+ * @example
+ * ```ts
+ * const result = fitExponential([0.5, 1.2, 0.8, 2.1, 0.3]);
+ * console.log(result.distribution.rate); // estimated lambda
+ * ```
  */
 export function fitExponential(data: number[]): FitResult<Exponential> {
   validateContinuousData(data);
@@ -103,6 +109,12 @@ export function fitExponential(data: number[]): FitResult<Exponential> {
  * @returns A {@link FitResult} containing the fitted Poisson distribution
  * @throws {Error} If fewer than 2 observations, mean is non-positive, or data
  *   contains non-integer or negative values
+ *
+ * @example
+ * ```ts
+ * const result = fitPoisson([2, 3, 1, 4, 2, 3]);
+ * console.log(result.distribution.mean); // estimated lambda
+ * ```
  */
 export function fitPoisson(data: number[]): FitResult<Poisson> {
   validateDiscreteData(data);
@@ -124,6 +136,12 @@ export function fitPoisson(data: number[]): FitResult<Poisson> {
  * @returns A {@link FitResult} containing the fitted Gamma distribution
  * @throws {Error} If fewer than 2 observations or any value is non-positive
  * @throws {Error} If any value is not finite
+ *
+ * @example
+ * ```ts
+ * const result = fitGamma([1.2, 2.5, 3.1, 1.8, 2.0]);
+ * console.log(result.distribution.shape); // estimated shape
+ * ```
  */
 export function fitGamma(data: number[]): FitResult<GammaDistribution> {
   validateContinuousData(data);
@@ -169,6 +187,12 @@ export function fitGamma(data: number[]): FitResult<GammaDistribution> {
  * @returns A {@link FitResult} containing the fitted Beta distribution
  * @throws {Error} If fewer than 2 observations or any value is not in (0, 1)
  * @throws {Error} If moment estimates are non-positive
+ *
+ * @example
+ * ```ts
+ * const result = fitBeta([0.2, 0.5, 0.3, 0.7, 0.4]);
+ * console.log(result.distribution.alpha, result.distribution.beta);
+ * ```
  */
 export function fitBeta(data: number[]): FitResult<BetaDistribution> {
   validateContinuousData(data);
