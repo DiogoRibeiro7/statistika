@@ -35,3 +35,32 @@ export {
   weightedCrossProducts,
   welfordBatch,
 } from "./native-stats";
+export {
+  hasNativeTimeSeries,
+  acf as nativeAcf,
+  pacfDurbinLevinson as nativePacf,
+  exponentialSmoothing as nativeExponentialSmoothing,
+  holtWinters as nativeHoltWinters,
+  difference as nativeDifference,
+} from "./native-timeseries";
+export {
+  hasNativeKalman,
+  kalmanFilterUnivariate,
+} from "./native-kalman";
+export {
+  hasNativeDistributions,
+  chi2Cdf, chi2Pdf,
+  tCdf, tPdf,
+  fCdf, fPdf,
+  normalPdf as nativeNormalPdf,
+  gammaCdf, betaCdf,
+  chi2CdfBatch, tCdfBatch, normalCdfBatch,
+} from "./native-distributions";
+export {
+  hasNativeGarch,
+  garch11Loglik,
+  garchPqLoglik,
+  gjrGarch11Loglik,
+  egarch11Loglik,
+  garch11Forecast,
+} from "./native-garch";

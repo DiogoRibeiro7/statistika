@@ -9,6 +9,14 @@
  */
 
 import { mean, variance } from "./utils/descriptive";
+import {
+  hasNativeGarch,
+  garch11Loglik as nativeGarch11,
+  garchPqLoglik as nativeGarchPq,
+  gjrGarch11Loglik as nativeGjr,
+  egarch11Loglik as nativeEgarch,
+  garch11Forecast as nativeGarch11Forecast,
+} from "./utils/native-garch";
 
 /**
  * Result of a standard GARCH(p,q) model estimation.
@@ -443,6 +451,16 @@ export function garchFit(data: number[], p = 1, q = 1): GARCHResult {
       alpha.reduce((s, a) => s + a, 0) + beta.reduce((s, b) => s + b, 0);
     if (persistence >= 1) return 1e12;
 
+    // Use Fortran-accelerated variance recursion + log-likelihood when available
+    if (hasNativeGarch) {
+      if (p === 1 && q === 1) {
+        const result = nativeGarch11(eps, omega, alpha[0], beta[0]);
+        return -result.logLikelihood;
+      }
+      const result = nativeGarchPq(eps, omega, alpha, beta);
+      return -result.logLikelihood;
+    }
+
     const sigma2 = computeGarchVariances(eps, omega, alpha, beta);
     return -garchLogLikelihood(eps, sigma2);
   };
@@ -452,8 +470,22 @@ export function garchFit(data: number[], p = 1, q = 1): GARCHResult {
   const omega = params[0];
   const alpha = params.slice(1, 1 + q);
   const beta = params.slice(1 + q, 1 + q + p);
-  const sigma2 = computeGarchVariances(eps, omega, alpha, beta);
-  const ll = garchLogLikelihood(eps, sigma2);
+
+  let sigma2: number[];
+  let ll: number;
+  if (hasNativeGarch && p === 1 && q === 1) {
+    const result = nativeGarch11(eps, omega, alpha[0], beta[0]);
+    sigma2 = result.sigma2;
+    ll = result.logLikelihood;
+  } else if (hasNativeGarch) {
+    const result = nativeGarchPq(eps, omega, alpha, beta);
+    sigma2 = result.sigma2;
+    ll = result.logLikelihood;
+  } else {
+    sigma2 = computeGarchVariances(eps, omega, alpha, beta);
+    ll = garchLogLikelihood(eps, sigma2);
+  }
+
   const nParams = 1 + q + p;
   const { aic, bic } = computeIC(ll, nParams, T);
 

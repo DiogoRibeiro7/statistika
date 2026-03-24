@@ -61,11 +61,25 @@ function main() {
   const specialObj = path.join(ROOT, "native/fortran/special_functions.o");
   if (
     !run(
-      `gfortran -c -fPIC -O2 -o ${specialObj} ${specialSrc}`,
+      `gfortran -c -fPIC -O2 -J${path.join(ROOT, "native/fortran")} -o ${specialObj} ${specialSrc}`,
       "Fortran special functions compilation",
     )
   ) {
     return;
+  }
+
+  // Compile distributions.f90 (depends on special_functions module)
+  const distSrc = path.join(ROOT, "native/fortran/distributions.f90");
+  const distObj = path.join(ROOT, "native/fortran/distributions.o");
+  if (fs.existsSync(distSrc)) {
+    if (
+      !run(
+        `gfortran -c -fPIC -O2 -J${path.join(ROOT, "native/fortran")} -o ${distObj} ${distSrc}`,
+        "Fortran distributions compilation",
+      )
+    ) {
+      try { fs.unlinkSync(distObj); } catch {}
+    }
   }
 
   // Compile statistics.f90
@@ -80,6 +94,48 @@ function main() {
     ) {
       // Create empty stub if compilation fails
       try { fs.unlinkSync(statsObj); } catch {}
+    }
+  }
+
+  // Compile time_series.f90
+  const tsSrc = path.join(ROOT, "native/fortran/time_series.f90");
+  const tsObj = path.join(ROOT, "native/fortran/time_series.o");
+  if (fs.existsSync(tsSrc)) {
+    if (
+      !run(
+        `gfortran -c -fPIC -O2 -o ${tsObj} ${tsSrc}`,
+        "Fortran time_series compilation",
+      )
+    ) {
+      try { fs.unlinkSync(tsObj); } catch {}
+    }
+  }
+
+  // Compile kalman.f90
+  const kalmanSrc = path.join(ROOT, "native/fortran/kalman.f90");
+  const kalmanObj = path.join(ROOT, "native/fortran/kalman.o");
+  if (fs.existsSync(kalmanSrc)) {
+    if (
+      !run(
+        `gfortran -c -fPIC -O2 -o ${kalmanObj} ${kalmanSrc}`,
+        "Fortran kalman compilation",
+      )
+    ) {
+      try { fs.unlinkSync(kalmanObj); } catch {}
+    }
+  }
+
+  // Compile optimization.f90
+  const optSrc = path.join(ROOT, "native/fortran/optimization.f90");
+  const optObj = path.join(ROOT, "native/fortran/optimization.o");
+  if (fs.existsSync(optSrc)) {
+    if (
+      !run(
+        `gfortran -c -fPIC -O2 -o ${optObj} ${optSrc}`,
+        "Fortran optimization compilation",
+      )
+    ) {
+      try { fs.unlinkSync(optObj); } catch {}
     }
   }
 

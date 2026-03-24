@@ -85,6 +85,11 @@ export interface StateSpaceEMOptions {
   stateDim?: number;
 }
 
+import {
+  hasNativeKalman,
+  kalmanFilterUnivariate as nativeKalmanFilter,
+} from "./utils/native-kalman";
+
 // ── Matrix helpers (small-matrix operations) ────────────────────────────
 
 /** Create an m x n zero matrix. */
@@ -370,6 +375,25 @@ export function kalmanFilter(
       throw new Error(
         `Observation at t=${t} has length ${observations[t].length}, expected ${p}`,
       );
+    }
+  }
+
+  // Fast path: univariate observations with no missing data → Fortran kernel
+  if (hasNativeKalman && p === 1) {
+    const hasMissing = observations.some((obs) => isNaN(obs[0]));
+    if (!hasMissing) {
+      const y = observations.map((obs) => obs[0]);
+      const Hflat = H[0]; // 1 x m row vector
+      const Rscalar = R[0][0];
+      const result = nativeKalmanFilter(F, Hflat, Q, Rscalar, y, x0, P0);
+      return {
+        states: result.states,
+        covariances: [], // Not computed in fast path
+        predictions: [], // Not computed in fast path
+        logLikelihood: result.logLikelihood,
+        innovations: [], // Not computed in fast path
+        innovationCovariances: [],
+      };
     }
   }
 
