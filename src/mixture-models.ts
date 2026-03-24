@@ -195,6 +195,13 @@ export function gaussianMixture(
  * @returns Object containing the best k, all fitted results, and BIC values
  * @throws {Error} If maxK is less than 1
  * @throws {Error} If data contains NaN or Infinity values
+ *
+ * @example
+ * ```ts
+ * const data = [1.0, 1.1, 1.2, 5.0, 5.1, 5.2];
+ * const result = selectComponents(data, 4, { seed: 42 });
+ * console.log(result.bestK); // likely 2
+ * ```
  */
 export function selectComponents(
   data: Dataset,
