@@ -561,9 +561,9 @@ export function hierarchicalNormalGibbs(
   } = {},
 ): GibbsSamplerResult {
   const J = data.length;
-  if (J === 0) throw new Error("data must contain at least one group");
+  if (J === 0) throw new Error(`Invalid parameter 'data': expected at least one group, received ${J}`);
   for (let j = 0; j < J; j++) {
-    if (data[j].length === 0) throw new Error(`Group ${j} is empty`);
+    if (data[j].length === 0) throw new Error(`Invalid parameter 'data[${j}]': expected a non-empty group, received length 0`);
   }
 
   const iterations = options.iterations ?? 10000;
@@ -699,7 +699,7 @@ export interface ChainDiagnosticsResult {
  * ```
  */
 export function chainDiagnostics(chains: number[][]): ChainDiagnosticsResult {
-  if (chains.length === 0) throw new Error("chains must not be empty");
+  if (chains.length === 0) throw new Error(`Invalid parameter 'chains': expected a non-empty array, received length 0`);
 
   const numSamples = chains.length;
   const numParams = chains[0].length;

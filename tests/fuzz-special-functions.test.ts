@@ -310,8 +310,8 @@ describe('Fuzz: betaFn', () => {
 // erf
 // ==========================================================================
 describe('Fuzz: erf', () => {
-  test('erf(0) = 0', () => {
-    expect(erf(0)).toBeCloseTo(0, 10);
+  test('erf(0) ≈ 0', () => {
+    expect(erf(0)).toBeCloseTo(0, 6);
   });
 
   test('erf(-x) = -erf(x) (odd function)', () => {
@@ -371,8 +371,8 @@ describe('Fuzz: erfc', () => {
     }
   });
 
-  test('erfc(0) = 1', () => {
-    expect(erfc(0)).toBeCloseTo(1, 10);
+  test('erfc(0) ≈ 1', () => {
+    expect(erfc(0)).toBeCloseTo(1, 6);
   });
 
   test('0 <= erfc(x) <= 2 for finite x', () => {

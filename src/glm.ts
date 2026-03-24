@@ -181,10 +181,10 @@ export function glm(
   } = {},
 ): GLMResult {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
+  if (n === 0) throw new Error(`Invalid parameter 'X': expected a non-empty matrix, received 0 rows`);
   const p = X[0].length;
-  if (n !== y.length) throw new Error("X and y must have the same length");
-  if (n <= p + 1) throw new Error("Need more observations than parameters");
+  if (n !== y.length) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${n}, y.length=${y.length}`);
+  if (n <= p + 1) throw new Error(`Invalid parameters 'X', 'y': expected more observations than parameters, received n=${n}, p=${p + 1}`);
 
   // Validate consistent row lengths
   for (let i = 0; i < n; i++) {
@@ -375,7 +375,7 @@ export function negativeBinomialFamily(theta: number): GLMFamily {
  */
 export function tweedieFamily(p: number): GLMFamily {
   if (p <= 1 || p >= 2) {
-    throw new Error("Tweedie power parameter p must satisfy 1 < p < 2");
+    throw new Error(`Invalid parameter 'p': expected a value in (1, 2), received ${p}`);
   }
   return {
     name: "tweedie",
