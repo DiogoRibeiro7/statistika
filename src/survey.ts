@@ -107,6 +107,11 @@ export function weightedStats(
  * @throws Error if data and weights have different lengths
  * @throws Error if no observations provided
  * @throws Error if sum of weights is zero
+ *
+ * @example
+ * ```ts
+ * weightedQuantile([10, 20, 30], [1, 2, 1], 0.5); // weighted median
+ * ```
  */
 export function weightedQuantile(
   data: number[],
@@ -256,6 +261,12 @@ export interface DesignEffectResult {
  * @returns DesignEffectResult with DEFF, effective sample size, and variance estimates
  * @throws Error if data and weights have different lengths
  * @throws Error if fewer than 2 observations
+ *
+ * @example
+ * ```ts
+ * const result = designEffect([1, 2, 3, 4], [1, 1, 2, 2]);
+ * console.log(result.deff); // design effect (1.0 for equal weights)
+ * ```
  */
 export function designEffect(
   data: number[],
@@ -324,6 +335,13 @@ export interface RatioEstimatorResult {
  * @throws Error if y, x, and weights have different lengths
  * @throws Error if fewer than 2 observations
  * @throws Error if weighted sum of x is zero
+ *
+ * @example
+ * ```ts
+ * const result = ratioEstimator([10, 20], [5, 10], [1, 1], 1000);
+ * console.log(result.ratio); // R_hat = sum(w*y) / sum(w*x)
+ * console.log(result.total); // estimated population total of y
+ * ```
  */
 export function ratioEstimator(
   y: number[],
@@ -384,6 +402,12 @@ export function ratioEstimator(
  * @returns Adjusted weights (length n) that sum to known population totals within each stratum
  * @throws Error if weights and strata have different lengths
  * @throws Error if any stratum in the data lacks a corresponding population count
+ *
+ * @example
+ * ```ts
+ * const adj = postStratify([1, 1, 1, 1], [0, 0, 1, 1], { 0: 100, 1: 200 });
+ * // Adjusted weights so stratum sums match population counts
+ * ```
  */
 export function postStratify(
   weights: number[],

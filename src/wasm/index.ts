@@ -21,6 +21,30 @@
  * ```
  */
 
+/* eslint-disable @typescript-eslint/no-namespace */
+
+// Minimal WebAssembly type declarations for Node.js environments
+// where the DOM lib is not included in tsconfig.
+declare namespace WebAssembly {
+  interface Module {}
+  interface Instance {
+    readonly exports: Record<string, unknown>;
+  }
+  interface Memory {
+    readonly buffer: ArrayBuffer;
+  }
+  interface ResultObject {
+    instance: Instance;
+    module: Module;
+  }
+  function instantiate(
+    bytes: ArrayBuffer | Uint8Array,
+    importObject?: Record<string, Record<string, unknown>>,
+  ): Promise<ResultObject>;
+}
+
+/* eslint-enable @typescript-eslint/no-namespace */
+
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tsFallback } from "./fallback";
@@ -162,7 +186,7 @@ async function doLoadWasm(): Promise<WasmModule | null> {
     };
 
     const { instance } = await WebAssembly.instantiate(wasmBytes, wasmImports);
-    const exports = instance.exports as Record<string, WebAssembly.ExportValue>;
+    const exports = instance.exports as Record<string, unknown>;
     const memory = exports.memory as WebAssembly.Memory;
 
     // Wrap the WASM exports into our WasmModule interface

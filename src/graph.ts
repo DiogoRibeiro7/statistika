@@ -325,6 +325,13 @@ export interface CentralityResult {
  *
  * @param g - Graph to compute centrality for
  * @returns A {@link CentralityResult} mapping each node to its degree centrality
+ *
+ * @example
+ * ```ts
+ * const g = Graph.fromEdgeList([[0, 1], [1, 2]]);
+ * const dc = degreeCentrality(g);
+ * console.log(dc.values.get(1)); // 1.0 (connected to both 0 and 2)
+ * ```
  */
 export function degreeCentrality(g: Graph): CentralityResult {
   const n = g.nodeCount;
@@ -343,6 +350,13 @@ export function degreeCentrality(g: Graph): CentralityResult {
  *
  * @param g - Graph to compute centrality for
  * @returns A {@link CentralityResult} mapping each node to its closeness centrality
+ *
+ * @example
+ * ```ts
+ * const g = Graph.fromEdgeList([[0, 1], [1, 2], [2, 3]]);
+ * const cc = closenessCentrality(g);
+ * console.log(cc.values.get(1)); // higher than node 0 (more central)
+ * ```
  */
 export function closenessCentrality(g: Graph): CentralityResult {
   const n = g.nodeCount;
