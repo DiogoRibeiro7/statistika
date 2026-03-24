@@ -108,10 +108,10 @@ export interface KrigingResult {
  * @example
  * ```ts
  * const pts = [[0, 0], [3, 4]];
- * distanceMatrix(pts); // [[0, 5], [5, 0]]
+ * spatialDistanceMatrix(pts); // [[0, 5], [5, 0]]
  * ```
  */
-export function distanceMatrix(points: SpatialPoint[]): number[][] {
+export function spatialDistanceMatrix(points: SpatialPoint[]): number[][] {
   const n = points.length;
   const D: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
   for (let i = 0; i < n; i++) {
@@ -142,7 +142,7 @@ export function distanceBandWeights(
   threshold: number,
 ): SpatialWeights {
   const n = points.length;
-  const D = distanceMatrix(points);
+  const D = spatialDistanceMatrix(points);
   const W: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
@@ -166,7 +166,7 @@ export function distanceBandWeights(
 export function knnWeights(points: SpatialPoint[], k: number): SpatialWeights {
   const n = points.length;
   if (k >= n) throw new Error("k must be less than the number of points");
-  const D = distanceMatrix(points);
+  const D = spatialDistanceMatrix(points);
   const W: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
 
   for (let i = 0; i < n; i++) {
@@ -341,7 +341,7 @@ export function empiricalVariogram(
   if (n !== values.length) throw new Error("points and values must have same length");
   if (n < 3) throw new Error("Need at least 3 observations");
 
-  const D = distanceMatrix(points);
+  const D = spatialDistanceMatrix(points);
 
   // Find max distance
   let maxD = 0;
@@ -497,7 +497,7 @@ export function ordinaryKriging(
   const totalSill = model.nugget + model.sill;
 
   // Build covariance matrix C (n+1 × n+1) with Lagrange multiplier row/col
-  const D = distanceMatrix(points);
+  const D = spatialDistanceMatrix(points);
   const size = n + 1;
   const C: number[][] = Array.from({ length: size }, () => new Array(size).fill(0));
 

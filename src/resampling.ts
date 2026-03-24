@@ -340,3 +340,556 @@ export function r2Score(actual: Dataset, predicted: Dataset): number {
   }
   return 1 - ssRes / ssTot;
 }
+
+// ── Advanced Resampling Methods ─────────────────────────────────────────
+
+/**
+ * Result of a bootstrap procedure.
+ */
+export interface BootstrapResult {
+  /** Point estimate from the original data. */
+  estimate: number;
+  /** Standard error of the bootstrap distribution. */
+  standardError: number;
+  /** Confidence interval computed from bootstrap percentiles. */
+  confidenceInterval: { lower: number; upper: number; level: number };
+  /** Full bootstrap distribution of the statistic. */
+  bootstrapDistribution: number[];
+  /** Number of bootstrap replicates. */
+  nBootstrap: number;
+}
+
+/**
+ * Result of time-series cross-validation.
+ */
+export interface TimeSeriesCVResult {
+  /** Score for each evaluation window. */
+  scores: number[];
+  /** Mean score across all windows. */
+  meanScore: number;
+  /** Standard deviation of scores. */
+  stdScore: number;
+  /** Train/test window boundaries for each split. */
+  windows: { trainStart: number; trainEnd: number; testStart: number; testEnd: number }[];
+}
+
+/**
+ * Result of nested cross-validation.
+ */
+export interface NestedCVResult {
+  /** Outer fold scores. */
+  outerScores: number[];
+  /** Mean of outer scores. */
+  meanScore: number;
+  /** Standard deviation of outer scores. */
+  stdScore: number;
+  /** Best hyperparameters selected in each outer fold's inner CV. */
+  bestParams: unknown[];
+}
+
+// ── Bootstrap helpers ───────────────────────────────────────────────────
+
+/**
+ * Build a BootstrapResult from an array of bootstrap replicate values and the
+ * original-sample estimate.
+ */
+function buildBootstrapResult(
+  estimate: number,
+  distribution: number[],
+  level = 0.95,
+): BootstrapResult {
+  const nBootstrap = distribution.length;
+  const sorted = [...distribution].sort((a, b) => a - b);
+  const alpha = 1 - level;
+  const lowerIdx = Math.max(0, Math.floor((alpha / 2) * nBootstrap) - 1);
+  const upperIdx = Math.min(nBootstrap - 1, Math.ceil((1 - alpha / 2) * nBootstrap) - 1);
+  const bsMean = mean(distribution);
+  const standardError = Math.sqrt(
+    distribution.reduce((s, v) => s + (v - bsMean) ** 2, 0) / (nBootstrap - 1),
+  );
+  return {
+    estimate,
+    standardError,
+    confidenceInterval: { lower: sorted[lowerIdx], upper: sorted[upperIdx], level },
+    bootstrapDistribution: distribution,
+    nBootstrap,
+  };
+}
+
+// ── Block Bootstrap ─────────────────────────────────────────────────────
+
+/**
+ * Moving block bootstrap for time-series data.
+ *
+ * Resamples by drawing contiguous blocks of observations, preserving the
+ * local dependence structure of the series.  When `circular` is true, the
+ * series is treated as if it wraps around, so every index can start a full
+ * block.
+ *
+ * @param data - Time-series observations (order matters)
+ * @param statistic - Function computing the statistic of interest
+ * @param options - Configuration
+ * @returns Bootstrap result with estimate, SE, CI, and distribution
+ * @throws {Error} If blockSize is less than 1 or exceeds data length
+ * @throws {Error} If data is empty
+ */
+export function blockBootstrap(
+  data: Dataset,
+  statistic: (sample: Dataset) => number,
+  options: {
+    blockSize?: number;
+    nBootstrap?: number;
+    seed?: number;
+    circular?: boolean;
+  } = {},
+): BootstrapResult {
+  const n = data.length;
+  if (n === 0) throw new Error("Data must not be empty");
+
+  const blockSize = options.blockSize ?? Math.max(1, Math.floor(Math.sqrt(n)));
+  if (blockSize < 1 || blockSize > n) throw new Error("blockSize must be between 1 and data length");
+
+  const nBootstrap = options.nBootstrap ?? 1000;
+  const circular = options.circular ?? false;
+  const rng = options.seed != null ? createRng(options.seed) : Math.random;
+
+  const estimate = statistic(data);
+  const nBlocks = Math.ceil(n / blockSize);
+  const maxStart = circular ? n : n - blockSize + 1;
+
+  const distribution: number[] = [];
+  for (let b = 0; b < nBootstrap; b++) {
+    const sample: number[] = [];
+    for (let blk = 0; blk < nBlocks && sample.length < n; blk++) {
+      const start = Math.floor(rng() * maxStart);
+      for (let j = 0; j < blockSize && sample.length < n; j++) {
+        sample.push(data[(start + j) % n]);
+      }
+    }
+    distribution.push(statistic(sample));
+  }
+
+  return buildBootstrapResult(estimate, distribution);
+}
+
+// ── Stationary Bootstrap ────────────────────────────────────────────────
+
+/**
+ * Stationary bootstrap for time-series data.
+ *
+ * Similar to block bootstrap but uses random block lengths drawn from a
+ * geometric distribution with the given expected block size.  This yields a
+ * strictly stationary resampling scheme.
+ *
+ * @param data - Time-series observations
+ * @param statistic - Function computing the statistic of interest
+ * @param options - Configuration
+ * @returns Bootstrap result
+ * @throws {Error} If data is empty
+ * @throws {Error} If expectedBlockSize is less than 1
+ */
+export function stationaryBootstrap(
+  data: Dataset,
+  statistic: (sample: Dataset) => number,
+  options: {
+    expectedBlockSize?: number;
+    nBootstrap?: number;
+    seed?: number;
+  } = {},
+): BootstrapResult {
+  const n = data.length;
+  if (n === 0) throw new Error("Data must not be empty");
+
+  const expectedBlockSize = options.expectedBlockSize ?? Math.max(1, Math.floor(Math.sqrt(n)));
+  if (expectedBlockSize < 1) throw new Error("expectedBlockSize must be at least 1");
+
+  const nBootstrap = options.nBootstrap ?? 1000;
+  const rng = options.seed != null ? createRng(options.seed) : Math.random;
+  const p = 1 / expectedBlockSize; // probability of starting a new block
+
+  const estimate = statistic(data);
+  const distribution: number[] = [];
+
+  for (let b = 0; b < nBootstrap; b++) {
+    const sample: number[] = [];
+    let idx = Math.floor(rng() * n);
+    for (let i = 0; i < n; i++) {
+      sample.push(data[idx]);
+      if (rng() < p) {
+        // Start a new block at a random position
+        idx = Math.floor(rng() * n);
+      } else {
+        idx = (idx + 1) % n;
+      }
+    }
+    distribution.push(statistic(sample));
+  }
+
+  return buildBootstrapResult(estimate, distribution);
+}
+
+// ── Wild Bootstrap ──────────────────────────────────────────────────────
+
+/**
+ * Wild bootstrap for heteroscedastic regression residuals.
+ *
+ * Multiplies each residual by a random weight drawn from either the
+ * Rademacher distribution (+1 / -1 with equal probability) or the Mammen
+ * two-point distribution, then adds the result back to the fitted values.
+ *
+ * @param residuals - Regression residuals
+ * @param fitted - Fitted (predicted) values
+ * @param statistic - Function computing the statistic from a bootstrap sample of y*
+ * @param options - Configuration
+ * @returns Bootstrap result
+ * @throws {Error} If residuals and fitted have different lengths
+ * @throws {Error} If data is empty
+ */
+export function wildBootstrap(
+  residuals: Dataset,
+  fitted: Dataset,
+  statistic: (sample: Dataset) => number,
+  options: {
+    nBootstrap?: number;
+    seed?: number;
+    distribution?: "rademacher" | "mammen";
+  } = {},
+): BootstrapResult {
+  const n = residuals.length;
+  if (n !== fitted.length) throw new Error("residuals and fitted must have the same length");
+  if (n === 0) throw new Error("Data must not be empty");
+
+  const nBootstrap = options.nBootstrap ?? 1000;
+  const dist = options.distribution ?? "rademacher";
+  const rng = options.seed != null ? createRng(options.seed) : Math.random;
+
+  // Original y = fitted + residuals
+  const original: number[] = new Array(n);
+  for (let i = 0; i < n; i++) original[i] = fitted[i] + residuals[i];
+  const estimate = statistic(original);
+
+  // Mammen two-point distribution constants
+  const sqrt5 = Math.sqrt(5);
+  const mammenP = (sqrt5 + 1) / (2 * sqrt5); // P(w = -(sqrt(5)-1)/2)
+  const mammenPos = (sqrt5 + 1) / 2;
+  const mammenNeg = -(sqrt5 - 1) / 2;
+
+  const distribution: number[] = [];
+  for (let b = 0; b < nBootstrap; b++) {
+    const yStar: number[] = new Array(n);
+    for (let i = 0; i < n; i++) {
+      let w: number;
+      if (dist === "rademacher") {
+        w = rng() < 0.5 ? -1 : 1;
+      } else {
+        // Mammen distribution
+        w = rng() < mammenP ? mammenNeg : mammenPos;
+      }
+      yStar[i] = fitted[i] + residuals[i] * w;
+    }
+    distribution.push(statistic(yStar));
+  }
+
+  return buildBootstrapResult(estimate, distribution);
+}
+
+// ── Bayesian Bootstrap ──────────────────────────────────────────────────
+
+/**
+ * Bayesian bootstrap via Dirichlet-weighted resampling.
+ *
+ * Instead of resampling with equal integer weights, draws continuous
+ * Dirichlet(1,…,1) weights for the observations.  The statistic function
+ * receives the original data, so statistics that depend on weights should
+ * use the weighted variant.  Here, a weighted mean is implicitly created by
+ * building resampled datasets where each data point is replicated
+ * proportionally to its Dirichlet weight (multinomial resampling from the
+ * Dirichlet probabilities).
+ *
+ * @param data - Input dataset
+ * @param statistic - Function computing the statistic of interest
+ * @param options - Configuration
+ * @returns Bootstrap result
+ * @throws {Error} If data is empty
+ */
+export function bayesianBootstrap(
+  data: Dataset,
+  statistic: (sample: Dataset) => number,
+  options: {
+    nBootstrap?: number;
+    seed?: number;
+  } = {},
+): BootstrapResult {
+  const n = data.length;
+  if (n === 0) throw new Error("Data must not be empty");
+
+  const nBootstrap = options.nBootstrap ?? 1000;
+  const rng = options.seed != null ? createRng(options.seed) : Math.random;
+
+  const estimate = statistic(data);
+  const distribution: number[] = [];
+
+  for (let b = 0; b < nBootstrap; b++) {
+    // Sample Dirichlet(1,...,1) by drawing Exponential(1) values and normalising
+    const weights = new Array<number>(n);
+    let wSum = 0;
+    for (let i = 0; i < n; i++) {
+      weights[i] = -Math.log(rng());
+      wSum += weights[i];
+    }
+    for (let i = 0; i < n; i++) weights[i] /= wSum;
+
+    // Multinomial resampling according to Dirichlet weights
+    const sample: number[] = new Array(n);
+    for (let i = 0; i < n; i++) {
+      let u = rng();
+      let cumulative = 0;
+      let chosen = n - 1;
+      for (let j = 0; j < n; j++) {
+        cumulative += weights[j];
+        if (u <= cumulative) {
+          chosen = j;
+          break;
+        }
+      }
+      sample[i] = data[chosen];
+    }
+
+    distribution.push(statistic(sample));
+  }
+
+  return buildBootstrapResult(estimate, distribution);
+}
+
+// ── Time-Series Cross-Validation ────────────────────────────────────────
+
+/**
+ * Time-series cross-validation with expanding or rolling windows.
+ *
+ * Respects temporal ordering: the training set always precedes the test set.
+ * With `maxTrainSize` set to `null` (the default) the training window expands
+ * over time; with a finite value the window rolls forward.
+ *
+ * @param data - Time-series observations
+ * @param fitPredict - Function (trainData, testData) => predictions for the test window
+ * @param options - Configuration
+ * @returns Time-series CV results including per-window scores and window boundaries
+ * @throws {Error} If minTrainSize + horizon exceeds data length
+ */
+export function timeSeriesCV(
+  data: Dataset,
+  fitPredict: (train: Dataset, test: Dataset) => number[],
+  options: {
+    minTrainSize?: number;
+    step?: number;
+    maxTrainSize?: number | null;
+    horizon?: number;
+    scorer?: (actual: Dataset, predicted: Dataset) => number;
+  } = {},
+): TimeSeriesCVResult {
+  const n = data.length;
+  const minTrainSize = options.minTrainSize ?? Math.max(1, Math.floor(n / 3));
+  const step = options.step ?? 1;
+  const maxTrainSize = options.maxTrainSize === undefined ? null : options.maxTrainSize;
+  const horizon = options.horizon ?? 1;
+  const scorer = options.scorer ?? mse;
+
+  if (minTrainSize + horizon > n) {
+    throw new Error("minTrainSize + horizon exceeds data length");
+  }
+
+  const scores: number[] = [];
+  const windows: { trainStart: number; trainEnd: number; testStart: number; testEnd: number }[] = [];
+
+  for (let trainEnd = minTrainSize; trainEnd + horizon <= n; trainEnd += step) {
+    const trainStart = maxTrainSize != null ? Math.max(0, trainEnd - maxTrainSize) : 0;
+    const testStart = trainEnd;
+    const testEnd = trainEnd + horizon;
+
+    const trainData = data.slice(trainStart, trainEnd);
+    const testData = data.slice(testStart, testEnd);
+
+    const predicted = fitPredict(trainData, testData);
+    scores.push(scorer(testData, predicted));
+    windows.push({ trainStart, trainEnd, testStart, testEnd });
+  }
+
+  const meanScore = scores.length > 0 ? mean(scores) : 0;
+  const stdScore =
+    scores.length > 1
+      ? Math.sqrt(scores.reduce((s, v) => s + (v - meanScore) ** 2, 0) / (scores.length - 1))
+      : 0;
+
+  return { scores, meanScore, stdScore, windows };
+}
+
+// ── Nested Cross-Validation ─────────────────────────────────────────────
+
+/**
+ * Nested cross-validation for simultaneous model evaluation and
+ * hyperparameter selection.
+ *
+ * The outer loop evaluates generalisation performance while the inner loop
+ * selects the best hyperparameters for each outer training fold.
+ *
+ * @param X - Feature matrix (n x p)
+ * @param y - Response variable
+ * @param fitPredictFactory - Function (params) => fitPredict, where fitPredict
+ *   takes (trainX, trainY, testX) and returns predictions.  The factory is
+ *   called once per candidate hyperparameter set.
+ * @param options - Configuration including the parameter grid
+ * @returns Nested CV results with outer scores and best parameters per fold
+ * @throws {Error} If X and y have different lengths
+ * @throws {Error} If paramGrid is empty
+ */
+export function nestedCV(
+  X: number[][],
+  y: Dataset,
+  fitPredictFactory: (
+    params: unknown,
+  ) => (trainX: number[][], trainY: Dataset, testX: number[][]) => number[],
+  options: {
+    outerK?: number;
+    innerK?: number;
+    seed?: number;
+    paramGrid: unknown[];
+    scorer?: (actual: Dataset, predicted: Dataset) => number;
+  },
+): NestedCVResult {
+  const n = X.length;
+  if (n !== y.length) throw new Error("X and y must have the same length");
+  if (!options.paramGrid || options.paramGrid.length === 0) {
+    throw new Error("paramGrid must not be empty");
+  }
+
+  const outerK = options.outerK ?? 5;
+  const innerK = options.innerK ?? 3;
+  const scorer = options.scorer ?? mse;
+  const rng = options.seed != null ? createRng(options.seed) : Math.random;
+
+  // Shuffle indices once
+  const indices = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+
+  const outerFoldSize = Math.floor(n / outerK);
+  const outerScores: number[] = [];
+  const bestParams: unknown[] = [];
+
+  for (let outerFold = 0; outerFold < outerK; outerFold++) {
+    const outerTestStart = outerFold * outerFoldSize;
+    const outerTestEnd = outerFold === outerK - 1 ? n : outerTestStart + outerFoldSize;
+    const outerTestIdx = indices.slice(outerTestStart, outerTestEnd);
+    const outerTrainIdx = [
+      ...indices.slice(0, outerTestStart),
+      ...indices.slice(outerTestEnd),
+    ];
+
+    const outerTrainX = outerTrainIdx.map((i) => X[i]);
+    const outerTrainY = outerTrainIdx.map((i) => y[i]);
+    const outerTestX = outerTestIdx.map((i) => X[i]);
+    const outerTestY = outerTestIdx.map((i) => y[i]);
+
+    // Inner CV: select best params
+    let bestInnerScore = Infinity;
+    let bestParam: unknown = options.paramGrid[0];
+
+    for (const params of options.paramGrid) {
+      const innerResult = kFoldCV(outerTrainX, outerTrainY, fitPredictFactory(params), {
+        k: Math.min(innerK, outerTrainIdx.length),
+        scorer,
+      });
+      if (innerResult.meanScore < bestInnerScore) {
+        bestInnerScore = innerResult.meanScore;
+        bestParam = params;
+      }
+    }
+
+    bestParams.push(bestParam);
+
+    // Evaluate on outer test fold with best params
+    const fitPredict = fitPredictFactory(bestParam);
+    const predicted = fitPredict(outerTrainX, outerTrainY, outerTestX);
+    outerScores.push(scorer(outerTestY, predicted));
+  }
+
+  const meanScore = mean(outerScores);
+  const stdScore = Math.sqrt(
+    outerScores.reduce((s, v) => s + (v - meanScore) ** 2, 0) / (outerK - 1),
+  );
+
+  return { outerScores, meanScore, stdScore, bestParams };
+}
+
+// ── Monte Carlo Cross-Validation ────────────────────────────────────────
+
+/**
+ * Monte Carlo cross-validation (repeated random sub-sampling).
+ *
+ * Repeatedly splits data into random train/test sets and evaluates the model.
+ * Unlike k-fold CV, splits are independent and observations may appear in
+ * multiple test sets.
+ *
+ * @param X - Feature matrix (n x p)
+ * @param y - Response variable
+ * @param fitPredict - Function (trainX, trainY, testX) => predictions
+ * @param options - Configuration
+ * @returns Cross-validation results
+ * @throws {Error} If X and y have different lengths
+ * @throws {Error} If testFraction is not in (0, 1)
+ */
+export function monteCarloCV(
+  X: number[][],
+  y: Dataset,
+  fitPredict: (trainX: number[][], trainY: Dataset, testX: number[][]) => number[],
+  options: {
+    nSplits?: number;
+    testFraction?: number;
+    seed?: number;
+    scorer?: (actual: Dataset, predicted: Dataset) => number;
+  } = {},
+): CrossValidationResult {
+  const n = X.length;
+  if (n !== y.length) throw new Error("X and y must have the same length");
+
+  const nSplits = options.nSplits ?? 100;
+  const testFraction = options.testFraction ?? 0.2;
+  if (testFraction <= 0 || testFraction >= 1) {
+    throw new Error("testFraction must be between 0 and 1 (exclusive)");
+  }
+
+  const scorer = options.scorer ?? mse;
+  const rng = options.seed != null ? createRng(options.seed) : Math.random;
+  const testSize = Math.max(1, Math.round(n * testFraction));
+
+  const foldScores: number[] = [];
+
+  for (let s = 0; s < nSplits; s++) {
+    // Shuffle indices
+    const indices = Array.from({ length: n }, (_, i) => i);
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    const testIndices = indices.slice(0, testSize);
+    const trainIndices = indices.slice(testSize);
+
+    const trainX = trainIndices.map((i) => X[i]);
+    const trainY = trainIndices.map((i) => y[i]);
+    const testX = testIndices.map((i) => X[i]);
+    const testY = testIndices.map((i) => y[i]);
+
+    const predicted = fitPredict(trainX, trainY, testX);
+    foldScores.push(scorer(testY, predicted));
+  }
+
+  const meanScore = mean(foldScores);
+  const stdScore = Math.sqrt(
+    foldScores.reduce((s, v) => s + (v - meanScore) ** 2, 0) / (nSplits - 1),
+  );
+
+  return { foldScores, meanScore, stdScore, nFolds: nSplits };
+}

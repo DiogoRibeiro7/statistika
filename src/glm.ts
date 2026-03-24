@@ -111,7 +111,7 @@ export const poisson: GLMFamily = {
 };
 
 /** Gamma family with inverse link. V(mu) = mu^2. For positive continuous data. */
-export const gamma: GLMFamily = {
+export const gammaFamily: GLMFamily = {
   name: "gamma",
   link: inverseLink,
   variance: (mu) => mu * mu,
@@ -325,5 +325,194 @@ export function glm(
       for (let j = 0; j < p; j++) eta += beta[j + 1] * x[j];
       return family.link.inverse(eta);
     },
+  };
+}
+
+// -- Additional Link Functions ------------------------------------------------
+
+/** Complementary log-log link: g(mu) = ln(-ln(1-mu)). For asymmetric binary responses. */
+export const cloglogLink: LinkFunction = {
+  link: (mu) => Math.log(-Math.log(1 - mu)),
+  inverse: (eta) => 1 - Math.exp(-Math.exp(eta)),
+  derivative: (eta) => Math.exp(eta - Math.exp(eta)),
+};
+
+// -- Additional GLM Families --------------------------------------------------
+
+/**
+ * Negative Binomial family with log link.
+ *
+ * V(mu) = mu + mu^2 / theta (quadratic variance function).
+ * Suitable for overdispersed count data where the Poisson assumption is too restrictive.
+ *
+ * @param theta - Dispersion parameter (shape parameter). Larger theta means closer to Poisson.
+ * @returns A {@link GLMFamily} for negative binomial regression.
+ */
+export function negativeBinomialFamily(theta: number): GLMFamily {
+  return {
+    name: "negativeBinomial",
+    link: logLink,
+    variance: (mu) => mu + (mu * mu) / theta,
+    logLikelihood: (y, mu) => {
+      const m = Math.max(1e-10, mu);
+      // Log-likelihood kernel for NB(theta, mu):
+      // y*ln(mu/(mu+theta)) + theta*ln(theta/(mu+theta)) + lnGamma(y+theta) - lnGamma(theta) - lnGamma(y+1)
+      // We omit constant terms involving only y and theta since they don't affect fitting.
+      return y * Math.log(m / (m + theta)) + theta * Math.log(theta / (m + theta));
+    },
+  };
+}
+
+/**
+ * Tweedie family with log link.
+ *
+ * V(mu) = mu^p where 1 < p < 2, corresponding to compound Poisson-Gamma distributions.
+ * Particularly useful for insurance claims and other zero-inflated continuous data.
+ *
+ * @param p - Variance power parameter, must satisfy 1 < p < 2.
+ * @returns A {@link GLMFamily} for Tweedie regression.
+ * @throws If p is not in the open interval (1, 2).
+ */
+export function tweedieFamily(p: number): GLMFamily {
+  if (p <= 1 || p >= 2) {
+    throw new Error("Tweedie power parameter p must satisfy 1 < p < 2");
+  }
+  return {
+    name: "tweedie",
+    link: logLink,
+    variance: (mu) => Math.pow(Math.max(1e-10, mu), p),
+    logLikelihood: (y, mu) => {
+      const m = Math.max(1e-10, mu);
+      // Tweedie deviance unit: 2 * ( y*mu^(1-p)/(1-p) - mu^(2-p)/(2-p) )
+      // We use the log-likelihood kernel form for IRLS fitting.
+      return -(
+        (Math.pow(m, 2 - p) / (2 - p)) -
+        (y * Math.pow(m, 1 - p) / (1 - p))
+      );
+    },
+  };
+}
+
+/**
+ * Quasi-likelihood family with user-specified variance function and link.
+ *
+ * Quasi-likelihood does not correspond to a true probability distribution,
+ * so there is no proper log-likelihood. The deviance is computed from the
+ * quasi-likelihood equations instead.
+ *
+ * @param varianceFn - Variance function V(mu) defining how variance depends on the mean.
+ * @param link - Link function relating the linear predictor to the mean.
+ * @returns A {@link GLMFamily} for quasi-likelihood regression.
+ */
+export function quasiFamily(varianceFn: (mu: number) => number, link: LinkFunction): GLMFamily {
+  return {
+    name: "quasi",
+    link,
+    variance: varianceFn,
+    logLikelihood: (y, mu) => {
+      // No true log-likelihood for quasi families.
+      // Return the negative quasi-deviance contribution: -0.5 * (y - mu)^2 / V(mu)
+      const v = Math.max(1e-10, varianceFn(mu));
+      return -0.5 * ((y - mu) ** 2) / v;
+    },
+  };
+}
+
+// -- Dispersion Estimation ----------------------------------------------------
+
+/**
+ * Estimate the dispersion parameter using the Pearson estimator.
+ *
+ * phi = sum((y_i - mu_i)^2 / V(mu_i)) / (n - p)
+ *
+ * @param X - Design matrix (n x p), without intercept column.
+ * @param y - Response variable.
+ * @param family - GLM family used for fitting.
+ * @param coefficients - Estimated coefficients (including intercept as first element).
+ * @returns The estimated dispersion parameter.
+ */
+export function estimateDispersion(
+  X: number[][],
+  y: Dataset,
+  family: GLMFamily,
+  coefficients: number[],
+): number {
+  const n = X.length;
+  const p = coefficients.length; // includes intercept
+
+  let pearsonChi2 = 0;
+  for (let i = 0; i < n; i++) {
+    let eta = coefficients[0];
+    for (let j = 0; j < X[i].length; j++) {
+      eta += coefficients[j + 1] * X[i][j];
+    }
+    const mu = family.link.inverse(eta);
+    const v = family.variance(mu);
+    pearsonChi2 += ((y[i] - mu) ** 2) / Math.max(v, 1e-10);
+  }
+
+  return pearsonChi2 / (n - p);
+}
+
+// -- GLM with Dispersion ------------------------------------------------------
+
+/**
+ * Extended GLM result that includes dispersion-adjusted inference.
+ */
+export interface GLMDispersionResult extends GLMResult {
+  /** Estimated dispersion parameter (Pearson estimator). */
+  dispersion: number;
+  /** Standard errors adjusted by sqrt(dispersion). */
+  adjustedStandardErrors: number[];
+  /** p-values recomputed using adjusted standard errors. */
+  adjustedPValues: number[];
+}
+
+/**
+ * Fit a GLM and estimate the dispersion parameter, adjusting standard errors accordingly.
+ *
+ * First fits the model using IRLS via {@link glm}, then computes the Pearson
+ * dispersion estimate and scales the standard errors by sqrt(dispersion).
+ *
+ * @param X - Design matrix (n x p), without intercept column.
+ * @param y - Response variable.
+ * @param family - GLM family.
+ * @param options - Configuration (same as {@link glm} options).
+ * @returns A {@link GLMDispersionResult} with dispersion-adjusted inference.
+ *
+ * @example
+ * ```ts
+ * const X = [[1], [2], [3], [4], [5]];
+ * const y = [2.1, 3.9, 6.2, 7.8, 10.1];
+ * const result = glmWithDispersion(X, y, gaussian);
+ * console.log(result.dispersion); // estimated dispersion
+ * console.log(result.adjustedStandardErrors); // scaled standard errors
+ * ```
+ */
+export function glmWithDispersion(
+  X: number[][],
+  y: Dataset,
+  family: GLMFamily,
+  options: {
+    maxIterations?: number;
+    tol?: number;
+  } = {},
+): GLMDispersionResult {
+  const result = glm(X, y, family, options);
+
+  const dispersion = estimateDispersion(X, y, family, result.coefficients);
+  const sqrtDisp = Math.sqrt(dispersion);
+
+  const adjustedStandardErrors = result.standardErrors.map((se) => se * sqrtDisp);
+  const adjustedPValues = adjustedStandardErrors.map((ase, j) => {
+    const z = ase > 0 ? result.coefficients[j] / ase : 0;
+    return 2 * (1 - normalCdf(Math.abs(z)));
+  });
+
+  return {
+    ...result,
+    dispersion,
+    adjustedStandardErrors,
+    adjustedPValues,
   };
 }
