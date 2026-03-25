@@ -24,6 +24,11 @@ export default defineConfig({
         { text: 'Time Series', link: '/tutorials/time-series' },
         { text: 'Survival Analysis', link: '/tutorials/survival' },
         { text: 'Causal Inference', link: '/tutorials/causal-inference' },
+        { text: 'Dimensionality Reduction & Clustering', link: '/tutorials/dimensionality' },
+        { text: 'Mixed-Effects Models', link: '/tutorials/mixed-models' },
+        { text: 'Meta-Analysis', link: '/tutorials/meta-analysis' },
+        { text: 'Changepoint Detection', link: '/tutorials/changepoint' },
+        { text: 'Spatial Statistics', link: '/tutorials/spatial' },
       ],
     },
     socialLinks: [

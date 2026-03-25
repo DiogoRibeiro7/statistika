@@ -7,6 +7,7 @@
  */
 
 import { nativeAddon } from "./native-addon";
+import { getAccelerated, hasWasm } from "../wasm";
 
 // ── Native addon interface ──────────────────────────────────────────────
 
@@ -271,6 +272,13 @@ export function solveLinearSystem(A: Matrix, b: number[]): number[] {
     }
     return result.x;
   }
+  if (hasWasm) {
+    const n = A.length;
+    const aFlat = new Float64Array(n * n);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) aFlat[i * n + j] = A[i][j];
+    const bFlat = new Float64Array(b);
+    return Array.from(getAccelerated().solve(aFlat, bFlat, n));
+  }
   return tsSolveLinearSystem(A, b);
 }
 
@@ -311,6 +319,20 @@ export function matMul(A: Matrix, B: Matrix): Matrix {
     const k = B.length;
     const n = B[0].length;
     return native.matMul(A, B, m, k, n);
+  }
+  if (hasWasm) {
+    const m = A.length;
+    const k = B.length;
+    const n = B[0].length;
+    const aFlat = new Float64Array(m * k);
+    for (let i = 0; i < m; i++) for (let j = 0; j < k; j++) aFlat[i * k + j] = A[i][j];
+    const bFlat = new Float64Array(k * n);
+    for (let i = 0; i < k; i++) for (let j = 0; j < n; j++) bFlat[i * n + j] = B[i][j];
+    const cFlat = getAccelerated().matMul(aFlat, bFlat, m, k, n);
+    const C: Matrix = Array.from({ length: m }, (_, i) =>
+      Array.from({ length: n }, (_, j) => cFlat[i * n + j]),
+    );
+    return C;
   }
   return tsMatMul(A, B);
 }

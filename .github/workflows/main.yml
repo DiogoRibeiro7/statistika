@@ -92,12 +92,19 @@ jobs:
           node-version: 22
           cache: yarn
       - run: yarn install --frozen-lockfile
-      - run: yarn docs
-      - name: Upload docs artifact
+      - name: Build TypeDoc API docs
+        run: yarn docs
+      - name: Build VitePress documentation site
+        run: yarn docs:site:build
+      - name: Combine docs into single output
+        run: |
+          cp -r docs-site/.vitepress/dist combined-docs
+          cp -r docs/ combined-docs/api-docs/
+      - name: Upload combined docs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: api-docs
-          path: docs/
+          name: combined-docs
+          path: combined-docs/
           retention-days: 14
 
   deploy-docs:
@@ -108,17 +115,17 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download docs artifact
+      - name: Download combined docs artifact
         uses: actions/download-artifact@v4
         with:
-          name: api-docs
-          path: docs/
+          name: combined-docs
+          path: combined-docs/
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload to Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/
+          path: combined-docs/
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

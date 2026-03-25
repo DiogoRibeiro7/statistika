@@ -1,4 +1,5 @@
 import { nativeAddon } from "./native-addon";
+import { getAccelerated, hasWasm } from "../wasm";
 
 // Try to load the native Fortran addon; fall back to pure-TS implementations.
 interface NativeSpecial {
@@ -189,6 +190,7 @@ function tsRegularizedBeta(x: number, a: number, b: number): number {
  */
 export function gammaLn(x: number): number {
   if (native) return native.gammaLn(x);
+  if (hasWasm) return getAccelerated().gammaLn(x);
   return tsGammaLn(x);
 }
 
@@ -203,6 +205,7 @@ export function gammaLn(x: number): number {
  */
 export function gamma(x: number): number {
   if (native) return native.gamma(x);
+  if (hasWasm) return getAccelerated().gamma(x);
   return tsGamma(x);
 }
 
@@ -257,6 +260,7 @@ export function binomialCoeff(n: number, k: number): number {
  */
 export function betaFn(a: number, b: number): number {
   if (native) return native.betaFn(a, b);
+  if (hasWasm) return getAccelerated().betaFn(a, b);
   return tsBetaFn(a, b);
 }
 
@@ -269,6 +273,7 @@ export function betaFn(a: number, b: number): number {
  */
 export function erf(x: number): number {
   if (native) return native.erf(x);
+  if (hasWasm) return getAccelerated().erf(x);
   return tsErf(x);
 }
 
@@ -280,6 +285,7 @@ export function erf(x: number): number {
  */
 export function erfc(x: number): number {
   if (native) return native.erfc(x);
+  if (hasWasm) return getAccelerated().erfc(x);
   return tsErfc(x);
 }
 
@@ -360,4 +366,11 @@ export function quantileBisect(
  */
 export function isNativeAvailable(): boolean {
   return native !== null;
+}
+
+/**
+ * Checks whether WASM acceleration for special math functions is available.
+ */
+export function isWasmAvailable(): boolean {
+  return hasWasm;
 }
