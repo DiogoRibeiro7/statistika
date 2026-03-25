@@ -49,9 +49,9 @@ export class Hypergeometric extends BaseDiscrete {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (N < 0 || !Number.isInteger(N)) throw new Error("N must be a non-negative integer");
-    if (K < 0 || K > N || !Number.isInteger(K)) throw new Error("K must be an integer in [0, N]");
-    if (n < 0 || n > N || !Number.isInteger(n)) throw new Error("n must be an integer in [0, N]");
+    if (N < 0 || !Number.isInteger(N)) throw new Error(`Invalid parameter 'N': expected a non-negative integer, received ${N}`);
+    if (K < 0 || K > N || !Number.isInteger(K)) throw new Error(`Invalid parameter 'K': expected an integer in [0, N=${N}], received ${K}`);
+    if (n < 0 || n > N || !Number.isInteger(n)) throw new Error(`Invalid parameter 'n': expected an integer in [0, N=${N}], received ${n}`);
     this.name = `Hypergeometric(${N}, ${K}, ${n})`;
   }
 
@@ -163,7 +163,7 @@ export class Hypergeometric extends BaseDiscrete {
    * ```
    */
   quantile(prob: number): number {
-    if (prob < 0 || prob > 1) throw new Error("p must be in [0, 1]");
+    if (prob < 0 || prob > 1) throw new Error(`Invalid parameter 'prob': expected a value in [0, 1], received ${prob}`);
     const { N, K, n } = this;
     const lo = Math.max(0, n + K - N);
     const hi = Math.min(n, K);

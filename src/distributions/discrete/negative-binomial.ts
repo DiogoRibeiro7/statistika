@@ -42,8 +42,8 @@ export class NegativeBinomial extends BaseDiscrete {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (r <= 0 || !Number.isInteger(r)) throw new Error("r must be a positive integer");
-    if (p <= 0 || p > 1) throw new Error("p must be in (0, 1]");
+    if (r <= 0 || !Number.isInteger(r)) throw new Error(`Invalid parameter 'r': expected a positive integer, received ${r}`);
+    if (p <= 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in (0, 1], received ${p}`);
     this.name = `NegBin(${r}, ${p})`;
   }
 
@@ -150,7 +150,7 @@ export class NegativeBinomial extends BaseDiscrete {
    * ```
    */
   quantile(prob: number): number {
-    if (prob < 0 || prob > 1) throw new Error("p must be in [0, 1]");
+    if (prob < 0 || prob > 1) throw new Error(`Invalid parameter 'prob': expected a value in [0, 1], received ${prob}`);
     if (prob === 0) return 0;
     if (prob === 1) return Infinity;
     let cumulative = 0;

@@ -379,6 +379,15 @@ export function functionalPCA(
  * @param curves - Array of curves, each with observation times `t` and values `y`
  * @param tGrid - Common evaluation grid of time points
  * @returns Array of mean values at each point in tGrid
+ *
+ * @example
+ * ```ts
+ * const curves = [
+ *   { t: [0, 1, 2], y: [1, 2, 3] },
+ *   { t: [0, 1, 2], y: [3, 4, 5] },
+ * ];
+ * const meanY = functionalMean(curves, [0, 1, 2]); // [2, 3, 4]
+ * ```
  */
 export function functionalMean(
   curves: { t: number[]; y: number[] }[],
@@ -409,6 +418,13 @@ export function functionalMean(
  * @param g - Second functional object (must share the same domain as f)
  * @param nPoints - Number of subintervals for numerical integration (default: 100)
  * @returns The approximate L2 inner product value
+ *
+ * @example
+ * ```ts
+ * const basis = polynomialBasis(2);
+ * const f = smoothBasisExpansion([0, 0.5, 1], [0, 1, 0], basis);
+ * console.log(l2InnerProduct(f, f)); // ||f||^2
+ * ```
  */
 export function l2InnerProduct(
   f: FunctionalObject,
@@ -436,6 +452,13 @@ export function l2InnerProduct(
  * @param f - Functional object to compute the norm of
  * @param nPoints - Number of subintervals for numerical integration (default: 100)
  * @returns The L2 norm (always non-negative)
+ *
+ * @example
+ * ```ts
+ * const basis = polynomialBasis(2);
+ * const f = smoothBasisExpansion([0, 0.5, 1], [0, 1, 0], basis);
+ * console.log(l2Norm(f)); // sqrt(integral of f(t)^2 dt)
+ * ```
  */
 export function l2Norm(f: FunctionalObject, nPoints = 100): number {
   return Math.sqrt(l2InnerProduct(f, f, nPoints));

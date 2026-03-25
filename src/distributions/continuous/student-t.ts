@@ -44,7 +44,7 @@ export class StudentT extends BaseContinuous {
    */
   constructor(public readonly nu: number = 1, rng?: RandomFn) {
     super(rng);
-    if (nu <= 0) throw new Error("nu (degrees of freedom) must be positive");
+    if (nu <= 0) throw new Error(`Invalid parameter 'nu': expected a positive number, received ${nu}`);
     this.name = `StudentT(${nu})`;
   }
 
@@ -142,7 +142,7 @@ export class StudentT extends BaseContinuous {
    * ```
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return -Infinity;
     if (p === 1) return Infinity;
     // Use symmetry

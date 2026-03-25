@@ -13,6 +13,12 @@ import { normalCdf, normalQuantile } from "./utils/linalg";
  * @param maxLags - Maximum number of lags (default: floor(cbrt(n)))
  * @returns An object with the test statistic, p-value, lag count, and whether the series is stationary at the 0.05 level
  * @throws If the series has fewer than 10 observations or not enough observations for the specified lag
+ *
+ * @example
+ * ```ts
+ * const result = adfTest([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+ * console.log(result.isStationary); // whether the series is stationary at 0.05
+ * ```
  */
 export function adfTest(
   series: Dataset,
@@ -196,6 +202,14 @@ export function autoArima(
  * @param confidence - Confidence level (default: 0.95)
  * @returns An object containing point forecasts and lower/upper prediction interval bounds
  * @throws If steps is not a positive integer or confidence is not in (0, 1)
+ *
+ * @example
+ * ```ts
+ * const model = arima(series, 1, 1, 0);
+ * const fc = forecastWithIntervals(model, 5, 0.95);
+ * console.log(fc.point);  // 5-step point forecasts
+ * console.log(fc.lower);  // lower 95% bounds
+ * ```
  */
 export function forecastWithIntervals(
   model: ARIMAResult,
@@ -242,6 +256,13 @@ export function forecastWithIntervals(
  * @param period - Seasonal period (e.g., 12 for monthly, 4 for quarterly)
  * @returns An object with trend (nullable where edges are undefined), seasonal, and residual arrays
  * @throws If period is less than 2 or the series has fewer than 2 full periods
+ *
+ * @example
+ * ```ts
+ * const result = seasonalDecompose(monthlyData, 12);
+ * console.log(result.trend);    // trend component (null at edges)
+ * console.log(result.seasonal); // repeating seasonal pattern
+ * ```
  */
 export function seasonalDecompose(
   series: Dataset,

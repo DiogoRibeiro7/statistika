@@ -27,7 +27,7 @@ export class Poisson extends BaseDiscrete {
    */
   constructor(public readonly lambda: number = 1, rng?: RandomFn) {
     super(rng);
-    if (lambda <= 0) throw new Error("lambda must be positive");
+    if (lambda <= 0) throw new Error(`Invalid parameter 'lambda': expected a positive number, received ${lambda}`);
     this.name = `Poisson(${lambda})`;
   }
 
@@ -82,7 +82,7 @@ export class Poisson extends BaseDiscrete {
    * @returns The quantile value.
    */
   quantile(prob: number): number {
-    if (prob < 0 || prob > 1) throw new Error("p must be in [0, 1]");
+    if (prob < 0 || prob > 1) throw new Error(`Invalid parameter 'prob': expected a value in [0, 1], received ${prob}`);
     if (prob === 0) return 0;
     if (prob === 1) return Infinity;
     let cumulative = 0;

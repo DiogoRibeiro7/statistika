@@ -54,7 +54,7 @@ export function kFoldCV(
   } = {},
 ): CrossValidationResult {
   const n = X.length;
-  if (n !== y.length) throw new Error("X and y must have the same length");
+  if (n !== y.length) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${n}, y.length=${y.length}`);
 
   // Validate consistent row lengths
   if (n > 0) {
@@ -69,8 +69,8 @@ export function kFoldCV(
   }
 
   const k = options.k ?? 5;
-  if (k < 2) throw new Error("k must be at least 2");
-  if (k > n) throw new Error("k cannot exceed the number of observations");
+  if (k < 2) throw new Error(`Invalid parameter 'k': expected at least 2, received ${k}`);
+  if (k > n) throw new Error(`Invalid parameter 'k': expected at most ${n} (number of observations), received ${k}`);
 
   const scorer = options.scorer ?? mse;
   const rng = options.seed != null ? createRng(options.seed) : Math.random;
@@ -158,7 +158,7 @@ export function jackknife(
   data: Dataset,
   statistic: (sample: Dataset) => number,
 ): { estimate: number; bias: number; standardError: number; pseudoValues: number[] } {
-  if (data.length < 2) throw new Error("Need at least 2 observations");
+  if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${data.length}`);
 
   const n = data.length;
   const fullEstimate = statistic(data);
@@ -221,10 +221,10 @@ export function stratifiedSample(
   seed?: number,
 ): { sample: number[]; indices: number[] } {
   if (data.length !== strata.length) {
-    throw new Error("Data and strata must have the same length");
+    throw new Error(`Invalid parameters 'data', 'strata': expected same length, received data.length=${data.length}, strata.length=${strata.length}`);
   }
   if (sampleSize <= 0 || sampleSize > data.length) {
-    throw new Error("Sample size must be between 1 and dataset size");
+    throw new Error(`Invalid parameter 'sampleSize': expected a value between 1 and ${data.length}, received ${sampleSize}`);
   }
 
   const rng = seed != null ? createRng(seed) : Math.random;
@@ -288,7 +288,7 @@ export function stratifiedSample(
  * @throws {Error} If arrays have different lengths
  */
 export function mse(actual: Dataset, predicted: Dataset): number {
-  if (actual.length !== predicted.length) throw new Error("Arrays must have same length");
+  if (actual.length !== predicted.length) throw new Error(`Invalid parameters 'actual', 'predicted': expected same length, received actual.length=${actual.length}, predicted.length=${predicted.length}`);
   let sum = 0;
   for (let i = 0; i < actual.length; i++) sum += (actual[i] - predicted[i]) ** 2;
   return sum / actual.length;
@@ -315,7 +315,7 @@ export function rmse(actual: Dataset, predicted: Dataset): number {
  * @throws {Error} If arrays have different lengths
  */
 export function mae(actual: Dataset, predicted: Dataset): number {
-  if (actual.length !== predicted.length) throw new Error("Arrays must have same length");
+  if (actual.length !== predicted.length) throw new Error(`Invalid parameters 'actual', 'predicted': expected same length, received actual.length=${actual.length}, predicted.length=${predicted.length}`);
   let sum = 0;
   for (let i = 0; i < actual.length; i++) sum += Math.abs(actual[i] - predicted[i]);
   return sum / actual.length;
@@ -330,7 +330,7 @@ export function mae(actual: Dataset, predicted: Dataset): number {
  * @throws {Error} If arrays have different lengths
  */
 export function r2Score(actual: Dataset, predicted: Dataset): number {
-  if (actual.length !== predicted.length) throw new Error("Arrays must have same length");
+  if (actual.length !== predicted.length) throw new Error(`Invalid parameters 'actual', 'predicted': expected same length, received actual.length=${actual.length}, predicted.length=${predicted.length}`);
   const yMean = mean(actual);
   let ssRes = 0;
   let ssTot = 0;
@@ -444,10 +444,10 @@ export function blockBootstrap(
   } = {},
 ): BootstrapResult {
   const n = data.length;
-  if (n === 0) throw new Error("Data must not be empty");
+  if (n === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
 
   const blockSize = options.blockSize ?? Math.max(1, Math.floor(Math.sqrt(n)));
-  if (blockSize < 1 || blockSize > n) throw new Error("blockSize must be between 1 and data length");
+  if (blockSize < 1 || blockSize > n) throw new Error(`Invalid parameter 'blockSize': expected a value between 1 and ${n}, received ${blockSize}`);
 
   const nBootstrap = options.nBootstrap ?? 1000;
   const circular = options.circular ?? false;
@@ -498,10 +498,10 @@ export function stationaryBootstrap(
   } = {},
 ): BootstrapResult {
   const n = data.length;
-  if (n === 0) throw new Error("Data must not be empty");
+  if (n === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
 
   const expectedBlockSize = options.expectedBlockSize ?? Math.max(1, Math.floor(Math.sqrt(n)));
-  if (expectedBlockSize < 1) throw new Error("expectedBlockSize must be at least 1");
+  if (expectedBlockSize < 1) throw new Error(`Invalid parameter 'expectedBlockSize': expected at least 1, received ${expectedBlockSize}`);
 
   const nBootstrap = options.nBootstrap ?? 1000;
   const rng = options.seed != null ? createRng(options.seed) : Math.random;
@@ -556,8 +556,8 @@ export function wildBootstrap(
   } = {},
 ): BootstrapResult {
   const n = residuals.length;
-  if (n !== fitted.length) throw new Error("residuals and fitted must have the same length");
-  if (n === 0) throw new Error("Data must not be empty");
+  if (n !== fitted.length) throw new Error(`Invalid parameters 'residuals', 'fitted': expected same length, received residuals.length=${n}, fitted.length=${fitted.length}`);
+  if (n === 0) throw new Error(`Invalid parameter 'residuals': expected a non-empty array, received length 0`);
 
   const nBootstrap = options.nBootstrap ?? 1000;
   const dist = options.distribution ?? "rademacher";
@@ -621,7 +621,7 @@ export function bayesianBootstrap(
   } = {},
 ): BootstrapResult {
   const n = data.length;
-  if (n === 0) throw new Error("Data must not be empty");
+  if (n === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
 
   const nBootstrap = options.nBootstrap ?? 1000;
   const rng = options.seed != null ? createRng(options.seed) : Math.random;
@@ -695,7 +695,7 @@ export function timeSeriesCV(
   const scorer = options.scorer ?? mse;
 
   if (minTrainSize + horizon > n) {
-    throw new Error("minTrainSize + horizon exceeds data length");
+    throw new Error(`Invalid parameters 'minTrainSize', 'horizon': expected minTrainSize + horizon <= ${n}, received ${minTrainSize} + ${horizon} = ${minTrainSize + horizon}`);
   }
 
   const scores: number[] = [];
@@ -757,9 +757,9 @@ export function nestedCV(
   },
 ): NestedCVResult {
   const n = X.length;
-  if (n !== y.length) throw new Error("X and y must have the same length");
+  if (n !== y.length) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${n}, y.length=${y.length}`);
   if (!options.paramGrid || options.paramGrid.length === 0) {
-    throw new Error("paramGrid must not be empty");
+    throw new Error(`Invalid parameter 'paramGrid': expected a non-empty array, received ${options.paramGrid ? 'length 0' : 'undefined'}`);
   }
 
   const outerK = options.outerK ?? 5;
@@ -852,12 +852,12 @@ export function monteCarloCV(
   } = {},
 ): CrossValidationResult {
   const n = X.length;
-  if (n !== y.length) throw new Error("X and y must have the same length");
+  if (n !== y.length) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${n}, y.length=${y.length}`);
 
   const nSplits = options.nSplits ?? 100;
   const testFraction = options.testFraction ?? 0.2;
   if (testFraction <= 0 || testFraction >= 1) {
-    throw new Error("testFraction must be between 0 and 1 (exclusive)");
+    throw new Error(`Invalid parameter 'testFraction': expected a value in (0, 1), received ${testFraction}`);
   }
 
   const scorer = options.scorer ?? mse;

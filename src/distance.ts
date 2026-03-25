@@ -140,6 +140,11 @@ export function cosineSimilarity(a: Dataset, b: Dataset): number {
  * @param b - Second vector
  * @returns The cosine distance in the range [0, 2]
  * @throws If vectors are empty, have different lengths, or either is a zero vector
+ *
+ * @example
+ * ```ts
+ * cosineDistance([1, 0], [0, 1]); // 1 (orthogonal vectors)
+ * ```
  */
 export function cosineDistance(a: Dataset, b: Dataset): number {
   return 1 - cosineSimilarity(a, b);
@@ -154,6 +159,11 @@ export function cosineDistance(a: Dataset, b: Dataset): number {
  * @param b - Second set of elements
  * @returns The Jaccard index in the range [0, 1]
  * @throws Never (returns 1 for two empty sets)
+ *
+ * @example
+ * ```ts
+ * jaccardIndex([1, 2, 3], [2, 3, 4]); // 0.5 (2 shared out of 4 unique)
+ * ```
  */
 export function jaccardIndex(a: number[], b: number[]): number {
   const setA = new Set(a);
@@ -174,6 +184,11 @@ export function jaccardIndex(a: number[], b: number[]): number {
  * @param b - Second set of elements
  * @returns The Jaccard distance in the range [0, 1]
  * @throws Never
+ *
+ * @example
+ * ```ts
+ * jaccardDistance([1, 2, 3], [2, 3, 4]); // 0.5
+ * ```
  */
 export function jaccardDistance(a: number[], b: number[]): number {
   return 1 - jaccardIndex(a, b);
@@ -280,6 +295,12 @@ export function mahalanobis(point: Dataset, data: Dataset[]): number {
  * @param metric - Distance function (default: euclidean)
  * @returns A symmetric n x n matrix where entry [i][j] is the distance between vectors[i] and vectors[j]
  * @throws If any call to the metric function throws
+ *
+ * @example
+ * ```ts
+ * const m = distanceMatrix([[0, 0], [1, 0], [0, 1]]);
+ * console.log(m[0][1]); // 1 (Euclidean distance)
+ * ```
  */
 export function distanceMatrix(
   vectors: Dataset[],

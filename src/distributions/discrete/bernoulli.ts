@@ -25,7 +25,7 @@ export class Bernoulli extends BaseDiscrete {
    */
   constructor(public readonly p: number = 0.5, rng?: RandomFn) {
     super(rng);
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     this.name = `Bernoulli(${p})`;
   }
 
@@ -74,7 +74,7 @@ export class Bernoulli extends BaseDiscrete {
    * @returns The smallest integer k such that F(k) >= prob.
    */
   quantile(prob: number): number {
-    if (prob < 0 || prob > 1) throw new Error("p must be in [0, 1]");
+    if (prob < 0 || prob > 1) throw new Error(`Invalid parameter 'prob': expected a value in [0, 1], received ${prob}`);
     return prob <= 1 - this.p ? 0 : 1;
   }
 

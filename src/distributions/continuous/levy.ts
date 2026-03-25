@@ -45,7 +45,7 @@ export class Levy extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (c <= 0) throw new Error("c must be positive");
+    if (c <= 0) throw new Error(`Invalid parameter 'c': expected a positive number, received ${c}`);
     this.name = `Levy(${mu}, ${c})`;
   }
 
@@ -135,7 +135,7 @@ export class Levy extends BaseContinuous {
    * ```
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return this.mu;
     if (p === 1) return Infinity;
     // CDF(x) = erfc(sqrt(c / (2(x - mu)))) = p

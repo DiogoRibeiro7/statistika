@@ -34,7 +34,7 @@ export class Geometric extends BaseDiscrete {
    */
   constructor(public readonly p: number = 0.5, rng?: RandomFn) {
     super(rng);
-    if (p <= 0 || p > 1) throw new Error("p must be in (0, 1]");
+    if (p <= 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in (0, 1], received ${p}`);
     this.name = `Geometric(${p})`;
   }
 
@@ -132,7 +132,7 @@ export class Geometric extends BaseDiscrete {
    * ```
    */
   quantile(prob: number): number {
-    if (prob < 0 || prob > 1) throw new Error("p must be in [0, 1]");
+    if (prob < 0 || prob > 1) throw new Error(`Invalid parameter 'prob': expected a value in [0, 1], received ${prob}`);
     if (prob === 0) return 0;
     if (prob === 1) return Infinity;
     return Math.floor(Math.log(1 - prob) / Math.log(1 - this.p));

@@ -49,6 +49,11 @@ export function clr(x: number[]): number[] {
  *
  * @param y - CLR coordinates (length D)
  * @returns Composition on the simplex (sums to 1)
+ *
+ * @example
+ * ```ts
+ * clrInverse([0, 0, 0]); // [0.333, 0.333, 0.333] (uniform)
+ * ```
  */
 export function clrInverse(y: number[]): number[] {
   const exp = y.map(Math.exp);
@@ -97,6 +102,11 @@ export function alr(x: number[], ref?: number): number[] {
  * @param y - ALR coordinates (length D-1)
  * @param ref - Reference component index used in the forward transform (default: D-1)
  * @returns Composition on the simplex (sums to 1, length D = y.length + 1)
+ *
+ * @example
+ * ```ts
+ * alrInverse([0, 0]); // [0.333, 0.333, 0.333] (equal ratios to reference)
+ * ```
  */
 export function alrInverse(y: number[], ref?: number): number[] {
   const D = y.length + 1;
@@ -156,6 +166,11 @@ export function ilr(x: number[]): number[] {
  *
  * @param y - ILR coordinates (length D-1)
  * @returns Composition on the simplex (sums to 1, length D = y.length + 1)
+ *
+ * @example
+ * ```ts
+ * ilrInverse([0, 0]); // [0.333, 0.333, 0.333]
+ * ```
  */
 export function ilrInverse(y: number[]): number[] {
   const D = y.length + 1;
@@ -189,6 +204,11 @@ export function ilrInverse(y: number[]): number[] {
  * @param total - Target sum (default 1, yielding proportions)
  * @returns Closed vector summing to `total`
  * @throws {Error} If the input vector sums to zero
+ *
+ * @example
+ * ```ts
+ * closure([2, 3, 5]); // [0.2, 0.3, 0.5]
+ * ```
  */
 export function closure(x: number[], total = 1): number[] {
   let sum = 0;
@@ -209,6 +229,11 @@ export function closure(x: number[], total = 1): number[] {
  * @param y - Second composition (length D)
  * @returns The perturbed composition on the simplex
  * @throws {Error} If x and y have different lengths
+ *
+ * @example
+ * ```ts
+ * perturbation([0.2, 0.3, 0.5], [1, 2, 1]); // element-wise product, re-closed
+ * ```
  */
 export function perturbation(x: number[], y: number[]): number[] {
   if (x.length !== y.length) throw new Error("Compositions must have same length");
@@ -227,6 +252,11 @@ export function perturbation(x: number[], y: number[]): number[] {
  * @param x - Composition (length D)
  * @param alpha - Scalar exponent
  * @returns The powered composition on the simplex
+ *
+ * @example
+ * ```ts
+ * powering([0.2, 0.3, 0.5], 2); // each part squared, then re-closed
+ * ```
  */
 export function powering(x: number[], alpha: number): number[] {
   const powered = x.map((xi) => Math.pow(xi, alpha));
@@ -245,6 +275,11 @@ export function powering(x: number[], alpha: number): number[] {
  * @param y - Second composition (length D)
  * @returns The Aitchison inner product (a scalar)
  * @throws {Error} If x and y have different lengths
+ *
+ * @example
+ * ```ts
+ * aitchisonInnerProduct([0.2, 0.3, 0.5], [0.1, 0.6, 0.3]);
+ * ```
  */
 export function aitchisonInnerProduct(x: number[], y: number[]): number {
   const D = x.length;
@@ -270,6 +305,11 @@ export function aitchisonInnerProduct(x: number[], y: number[]): number {
  * @param y - Second composition (length D)
  * @returns The Aitchison distance (non-negative scalar)
  * @throws {Error} If x and y have different lengths
+ *
+ * @example
+ * ```ts
+ * aitchisonDistance([0.2, 0.3, 0.5], [0.1, 0.6, 0.3]); // > 0
+ * ```
  */
 export function aitchisonDistance(x: number[], y: number[]): number {
   const D = x.length;
@@ -294,6 +334,11 @@ export function aitchisonDistance(x: number[], y: number[]): number {
  *
  * @param x - Composition (length D)
  * @returns The Aitchison norm (non-negative scalar)
+ *
+ * @example
+ * ```ts
+ * aitchisonNorm([0.333, 0.333, 0.334]); // near 0 (close to uniform)
+ * ```
  */
 export function aitchisonNorm(x: number[]): number {
   return Math.sqrt(aitchisonInnerProduct(x, x));
@@ -312,6 +357,12 @@ export function aitchisonNorm(x: number[]): number {
  * @param compositions - Array of compositions (n x D), all parts must be positive
  * @returns The centred composition on the simplex (sums to 1)
  * @throws {Error} If the array is empty
+ *
+ * @example
+ * ```ts
+ * compositionalCentre([[0.2, 0.3, 0.5], [0.1, 0.6, 0.3]]);
+ * // geometric mean composition, re-closed to sum to 1
+ * ```
  */
 export function compositionalCentre(compositions: number[][]): number[] {
   const n = compositions.length;
@@ -341,6 +392,12 @@ export function compositionalCentre(compositions: number[][]): number[] {
  * @param compositions - Array of compositions (n x D, need n >= 2)
  * @returns A D x D symmetric matrix of pairwise log-ratio variances (diagonal is zero)
  * @throws {Error} If fewer than 2 compositions are provided
+ *
+ * @example
+ * ```ts
+ * const T = variationMatrix([[0.2, 0.3, 0.5], [0.1, 0.6, 0.3]]);
+ * // T[i][j] = Var(ln(x_i / x_j)) across compositions
+ * ```
  */
 export function variationMatrix(compositions: number[][]): number[][] {
   const n = compositions.length;

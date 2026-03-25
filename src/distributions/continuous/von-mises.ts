@@ -88,7 +88,7 @@ export class VonMises extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (kappa < 0) throw new Error("kappa (concentration) must be non-negative");
+    if (kappa < 0) throw new Error(`Invalid parameter 'kappa': expected a non-negative number, received ${kappa}`);
     this.name = `VonMises(${mu}, ${kappa})`;
     this.i0Kappa = besselI0(kappa);
   }
@@ -168,7 +168,7 @@ export class VonMises extends BaseContinuous {
    * @throws {Error} If p is not in [0, 1].
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return -Math.PI;
     if (p === 1) return Math.PI;
     return quantileBisect((x) => this.cdf(x), p, -Math.PI, Math.PI);

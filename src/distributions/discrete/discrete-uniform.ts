@@ -40,9 +40,9 @@ export class DiscreteUniform extends BaseDiscrete {
   ) {
     super(rng);
     if (!Number.isInteger(a) || !Number.isInteger(b)) {
-      throw new Error("a and b must be integers");
+      throw new Error(`Invalid parameters 'a', 'b': expected integers, received a=${a}, b=${b}`);
     }
-    if (a >= b) throw new Error("a must be less than b");
+    if (a >= b) throw new Error(`Invalid parameters 'a', 'b': expected a < b, received a=${a}, b=${b}`);
     this.name = `DiscreteUniform(${a}, ${b})`;
     this.range = b - a + 1;
   }
@@ -140,7 +140,7 @@ export class DiscreteUniform extends BaseDiscrete {
    * ```
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return this.a;
     if (p === 1) return this.b;
     return Math.min(this.a + Math.floor(p * this.range), this.b);

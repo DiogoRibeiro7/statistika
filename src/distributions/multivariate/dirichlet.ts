@@ -54,9 +54,9 @@ export class Dirichlet {
   constructor(public readonly alpha: number[], rng?: RandomFn) {
     this.rng = rng ?? Math.random;
     const k = alpha.length;
-    if (k < 2) throw new Error("Dirichlet requires at least 2 dimensions");
+    if (k < 2) throw new Error(`Invalid parameter 'alpha': expected at least 2 dimensions, received ${k}`);
     for (let i = 0; i < k; i++) {
-      if (alpha[i] <= 0) throw new Error(`alpha[${i}] must be positive`);
+      if (alpha[i] <= 0) throw new Error(`Invalid parameter 'alpha[${i}]': expected a positive number, received ${alpha[i]}`);
     }
     this.dim = k;
     this.alphaSum = alpha.reduce((a, b) => a + b, 0);

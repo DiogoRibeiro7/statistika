@@ -546,6 +546,12 @@ export interface MixedModelLRTResult {
  * @param dfDiff - Difference in number of parameters (must be >= 1)
  * @returns An {@link MixedModelLRTResult} with test statistic, df, and p-value
  * @throws {Error} If dfDiff is less than 1
+ *
+ * @example
+ * ```ts
+ * const result = lrtTest(-150, -140, 2);
+ * console.log(result.pValue); // test whether full model is significantly better
+ * ```
  */
 export function lrtTest(
   restricted: number,

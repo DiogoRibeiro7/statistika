@@ -38,6 +38,11 @@ export function entropy(probabilities: Dataset, base = 2): number {
  * @returns The empirical entropy of the data
  * @throws Error if dataset is empty
  * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * entropyFromData([1, 1, 2, 2, 3, 3]); // 1.585 bits (uniform over 3 values)
+ * ```
  */
 export function entropyFromData(data: Dataset, base = 2): number {
   if (data.length === 0) throw new Error("Dataset must not be empty");
@@ -57,6 +62,11 @@ export function entropyFromData(data: Dataset, base = 2): number {
  * @returns The joint entropy H(X, Y)
  * @throws Error if datasets have different lengths or are empty
  * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * jointEntropy([0, 0, 1, 1], [0, 1, 0, 1]); // 2.0 bits (independent binary)
+ * ```
  */
 export function jointEntropy(dataX: Dataset, dataY: Dataset, base = 2): number {
   if (dataX.length !== dataY.length) {
@@ -87,6 +97,11 @@ export function jointEntropy(dataX: Dataset, dataY: Dataset, base = 2): number {
  * @returns The conditional entropy H(Y|X)
  * @throws Error if datasets have different lengths or are empty
  * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * conditionalEntropy([0, 0, 1, 1], [0, 1, 0, 1]); // H(Y|X)
+ * ```
  */
 export function conditionalEntropy(dataX: Dataset, dataY: Dataset, base = 2): number {
   return jointEntropy(dataX, dataY, base) - entropyFromData(dataX, base);
@@ -105,6 +120,11 @@ export function conditionalEntropy(dataX: Dataset, dataY: Dataset, base = 2): nu
  * @returns The mutual information I(X; Y), always non-negative
  * @throws Error if datasets have different lengths or are empty
  * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * mutualInformation([0, 0, 1, 1], [0, 0, 1, 1]); // 1.0 bit (perfectly dependent)
+ * ```
  */
 export function mutualInformation(dataX: Dataset, dataY: Dataset, base = 2): number {
   const hx = entropyFromData(dataX, base);
@@ -127,6 +147,11 @@ export function mutualInformation(dataX: Dataset, dataY: Dataset, base = 2): num
  * @returns The normalized mutual information in [0, 1]
  * @throws Error if datasets have different lengths or are empty
  * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * normalizedMutualInformation([0, 0, 1, 1], [0, 0, 1, 1]); // 1.0
+ * ```
  */
 export function normalizedMutualInformation(dataX: Dataset, dataY: Dataset, base = 2): number {
   const hx = entropyFromData(dataX, base);
@@ -191,6 +216,11 @@ export function klDivergence(p: Dataset, q: Dataset, base = 2): number {
  * @throws Error if distributions have different lengths
  * @throws Error if either distribution is invalid (empty, negative, or doesn't sum to ~1)
  * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * jsDivergence([0.5, 0.5], [0.9, 0.1]); // symmetric divergence in [0, 1]
+ * ```
  */
 export function jsDivergence(p: Dataset, q: Dataset, base = 2): number {
   if (p.length !== q.length) throw new Error("Distributions must have the same length");
@@ -218,6 +248,11 @@ export function jsDivergence(p: Dataset, q: Dataset, base = 2): number {
  * @throws Error if either distribution is invalid (empty, negative, or doesn't sum to ~1)
  * @throws Error if q(x) = 0 for any x where p(x) > 0
  * @throws Error if base is not greater than 0 or equals 1
+ *
+ * @example
+ * ```ts
+ * crossEntropy([0.5, 0.5], [0.5, 0.5]); // 1.0 (equals entropy when p === q)
+ * ```
  */
 export function crossEntropy(p: Dataset, q: Dataset, base = 2): number {
   if (p.length !== q.length) throw new Error("Distributions must have the same length");

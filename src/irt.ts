@@ -131,6 +131,12 @@ function gaussHermiteQuadrature(nPoints: number = 21): { nodes: number[]; weight
 /**
  * Rasch (1PL) model.
  * P(theta) = 1 / (1 + exp(-(theta - b)))
+ *
+ * @example
+ * ```ts
+ * const result = raschModel(0, { b: 0 });
+ * console.log(result.probability); // 0.5 (theta equals difficulty)
+ * ```
  */
 export function raschModel(theta: number, params: IRTItemParams): IRTResult {
   const b = params.b;
@@ -141,6 +147,12 @@ export function raschModel(theta: number, params: IRTItemParams): IRTResult {
 /**
  * Two-parameter logistic (2PL) model.
  * P(theta) = 1 / (1 + exp(-a*(theta - b)))
+ *
+ * @example
+ * ```ts
+ * const result = twoPlModel(1.0, { a: 1.5, b: 0 });
+ * console.log(result.probability); // > 0.5 (theta above difficulty)
+ * ```
  */
 export function twoPlModel(theta: number, params: IRTItemParams): IRTResult {
   const a = params.a ?? 1;
@@ -152,6 +164,12 @@ export function twoPlModel(theta: number, params: IRTItemParams): IRTResult {
 /**
  * Three-parameter logistic (3PL) model.
  * P(theta) = c + (1-c) / (1 + exp(-a*(theta - b)))
+ *
+ * @example
+ * ```ts
+ * const result = threePlModel(-3, { a: 1, b: 0, c: 0.25 });
+ * console.log(result.probability); // ~0.25 (near guessing level)
+ * ```
  */
 export function threePlModel(theta: number, params: IRTItemParams): IRTResult {
   const a = params.a ?? 1;
@@ -171,6 +189,12 @@ export function threePlModel(theta: number, params: IRTItemParams): IRTResult {
  *   P(category = k | theta) = P*(k) - P*(k+1)
  *
  * with P*(0) = 1 and P*(K) = 0.
+ *
+ * @example
+ * ```ts
+ * const result = gradedResponseModel(0, { a: 1.5, b: [-1, 0, 1] });
+ * console.log(result.categoryProbabilities); // probabilities for 4 categories
+ * ```
  */
 export function gradedResponseModel(theta: number, params: GRMItemParams): GRMResult {
   const { a, b } = params;
@@ -213,6 +237,12 @@ export function gradedResponseModel(theta: number, params: GRMItemParams): GRMRe
  * where P = P(theta), Q = 1-P.
  *
  * For 1PL/2PL (c=0) this simplifies to a^2 * P * Q.
+ *
+ * @example
+ * ```ts
+ * const info = itemInformation(0, { a: 1.5, b: 0 });
+ * console.log(info.information); // maximum at theta = b
+ * ```
  */
 export function itemInformation(theta: number, params: IRTItemParams): ItemInformationData {
   const a = params.a ?? 1;
@@ -236,6 +266,13 @@ export function itemInformation(theta: number, params: IRTItemParams): ItemInfor
 /**
  * Compute test information at a given theta as the sum of item
  * information values across all items.
+ *
+ * @example
+ * ```ts
+ * const items = [{ b: -1 }, { b: 0 }, { b: 1 }];
+ * const info = testInformation(0, items);
+ * console.log(info.information); // sum of item information at theta=0
+ * ```
  */
 export function testInformation(theta: number, items: IRTItemParams[]): ItemInformationData {
   let totalInfo = 0;
@@ -257,6 +294,12 @@ export function testInformation(theta: number, items: IRTItemParams[]): ItemInfo
  * @param thetaMax Upper bound of theta range (default  4).
  * @param nPoints  Number of equally-spaced evaluation points (default 81).
  * @returns Array of {theta, probability} data points.
+ *
+ * @example
+ * ```ts
+ * const icc = itemCharacteristicCurve({ a: 1.2, b: 0.5 });
+ * // icc is an array of { theta, probability } pairs
+ * ```
  */
 export function itemCharacteristicCurve(
   params: IRTItemParams,
@@ -289,6 +332,13 @@ export function itemCharacteristicCurve(
  * @param items      Corresponding item parameters.
  * @param options    Optional configuration.
  * @returns Estimated theta (EAP — Expected A Posteriori).
+ *
+ * @example
+ * ```ts
+ * const items = [{ b: -1 }, { b: 0 }, { b: 1 }];
+ * const theta = estimateAbility([1, 1, 0], items);
+ * console.log(theta); // estimated ability ~0
+ * ```
  */
 export function estimateAbility(
   responses: number[],

@@ -127,9 +127,9 @@ export class MultivariateNormal {
   ) {
     this.rng = rng ?? Math.random;
     const k = mean.length;
-    if (k < 1) throw new Error("Dimension must be at least 1");
+    if (k < 1) throw new Error(`Invalid parameter 'mean': expected at least 1 dimension, received ${k}`);
     if (covariance.length !== k || covariance.some((r) => r.length !== k)) {
-      throw new Error("Covariance matrix dimensions must match mean vector length");
+      throw new Error(`Invalid parameter 'covariance': expected a ${k}x${k} matrix to match mean vector length, received ${covariance.length}x${covariance[0]?.length}`);
     }
     this.dim = k;
     this.name = `MultivariateNormal(dim=${k})`;

@@ -53,7 +53,7 @@ export class LogNormal extends BaseContinuous {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (sigma <= 0) throw new Error("sigma must be positive");
+    if (sigma <= 0) throw new Error(`Invalid parameter 'sigma': expected a positive number, received ${sigma}`);
     this.name = `LogNormal(${mu}, ${sigma})`;
     this.normalDist = new Normal(mu, sigma, rng);
   }
@@ -140,7 +140,7 @@ export class LogNormal extends BaseContinuous {
    * ```
    */
   quantile(p: number): number {
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return 0;
     if (p === 1) return Infinity;
     return Math.exp(this.normalDist.quantile(p));

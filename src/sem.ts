@@ -442,6 +442,13 @@ export function cfa(
  * @param nFactors - Number of latent factors
  * @param nEstimatedParams - Number of freely estimated parameters
  * @returns SEMFitIndices with chi-squared, df, p-value, RMSEA, CFI, TLI, SRMR, AIC, and BIC
+ *
+ * @example
+ * ```ts
+ * const fit = computeFitIndices(observedCov, impliedCov, 200, 5, 2, 8);
+ * console.log(fit.rmsea); // < 0.05 indicates good fit
+ * console.log(fit.cfi);   // > 0.95 indicates good fit
+ * ```
  */
 export function computeFitIndices(
   observed: number[][],

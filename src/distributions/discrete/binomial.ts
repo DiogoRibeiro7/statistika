@@ -32,8 +32,8 @@ export class Binomial extends BaseDiscrete {
     rng?: RandomFn,
   ) {
     super(rng);
-    if (n < 1 || !Number.isInteger(n)) throw new Error("n must be a positive integer");
-    if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+    if (n < 1 || !Number.isInteger(n)) throw new Error(`Invalid parameter 'n': expected a positive integer, received ${n}`);
+    if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     this.name = `Binomial(${n}, ${p})`;
   }
 
@@ -95,7 +95,7 @@ export class Binomial extends BaseDiscrete {
    * @returns The quantile value.
    */
   quantile(prob: number): number {
-    if (prob < 0 || prob > 1) throw new Error("p must be in [0, 1]");
+    if (prob < 0 || prob > 1) throw new Error(`Invalid parameter 'prob': expected a value in [0, 1], received ${prob}`);
     if (prob === 0) return 0;
     if (prob === 1) return this.n;
     // Linear search (fine for moderate n)
