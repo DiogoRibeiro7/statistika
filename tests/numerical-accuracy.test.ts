@@ -13,6 +13,12 @@ import { StudentT } from '../src/distributions/continuous/student-t';
 import { FDistribution } from '../src/distributions/continuous/f-distribution';
 import { Poisson } from '../src/distributions/discrete/poisson';
 import { Binomial } from '../src/distributions/discrete/binomial';
+import { Exponential } from '../src/distributions/continuous/exponential';
+import { LogNormal } from '../src/distributions/continuous/log-normal';
+import { Weibull } from '../src/distributions/continuous/weibull';
+import { Uniform } from '../src/distributions/continuous/uniform';
+import { Cauchy } from '../src/distributions/continuous/cauchy';
+import { Geometric } from '../src/distributions/discrete/geometric';
 import { gammaLn, gamma, betaFn, erf, erfc } from '../src/utils/math';
 import { linearRegression } from '../src/models/linear-regression';
 
@@ -379,5 +385,97 @@ describe('Numerical accuracy: linear regression (Anscombe I)', () => {
 
   test('predict(0) ≈ intercept', () => {
     expect(result.predict(0)).toBeCloseTo(result.intercept, 10);
+  });
+});
+
+// ==========================================================================
+// 4. Additional distribution PDF / CDF accuracy
+// ==========================================================================
+
+describe('Numerical accuracy: Exponential distribution', () => {
+  test('Exp(1).cdf(1) ≈ 0.6321206 (R: pexp(1,1))', () => {
+    const dist = new Exponential(1);
+    expect(dist.cdf(1)).toBeCloseTo(0.6321206, 5);
+  });
+
+  test('Exp(0.5).cdf(2) ≈ 0.6321206 (R: pexp(2,0.5))', () => {
+    const dist = new Exponential(0.5);
+    expect(dist.cdf(2)).toBeCloseTo(0.6321206, 5);
+  });
+
+  test('Exp(1).pdf(0) = 1', () => {
+    const dist = new Exponential(1);
+    expect(dist.pdf(0)).toBeCloseTo(1, 6);
+  });
+});
+
+describe('Numerical accuracy: LogNormal distribution', () => {
+  test('LogNormal(0,1).cdf(1) ≈ 0.5 (R: plnorm(1,0,1))', () => {
+    const dist = new LogNormal(0, 1);
+    expect(dist.cdf(1)).toBeCloseTo(0.5, 5);
+  });
+
+  test('LogNormal(0,1).pdf(1) ≈ 0.3989423 (R: dlnorm(1,0,1))', () => {
+    const dist = new LogNormal(0, 1);
+    expect(dist.pdf(1)).toBeCloseTo(0.3989423, 5);
+  });
+});
+
+describe('Numerical accuracy: Weibull distribution', () => {
+  test('Weibull(1,1).cdf(1) ≈ 0.6321206 (same as Exp(1))', () => {
+    const dist = new Weibull(1, 1);
+    expect(dist.cdf(1)).toBeCloseTo(0.6321206, 5);
+  });
+
+  test('Weibull(2,1).cdf(1) ≈ 0.6321206 (R: pweibull(1,2,1))', () => {
+    const dist = new Weibull(2, 1);
+    expect(dist.cdf(1)).toBeCloseTo(0.6321206, 5);
+  });
+});
+
+describe('Numerical accuracy: Uniform distribution', () => {
+  test('Uniform(0,1).cdf(0.5) = 0.5', () => {
+    const dist = new Uniform(0, 1);
+    expect(dist.cdf(0.5)).toBeCloseTo(0.5, 10);
+  });
+
+  test('Uniform(0,1).pdf(0.5) = 1', () => {
+    const dist = new Uniform(0, 1);
+    expect(dist.pdf(0.5)).toBeCloseTo(1, 10);
+  });
+
+  test('Uniform(2,5).cdf(3) ≈ 0.3333', () => {
+    const dist = new Uniform(2, 5);
+    expect(dist.cdf(3)).toBeCloseTo(0.3333, 3);
+  });
+});
+
+describe('Numerical accuracy: Cauchy distribution', () => {
+  test('Cauchy(0,1).cdf(0) = 0.5', () => {
+    const dist = new Cauchy(0, 1);
+    expect(dist.cdf(0)).toBeCloseTo(0.5, 6);
+  });
+
+  test('Cauchy(0,1).cdf(1) ≈ 0.75 (R: pcauchy(1))', () => {
+    const dist = new Cauchy(0, 1);
+    expect(dist.cdf(1)).toBeCloseTo(0.75, 5);
+  });
+
+  test('Cauchy(0,1).pdf(0) ≈ 0.3183099 (1/pi)', () => {
+    const dist = new Cauchy(0, 1);
+    expect(dist.pdf(0)).toBeCloseTo(0.3183099, 5);
+  });
+});
+
+describe('Numerical accuracy: Geometric distribution', () => {
+  test('Geometric(0.5).pmf(0) = 0.5 (first success on trial 1, 0 failures)', () => {
+    const dist = new Geometric(0.5);
+    expect(dist.pmf(0)).toBeCloseTo(0.5, 10);
+  });
+
+  test('Geometric(0.3).cdf(2) ≈ 0.657 (R: pgeom(2, 0.3))', () => {
+    // R: pgeom(2, 0.3) = 1 - (1 - 0.3)^3 = 1 - 0.343 = 0.657
+    const dist = new Geometric(0.3);
+    expect(dist.cdf(2)).toBeCloseTo(0.657, 3);
   });
 });

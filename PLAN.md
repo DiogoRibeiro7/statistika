@@ -1,15 +1,15 @@
 # node_stats — Feature Plan
 
-## Current State (v2.0.0)
+## Current State (v2.0.0 → v3.0 in progress)
 
-**node_stats** is a comprehensive statistical library for Node.js written in TypeScript with optional native Fortran/LAPACK acceleration. All originally planned v1.0 and v2.0 features have been implemented.
+**node_stats** is a comprehensive statistical library for Node.js written in TypeScript with optional native Fortran/LAPACK acceleration and WASM support. All originally planned v1.0 and v2.0 features have been implemented. v3.0 work is underway.
 
 ### What's Shipped
 
 | Module | Features |
 |--------|----------|
-| **Distributions** (35+) | Normal, Uniform, Exponential, Gamma, Beta, Chi-squared, Student-t, F, Log-Normal, Weibull, GEV, Gumbel, Frechet, GPD, Cauchy, Pareto, Laplace, Inverse Gamma, Log-Logistic, Truncated Normal, Rayleigh, von Mises, Bernoulli, Binomial, Poisson, Geometric, Discrete Uniform, Negative Binomial, Hypergeometric, Zero-Inflated Poisson, Multivariate Normal, Multivariate t, Dirichlet, Wishart, Inverse Wishart, Multinomial |
-| **Matrix/LinAlg** | Matrix class with LU, QR, Cholesky, SVD, eigenvalue decomposition; native LAPACK acceleration |
+| **Distributions** (36+) | Normal, Uniform, Exponential, Gamma, Beta, Chi-squared, Student-t, F, Log-Normal, Weibull, GEV, Gumbel, Frechet, GPD, Cauchy, Pareto, Laplace, Inverse Gamma, Log-Logistic, Truncated Normal, Rayleigh, von Mises, **Lévy**, Bernoulli, Binomial, Poisson, Geometric, Discrete Uniform, Negative Binomial, Hypergeometric, Zero-Inflated Poisson, Multivariate Normal, Multivariate t, Dirichlet, Wishart, Inverse Wishart, Multinomial |
+| **Matrix/LinAlg** | Matrix class with LU, QR, Cholesky, SVD, eigenvalue decomposition; native LAPACK acceleration; WASM acceleration |
 | **Regression** | Linear, multiple, polynomial, logistic, robust (Huber, RANSAC), quantile, Ridge, LASSO, Elastic Net |
 | **Feature Selection** | Forward/backward stepwise (AIC/BIC), mutual information ranking |
 | **GLM** | Gaussian, Binomial, Poisson, Gamma, Negative Binomial, Tweedie families; identity/log/logit/probit/inverse/cloglog links; quasi-likelihood; dispersion estimation |
@@ -35,42 +35,54 @@
 | **SEM** | Path analysis, CFA, fit indices (CFI, TLI, RMSEA, SRMR) |
 | **Mixed Models** | Random intercepts/slopes, REML, ICC, BLUPs |
 | **Resampling** | k-fold CV, LOO-CV, jackknife, bootstrap, permutation tests, block/wild/Bayesian bootstrap, time-series CV, nested CV, Monte Carlo CV |
+| **Worker Threads** | Parallel MCMC chains, parallel bootstrap, parallel cross-validation via worker_threads |
+| **WASM Acceleration** | Special functions (gammaLn, gamma, erf, erfc, betaFn) and linear algebra (matMul, solve, cholesky) via WebAssembly with TS fallback |
 | **Other** | Bayesian networks, functional data analysis, compositional data, experimental design, streaming stats, robust statistics, information theory, missing data, smoothing, effect sizes, power analysis, DataFrame, viz-data |
 
-**Health**: 98 test suites, all passing. CI/CD with GitHub Actions (CodeQL, dependency review, benchmarks). Dual CJS/ESM build. Native Fortran acceleration (optional).
+**Health**: 105+ test suites, all passing. CI/CD with GitHub Actions (CodeQL, dependency review, benchmarks). Dual CJS/ESM build. Native Fortran acceleration (optional). WASM acceleration (optional).
 
 ---
 
-## Next Steps (v3.0 Roadmap)
+## v3.0 Roadmap — Progress
 
 ### Performance
 
-- **WASM acceleration**: Compile hot-path matrix ops to WebAssembly for environments without gfortran — enables browser and serverless use
-- **Typed arrays everywhere**: Migrate remaining `number[][]` matrix ops to `Float64Array` for cache-friendly access
-- **Lazy evaluation in DataFrame**: Only compute columns when accessed
-- **Worker thread support**: Offload large MCMC chains and bootstrap runs to worker threads
+- [x] **WASM acceleration**: C source for special functions and linear algebra, TS fallback, integrated into math.ts/linalg.ts fallback chain (Fortran → WASM → TS)
+- [ ] **Typed arrays everywhere**: Migrate remaining `number[][]` matrix ops to `Float64Array` for cache-friendly access
+- [x] **Lazy evaluation in DataFrame**: Only compute columns when accessed
+- [x] **Worker thread support**: parallelMCMC, parallelBootstrap, parallelCrossValidation with WorkerPool
 
 ### Developer Experience
 
-- **Documentation site**: Tutorials with worked examples (not just API reference)
-- **Expanded benchmarks**: Cover regression, GLM, MCMC, and clustering modules (currently only special functions and linalg)
-- **JSDoc @example tags**: Ensure every public function has a runnable example
-- **Error messages**: Include parameter names and valid ranges in all validation errors
+- [x] **Documentation site**: VitePress site with 11 tutorials (distributions, regression, bayesian, time-series, survival, causal-inference, dimensionality, mixed-models, meta-analysis, changepoint, spatial) + guides + API reference
+- [x] **Expanded benchmarks**: Cover special functions, linalg, regression, GLM, MCMC, and clustering modules
+- [x] **JSDoc @example tags**: Added to all major public functions
+- [x] **Error messages**: Include parameter names and valid ranges in all validation errors
 
 ### Ecosystem
 
-- **Sub-path exports**: Already partially done (`node_stats/distributions`, etc.) — extend to all modules
-- **Standalone packages**: Consider publishing distributions, time-series, and bayesian as standalone npm packages
-- **Observable/RxJS integration**: Streaming stats adapter for Observable streams
-- **JSON schema**: Publish JSON schemas for result types (useful for API responses)
+- [x] **Sub-path exports**: 50+ sub-path exports (`node_stats/distributions`, `node_stats/bayesian`, etc.)
+- [ ] **Standalone packages**: Consider publishing distributions, time-series, and bayesian as standalone npm packages
+- [x] **Observable/RxJS integration**: Streaming stats adapter for Observable streams
+- [x] **JSON schema**: JSON schemas for result types published
 
 ### Testing
 
-- **Property-based testing**: Add generative tests for distributions (e.g., CDF(quantile(p)) ≈ p)
-- **Numerical accuracy benchmarks**: Compare against R/SciPy reference values
-- **Fuzz testing**: Random inputs to catch edge cases in special functions
-- **Performance regression tests**: Track benchmark results in CI
+- [x] **Property-based testing**: 34+ generative tests across all distributions (CDF(quantile(p)) ≈ p, monotonicity, etc.)
+- [x] **Numerical accuracy benchmarks**: Reference values from R/SciPy for 14+ distributions and special functions
+- [x] **Fuzz testing**: 68 tests with random/extreme inputs for all special functions
+- [x] **Performance regression tests**: Benchmark CI with >10% regression detection, baselines tracked
 
-### Missing Distribution
+### Completed
 
-- **Levy distribution** — stable distribution used in finance and anomalous diffusion modeling
+- [x] **Lévy distribution**: Full implementation with pdf, cdf, quantile, sample, sf, mean, variance
+
+---
+
+## Remaining Work
+
+- Publish compiled WASM binary in npm package (currently requires local Emscripten build)
+- Browser/serverless WASM loader (fetch-based instead of fs.readFile)
+- Expand benchmark baselines for all modules
+- Migrate matrix internals to Float64Array
+- Consider standalone npm packages for reduced bundle size
