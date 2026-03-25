@@ -1,6 +1,6 @@
 # Tutorial: Working with Distributions
 
-node_stats provides 23 probability distributions -- 16 continuous and 7 discrete. Every distribution shares a common interface for computing moments, sampling, and probability calculations.
+node_stats provides 31 probability distributions -- 23 continuous and 8 discrete. Every distribution shares a common interface for computing moments, sampling, and probability calculations.
 
 ## Creating a Distribution
 
