@@ -29,6 +29,7 @@ export default defineConfig({
         { text: 'Meta-Analysis', link: '/tutorials/meta-analysis' },
         { text: 'Changepoint Detection', link: '/tutorials/changepoint' },
         { text: 'Spatial Statistics', link: '/tutorials/spatial' },
+        { text: 'Worked Examples', link: '/tutorials/examples' },
       ],
     },
     socialLinks: [
