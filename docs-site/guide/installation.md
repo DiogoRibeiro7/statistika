@@ -2,20 +2,20 @@
 
 ## Standard Installation
 
-Install node_stats using your preferred package manager:
+Install statistika using your preferred package manager:
 
 ::: code-group
 
 ```bash [yarn]
-yarn add @diogoribeiro7/node_stats
+yarn add @diogoribeiro7/statistika
 ```
 
 ```bash [npm]
-npm install @diogoribeiro7/node_stats
+npm install @diogoribeiro7/statistika
 ```
 
 ```bash [pnpm]
-pnpm add @diogoribeiro7/node_stats
+pnpm add @diogoribeiro7/statistika
 ```
 
 :::
@@ -75,7 +75,7 @@ yarn build:ts
 You can check whether native acceleration is active:
 
 ```typescript
-import { gamma } from 'node_stats';
+import { gamma } from 'statistika';
 
 // The function works identically regardless of backend.
 // Native acceleration is transparent — same API, faster execution.
@@ -84,7 +84,7 @@ console.log(gamma(5)); // 24
 
 ## Module Systems
 
-node_stats ships dual CJS/ESM builds:
+statistika ships dual CJS/ESM builds:
 
 - **ESM**: `dist/esm/index.js` (for `import` syntax)
 - **CJS**: `dist/cjs/index.js` (for `require` syntax)
@@ -93,7 +93,7 @@ The `exports` field in `package.json` ensures the correct format is resolved aut
 
 ## Supported Node.js Versions
 
-node_stats requires Node.js 18 or later. It is tested against:
+statistika requires Node.js 18 or later. It is tested against:
 
 - Node.js 18 (LTS)
 - Node.js 20 (LTS)

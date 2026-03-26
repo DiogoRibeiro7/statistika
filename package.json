@@ -1,5 +1,5 @@
 {
-  "name": "@diogoribeiro7/node_stats",
+  "name": "@diogoribeiro7/statistika",
   "version": "2.0.0",
   "description": "Comprehensive statistical library for Node.js — distributions, hypothesis tests, regression models, correlation, and special math functions with optional native Fortran acceleration",
   "main": "dist/cjs/index.js",
@@ -328,11 +328,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/DiogoRibeiro7/node_stats.git"
+    "url": "https://github.com/DiogoRibeiro7/statistika.git"
   },
-  "homepage": "https://github.com/DiogoRibeiro7/node_stats#readme",
+  "homepage": "https://github.com/DiogoRibeiro7/statistika#readme",
   "bugs": {
-    "url": "https://github.com/DiogoRibeiro7/node_stats/issues"
+    "url": "https://github.com/DiogoRibeiro7/statistika/issues"
   },
   "keywords": [
     "statistics",

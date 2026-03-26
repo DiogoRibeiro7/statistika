@@ -1,13 +1,13 @@
 # Tutorial: Meta-Analysis
 
-Meta-analysis combines results from multiple independent studies to produce a single, more precise estimate. node_stats provides fixed-effects and random-effects models, heterogeneity statistics, forest and funnel plot data, and publication bias tests.
+Meta-analysis combines results from multiple independent studies to produce a single, more precise estimate. statistika provides fixed-effects and random-effects models, heterogeneity statistics, forest and funnel plot data, and publication bias tests.
 
 ## Fixed-Effects Meta-Analysis
 
 A fixed-effects model assumes all studies estimate the same true effect. Each study is weighted by the inverse of its variance:
 
 ```typescript
-import { fixedEffectsMeta } from 'node_stats';
+import { fixedEffectsMeta } from 'statistika';
 
 // Five clinical trials reporting standardized mean differences
 const effects   = [0.52, 0.31, 0.67, 0.45, 0.58];
@@ -36,7 +36,7 @@ console.log(result.weights);
 When studies may estimate different (but related) true effects, use a random-effects model. It incorporates between-study variance using the DerSimonian-Laird estimator:
 
 ```typescript
-import { randomEffectsMeta } from 'node_stats';
+import { randomEffectsMeta } from 'statistika';
 
 const result = randomEffectsMeta(effects, variances);
 
@@ -83,7 +83,7 @@ console.log(result.h2.toFixed(2));
 Generate structured data for rendering a forest plot. Each study is shown with its effect size, confidence interval, and relative weight:
 
 ```typescript
-import { forestPlotData } from 'node_stats';
+import { forestPlotData } from 'statistika';
 
 const labels = [
   'Smith 2018',
@@ -118,7 +118,7 @@ console.log(plot.method); // "random"
 Funnel plots help detect publication bias visually. In the absence of bias, studies should form a symmetric inverted funnel around the pooled effect:
 
 ```typescript
-import { funnelPlotData } from 'node_stats';
+import { funnelPlotData } from 'statistika';
 
 const ses = variances.map(v => Math.sqrt(v));
 const funnel = funnelPlotData(effects, ses);
@@ -140,7 +140,7 @@ console.log(funnel.pseudoCI.length);
 Egger's test checks for funnel plot asymmetry by regressing standardized effects on precision. A significant intercept suggests small-study bias:
 
 ```typescript
-import { eggersTest } from 'node_stats';
+import { eggersTest } from 'statistika';
 
 const test = eggersTest(effects, ses);
 
@@ -162,7 +162,7 @@ console.log(test.method);
 Begg's test uses Kendall's tau to check for correlation between effect sizes and their variances:
 
 ```typescript
-import { beggsTest } from 'node_stats';
+import { beggsTest } from 'statistika';
 
 const begg = beggsTest(effects, variances);
 
@@ -181,7 +181,7 @@ console.log(begg.method);
 The trim-and-fill method estimates the number of missing studies and adjusts the pooled estimate:
 
 ```typescript
-import { trimAndFill } from 'node_stats';
+import { trimAndFill } from 'statistika';
 
 const tf = trimAndFill(effects, variances);
 
@@ -206,7 +206,7 @@ import {
   forestPlotData,
   eggersTest,
   trimAndFill,
-} from 'node_stats';
+} from 'statistika';
 
 // Six RCTs reporting odds ratios (log scale)
 const logOR     = [0.22, 0.35, 0.18, 0.40, 0.28, 0.50];

@@ -1,15 +1,15 @@
 import { defineConfig } from 'vitepress';
 
 export default defineConfig({
-  title: 'node_stats',
+  title: 'statistika',
   description: 'Comprehensive statistical library for Node.js',
-  base: '/node_stats/',
+  base: '/statistika/',
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Tutorials', link: '/tutorials/distributions' },
       { text: 'API Reference', link: '/api/' },
-      { text: 'GitHub', link: 'https://github.com/DiogoRibeiro7/node_stats' },
+      { text: 'GitHub', link: 'https://github.com/DiogoRibeiro7/statistika' },
     ],
     sidebar: {
       '/guide/': [
@@ -33,7 +33,7 @@ export default defineConfig({
       ],
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/DiogoRibeiro7/node_stats' },
+      { icon: 'github', link: 'https://github.com/DiogoRibeiro7/statistika' },
     ],
   },
 });

@@ -1,13 +1,13 @@
 # Tutorial: Causal Inference
 
-This tutorial covers the causal inference methods in node_stats: propensity score estimation, matching, inverse probability weighting (IPW), difference-in-differences (DiD), regression discontinuity design (RDD), and two-stage least squares (2SLS).
+This tutorial covers the causal inference methods in statistika: propensity score estimation, matching, inverse probability weighting (IPW), difference-in-differences (DiD), regression discontinuity design (RDD), and two-stage least squares (2SLS).
 
 ## Propensity Scores
 
 The propensity score e(X) = P(T=1 | X) is the probability of receiving treatment given observed covariates. It is estimated via logistic regression.
 
 ```typescript
-import { propensityScore } from 'node_stats/causal-inference';
+import { propensityScore } from 'statistika/causal-inference';
 
 // Covariates: [age, income_in_thousands]
 const X = [
@@ -31,7 +31,7 @@ console.log(ps.iterations);    // IRLS iterations
 Match treated units to control units with similar propensity scores:
 
 ```typescript
-import { propensityScore, propensityMatching } from 'node_stats/causal-inference';
+import { propensityScore, propensityMatching } from 'statistika/causal-inference';
 
 // Outcome variable (e.g., health score improvement)
 const outcomes = [2, 3, 8, 10, 9, 1, 4, 7, 11, 12, 2, 3, 9, 10, 11, 1, 5, 8, 10, 13];
@@ -50,7 +50,7 @@ console.log(match.matches);     // array of [treated_idx, control_idx] pairs
 IPW uses the propensity scores to create a pseudo-population where treatment is independent of covariates:
 
 ```typescript
-import { propensityScore, ipw } from 'node_stats/causal-inference';
+import { propensityScore, ipw } from 'statistika/causal-inference';
 
 const ps = propensityScore(X, treatment);
 const result = ipw(outcomes, treatment, ps.scores);
@@ -66,7 +66,7 @@ The ATE estimates the causal effect of treatment across the entire population. T
 DiD compares the change in outcomes over time between a treatment group and a control group:
 
 ```typescript
-import { differenceInDifferences } from 'node_stats/causal-inference';
+import { differenceInDifferences } from 'statistika/causal-inference';
 
 // Outcome values for all units across both periods
 const y = [
@@ -116,7 +116,7 @@ RDD exploits a cutoff in a running variable that determines treatment assignment
 In a sharp RDD, treatment is a deterministic function of the running variable:
 
 ```typescript
-import { rdd } from 'node_stats/causal-inference';
+import { rdd } from 'statistika/causal-inference';
 
 // Running variable: test score (treatment if score >= 50)
 const n = 100;
@@ -149,7 +149,7 @@ console.log(bw.estimate); // more local estimate
 In a fuzzy RDD, crossing the cutoff increases the probability of treatment but does not guarantee it. This uses 2SLS internally:
 
 ```typescript
-import { fuzzyRDD } from 'node_stats/causal-inference';
+import { fuzzyRDD } from 'statistika/causal-inference';
 
 // Not everyone above the cutoff actually receives treatment
 const actualTreatment = running.map((r, i) => {
@@ -170,7 +170,7 @@ console.log(fuzzy.nUsed);       // observations used
 2. **Exogenous**: uncorrelated with the error term
 
 ```typescript
-import { twoSLS } from 'node_stats/causal-inference';
+import { twoSLS } from 'statistika/causal-inference';
 
 // Classic example: returns to schooling
 // - Y: wages (outcome)
@@ -207,7 +207,7 @@ A first-stage F-statistic below 10 suggests weak instruments, which can lead to 
 ## Complete Workflow: Propensity Score Analysis
 
 ```typescript
-import { propensityScore, propensityMatching, ipw } from 'node_stats/causal-inference';
+import { propensityScore, propensityMatching, ipw } from 'statistika/causal-inference';
 
 // Step 1: Estimate propensity scores
 const ps = propensityScore(X, treatment);

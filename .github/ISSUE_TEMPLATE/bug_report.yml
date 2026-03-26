@@ -24,7 +24,7 @@ body:
       description: Minimal code to reproduce the issue.
       render: typescript
       placeholder: |
-        import { arima } from 'node_stats';
+        import { arima } from 'statistika';
         const series = [1, 2, 3, ...];
         const result = arima(series, 2, 1, 1);
         // Expected: ...
@@ -51,7 +51,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: node_stats version
+      label: statistika version
       placeholder: "1.0.0"
     validations:
       required: true

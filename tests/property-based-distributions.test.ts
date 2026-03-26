@@ -1,5 +1,5 @@
 /**
- * Property-based tests for ALL distributions in node_stats.
+ * Property-based tests for ALL distributions in statistika.
  *
  * Tests verify universal statistical invariants:
  *  1. CDF-Quantile roundtrip

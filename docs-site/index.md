@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: node_stats
+  name: statistika
   text: Comprehensive Statistical Library for Node.js
   tagline: 31 distributions, hypothesis tests, regression, Bayesian inference, time series, survival analysis, causal inference, and more — all in TypeScript with optional native Fortran acceleration.
   actions:
@@ -11,7 +11,7 @@ hero:
       link: /guide/getting-started
     - theme: alt
       text: View on GitHub
-      link: https://github.com/DiogoRibeiro7/node_stats
+      link: https://github.com/DiogoRibeiro7/statistika
 
 features:
   - title: Probability Distributions

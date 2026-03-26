@@ -1,6 +1,6 @@
 # Tutorial: Mixed-Effects Models
 
-Mixed-effects models handle data with a hierarchical or grouped structure -- for example, students nested within schools, or repeated measurements on the same subjects. node_stats provides random intercept models, random intercept + slope models, ICC computation, and likelihood ratio tests for model comparison.
+Mixed-effects models handle data with a hierarchical or grouped structure -- for example, students nested within schools, or repeated measurements on the same subjects. statistika provides random intercept models, random intercept + slope models, ICC computation, and likelihood ratio tests for model comparison.
 
 ## When to Use Mixed Models
 
@@ -16,7 +16,7 @@ Use a mixed model when:
 The simplest mixed model allows each group to have its own intercept while sharing fixed-effect slopes across groups.
 
 ```typescript
-import { lmmRandomIntercept } from 'node_stats';
+import { lmmRandomIntercept } from 'statistika';
 
 // Student test scores nested within schools
 // y = scores, X = study hours, groups = school ID
@@ -82,7 +82,7 @@ console.log(`School A student with 4 hours: ${schoolAPred.toFixed(1)}`);
 When the effect of a covariate varies by group, add a random slope. For example, the benefit of study hours may differ across schools:
 
 ```typescript
-import { lmmRandomSlope } from 'node_stats';
+import { lmmRandomSlope } from 'statistika';
 
 const result = lmmRandomSlope(scores, studyHours, schools);
 
@@ -120,7 +120,7 @@ for (const [school, blup] of result.blups) {
 The ICC measures what proportion of total variance is attributable to between-group differences. A high ICC means groups differ substantially.
 
 ```typescript
-import { icc } from 'node_stats';
+import { icc } from 'statistika';
 
 const result = icc(scores, schools);
 
@@ -141,7 +141,7 @@ An ICC near 0 suggests grouping has little effect, and a standard regression may
 Compare a simpler model (e.g., random intercept only) to a more complex one (random intercept + slope) using a likelihood ratio test:
 
 ```typescript
-import { lmmRandomIntercept, lmmRandomSlope, lrtTest } from 'node_stats';
+import { lmmRandomIntercept, lmmRandomSlope, lrtTest } from 'statistika';
 
 const simple = lmmRandomIntercept(scores, studyHours, schools);
 const full = lmmRandomSlope(scores, studyHours, schools);
@@ -169,7 +169,7 @@ console.log(`Random slope     — AIC: ${full.aic.toFixed(1)}, BIC: ${full.bic.t
 ## Complete Example: Classroom Data
 
 ```typescript
-import { lmmRandomIntercept, icc } from 'node_stats';
+import { lmmRandomIntercept, icc } from 'statistika';
 
 // Reading scores for 20 students across 5 classrooms
 const readingScores = [

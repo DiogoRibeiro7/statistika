@@ -1,6 +1,6 @@
 # Worked Examples
 
-These end-to-end examples show how to combine multiple node_stats modules to solve real-world statistical problems.
+These end-to-end examples show how to combine multiple statistika modules to solve real-world statistical problems.
 
 ## Example 1: A/B Test Analysis
 
@@ -9,7 +9,7 @@ Compare two website variants using frequentist and Bayesian methods.
 ```typescript
 import {
   mean, stdDev, twoSampleTTest, BetaDistribution, betaBinomial,
-} from 'node_stats';
+} from 'statistika';
 
 // Variant A: 1000 visitors, 45 conversions
 // Variant B: 1000 visitors, 62 conversions
@@ -54,7 +54,7 @@ Fit a model, check assumptions, and compute confidence intervals.
 import {
   linearRegression, multipleRegression,
   mean, stdDev,
-} from 'node_stats';
+} from 'statistika';
 
 // Predict house prices from square footage
 const sqft = [850, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600];
@@ -79,7 +79,7 @@ console.log('StdDev of residuals:', stdDev(residuals).toFixed(2));
 Analyze and forecast a seasonal time series.
 
 ```typescript
-import { arima, autocorrelation, adfTest, difference } from 'node_stats';
+import { arima, autocorrelation, adfTest, difference } from 'statistika';
 
 // Monthly sales data (2 years)
 const sales = [
@@ -114,7 +114,7 @@ console.log('Next 6 months forecast:', forecast.map(v => v.toFixed(0)));
 Compare survival between treatment and control groups.
 
 ```typescript
-import { kaplanMeier, logRankTest } from 'node_stats';
+import { kaplanMeier, logRankTest } from 'statistika';
 
 // Treatment group
 const treatment = [
@@ -156,7 +156,7 @@ Find the best-fitting distribution for a dataset.
 import {
   fitNormal, fitGamma, fitLogNormal, fitWeibull,
   andersonDarling,
-} from 'node_stats';
+} from 'statistika';
 
 // Observed waiting times (minutes)
 const waitTimes = [
@@ -190,7 +190,7 @@ console.log(`\nBest fit: ${best.name}`);
 Estimate a parameter using Metropolis-Hastings sampling.
 
 ```typescript
-import { metropolisHastingsND, gelmanRubin, estimateESS } from 'node_stats';
+import { metropolisHastingsND, gelmanRubin, estimateESS } from 'statistika';
 
 // Estimate the mean of normally distributed data
 const data = [4.2, 3.8, 4.5, 4.1, 3.9, 4.3, 4.0, 4.4, 3.7, 4.6];

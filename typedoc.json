@@ -2,7 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src/index.ts"],
   "out": "docs",
-  "name": "node_stats",
+  "name": "statistika",
   "readme": "README.md",
   "includeVersion": true,
   "excludePrivate": true,
@@ -10,7 +10,7 @@
   "excludeExternals": true,
   "categorizeByGroup": true,
   "navigationLinks": {
-    "GitHub": "https://github.com/DiogoRibeiro7/node_stats"
+    "GitHub": "https://github.com/DiogoRibeiro7/statistika"
   },
   "plugin": [],
   "tsconfig": "tsconfig.json"
