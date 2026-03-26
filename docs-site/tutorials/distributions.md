@@ -173,6 +173,68 @@ const gpd = new GPD(0.1, 2); // shape=0.1, scale=2
 console.log(gpd.sf(10));     // P(excess > 10)
 ```
 
+## Distribution Fitting
+
+Given a dataset, you can fit a distribution via maximum likelihood estimation (MLE) and compare fits using AIC:
+
+```typescript
+import {
+  fitNormal, fitExponential, fitGamma, fitLogNormal, fitWeibull,
+  andersonDarling, cramerVonMises,
+} from 'node_stats';
+
+// Observed data: response times in milliseconds
+const data = [
+  120, 95, 210, 180, 145, 300, 110, 250, 160, 200,
+  130, 170, 190, 155, 140, 280, 115, 175, 195, 165,
+];
+
+// Fit several candidate distributions
+const normalFit = fitNormal(data);
+const expFit = fitExponential(data);
+const gammaFit = fitGamma(data);
+const lnFit = fitLogNormal(data);
+
+console.log('Normal AIC:', normalFit.aic);
+console.log('Exponential AIC:', expFit.aic);
+console.log('Gamma AIC:', gammaFit.aic);
+console.log('LogNormal AIC:', lnFit.aic);
+// Lower AIC = better fit. Choose the distribution with the smallest AIC.
+
+// Access fitted parameters
+console.log('Fitted Gamma shape:', gammaFit.distribution.mean());
+```
+
+### Goodness-of-Fit Testing
+
+After fitting, verify the fit using the Anderson-Darling or Cramér-von Mises tests:
+
+```typescript
+// Anderson-Darling test: does the data follow the fitted normal?
+const ad = andersonDarling(data, normalFit.distribution);
+console.log('A² statistic:', ad.statistic);
+console.log('p-value:', ad.pValue);
+console.log('Reject at 5%?', ad.rejected);
+
+// Cramér-von Mises test
+const cvm = cramerVonMises(data, normalFit.distribution);
+console.log('W² statistic:', cvm.statistic);
+```
+
+### Fitting Discrete Distributions
+
+For count data, use the discrete fitting functions:
+
+```typescript
+import { fitPoisson, fitGeometric } from 'node_stats';
+
+const counts = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 0, 2, 4, 3];
+
+const poisFit = fitPoisson(counts);
+console.log('Fitted lambda:', poisFit.distribution.mean());
+console.log('Poisson AIC:', poisFit.aic);
+```
+
 ## Full Distribution Reference
 
 ### Continuous Distributions
