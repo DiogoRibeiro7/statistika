@@ -1,4 +1,4 @@
-import { mean, median, variance, stdDev, skewness, kurtosis, percentile, describe as describeStats } from "../../src/utils";
+import { mean, median, variance, stdDev, standardDeviation, skewness, kurtosis, percentile, describe as describeStats } from "../../src/utils";
 
 describe("mean", () => {
   it("computes the arithmetic mean", () => {
@@ -123,5 +123,17 @@ describe("describeStats", () => {
     expect(stats.median).toBe(3);
     expect(stats.min).toBe(1);
     expect(stats.max).toBe(5);
+  });
+});
+
+describe("API aliases", () => {
+  it("standardDeviation is an alias for stdDev", () => {
+    expect(standardDeviation).toBe(stdDev);
+  });
+
+  it("standardDeviation produces identical results to stdDev", () => {
+    const data = [2, 4, 4, 4, 5, 5, 7, 9];
+    expect(standardDeviation(data)).toBe(stdDev(data));
+    expect(standardDeviation(data, false)).toBe(stdDev(data, false));
   });
 });

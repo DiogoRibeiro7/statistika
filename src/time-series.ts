@@ -551,3 +551,13 @@ function integrateForecasts(
 
   return result;
 }
+
+// ---- Aliases for API naming consistency ----
+
+/**
+ * Alias for {@link autocorrelation}. Computes ACF and PACF for a time series.
+ *
+ * @see autocorrelation
+ */
+export const acf = autocorrelation;
+

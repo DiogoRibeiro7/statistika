@@ -87,18 +87,18 @@ export function huberRegression(
   let designMatrix: number[][];
   if (isSimple) {
     const xArr = X as number[];
-    if (xArr.length !== n) throw new Error("X and y must have the same length");
+    if (xArr.length !== n) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${xArr.length}, y.length=${n}`);
     // Add intercept column
     designMatrix = xArr.map((x) => [1, x]);
   } else {
     const xMat = X as number[][];
-    if (xMat.length !== n) throw new Error("X and y must have the same length");
+    if (xMat.length !== n) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${xMat.length}, y.length=${n}`);
     // Add intercept column
     designMatrix = xMat.map((row) => [1, ...row]);
   }
 
-  if (n < 2) throw new Error("Need at least 2 observations");
-  if (delta <= 0) throw new Error("delta must be positive");
+  if (n < 2) throw new Error(`Invalid parameter 'y': expected at least 2 observations, received ${n}`);
+  if (delta <= 0) throw new Error(`Invalid parameter 'delta': expected a positive number, received ${delta}`);
 
   const p = designMatrix[0].length;
 
@@ -247,11 +247,11 @@ export function ransacRegression(
   let designMatrix: number[][];
   if (isSimple) {
     const xArr = X as number[];
-    if (xArr.length !== n) throw new Error("X and y must have the same length");
+    if (xArr.length !== n) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${xArr.length}, y.length=${n}`);
     designMatrix = xArr.map((x) => [1, x]);
   } else {
     const xMat = X as number[][];
-    if (xMat.length !== n) throw new Error("X and y must have the same length");
+    if (xMat.length !== n) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${xMat.length}, y.length=${n}`);
     designMatrix = xMat.map((row) => [1, ...row]);
   }
 
@@ -259,7 +259,7 @@ export function ransacRegression(
   const samplesPerTrial = minSamples ?? p;
 
   if (n < samplesPerTrial) {
-    throw new Error("Not enough observations for RANSAC");
+    throw new Error(`Invalid parameter 'X': expected at least ${samplesPerTrial} observations for RANSAC, received ${n}`);
   }
 
   // Default threshold: MAD of OLS residuals * 3

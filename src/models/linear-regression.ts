@@ -34,10 +34,10 @@ export function linearRegression(
   y: Dataset,
 ): LinearRegressionResult {
   if (x.length !== y.length) {
-    throw new Error("x and y datasets must have the same length");
+    throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${x.length}, y.length=${y.length}`);
   }
   if (x.length < 2) {
-    throw new Error("Datasets must have at least 2 data points");
+    throw new Error(`Invalid parameter 'x': expected at least 2 data points, received ${x.length}`);
   }
 
   const n = x.length;

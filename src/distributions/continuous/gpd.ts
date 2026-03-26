@@ -119,6 +119,32 @@ export class GPD extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity outside the support.
+   */
+  logPdf(x: number): number {
+    if (!this.isInSupport(x)) return -Infinity;
+    const z = (x - this.mu) / this.sigma;
+    if (this.xi === 0) {
+      return -z - Math.log(this.sigma);
+    }
+    const v = 1 + this.xi * z;
+    if (v <= 0) return -Infinity;
+    return -(1 / this.xi + 1) * Math.log(v) - Math.log(this.sigma);
+  }
+
+  /**
+   * Returns the mode of the GPD.
+   *
+   * The mode is always at the lower bound `mu`.
+   */
+  get mode(): number {
+    return this.mu;
+  }
+
+  /**
    * Evaluates the cumulative distribution function (CDF) at x.
    *
    * - xi = 0: F(x) = 1 - exp(-(x-mu)/sigma)

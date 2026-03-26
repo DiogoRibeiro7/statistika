@@ -1,5 +1,6 @@
 import {
   autocorrelation,
+  acf,
   simpleMovingAverage,
   exponentialMovingAverage,
   weightedMovingAverage,
@@ -240,6 +241,23 @@ describe("Time Series Analysis", () => {
 
     it("throws on negative parameters", () => {
       expect(() => arima([1, 2, 3, 4, 5], -1, 0, 0)).toThrow();
+    });
+  });
+
+  // ---- Alias tests ----
+  describe("API aliases", () => {
+    it("acf is an alias for autocorrelation", () => {
+      expect(acf).toBe(autocorrelation);
+    });
+
+    it("acf produces identical results to autocorrelation", () => {
+      const series = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      const r1 = autocorrelation(series);
+      const r2 = acf(series);
+      expect(r2.acf).toEqual(r1.acf);
+      expect(r2.pacf).toEqual(r1.pacf);
+      expect(r2.maxLag).toBe(r1.maxLag);
+      expect(r2.confidenceBound).toBe(r1.confidenceBound);
     });
   });
 });

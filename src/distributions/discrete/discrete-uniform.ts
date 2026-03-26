@@ -101,6 +101,47 @@ export class DiscreteUniform extends BaseDiscrete {
   }
 
   /**
+   * Computes the log of the probability mass function at `k`.
+   *
+   * log P(X = k) = -log(b - a + 1) for integer k in [a, b], -Infinity otherwise.
+   *
+   * @param k - The value at which to evaluate the log-PMF.
+   * @returns The log-probability. Returns -Infinity for values outside [a, b] or non-integers.
+   */
+  logPmf(k: number): number {
+    if (!Number.isInteger(k) || k < this.a || k > this.b) return -Infinity;
+    return -Math.log(this.range);
+  }
+
+  /**
+   * Returns the skewness of the Discrete Uniform distribution.
+   *
+   * The skewness is always 0 (symmetric distribution).
+   */
+  get skewness(): number {
+    return 0;
+  }
+
+  /**
+   * Returns the excess kurtosis of the Discrete Uniform distribution.
+   *
+   * Formula: -(6 * (n^2 + 1)) / (5 * (n^2 - 1)), where n = b - a + 1.
+   */
+  get kurtosis(): number {
+    const n2 = this.range * this.range;
+    return -(6 * (n2 + 1)) / (5 * (n2 - 1));
+  }
+
+  /**
+   * Returns the mode of the Discrete Uniform distribution.
+   *
+   * All values in [a, b] are modes. Returns NaN since no unique mode exists.
+   */
+  get mode(): number {
+    return NaN;
+  }
+
+  /**
    * Computes the cumulative distribution function P(X <= k).
    *
    * Formula: F(k) = (floor(k) - a + 1) / (b - a + 1) for a <= k < b.

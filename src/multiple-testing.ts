@@ -274,20 +274,20 @@ export function benjaminiYekutieli(pValues: number[], alpha = 0.05): MultipleTes
 
 function validateAlpha(alpha: number): void {
   if (alpha <= 0 || alpha >= 1 || Number.isNaN(alpha)) {
-    throw new Error(`alpha must be between 0 and 1 (exclusive), got ${alpha}`);
+    throw new Error(`Invalid parameter 'alpha': expected a value in (0, 1), received ${alpha}`);
   }
 }
 
 function validatePValues(pValues: number[]): void {
   if (pValues.length === 0) {
-    throw new Error("p-values array must not be empty");
+    throw new Error(`Invalid parameter 'pValues': expected a non-empty array, received length 0`);
   }
   for (const p of pValues) {
     if (Number.isNaN(p)) {
-      throw new Error("p-values must not contain NaN");
+      throw new Error(`Invalid parameter 'pValues': expected no NaN values, received NaN`);
     }
     if (p < 0 || p > 1) {
-      throw new Error(`p-values must be between 0 and 1, got ${p}`);
+      throw new Error(`Invalid parameter 'pValues': expected values in [0, 1], received ${p}`);
     }
   }
 }

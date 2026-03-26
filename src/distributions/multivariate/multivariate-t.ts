@@ -24,6 +24,7 @@
 
 import { gammaLn } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { resolveRng } from "../../random";
 
 /**
  * Computes the Cholesky decomposition of a symmetric positive-definite matrix.
@@ -92,7 +93,7 @@ export class MultivariateT {
     public readonly df: number,
     rng?: RandomFn,
   ) {
-    this.rng = rng ?? Math.random;
+    this.rng = resolveRng(rng);
     const p = mu.length;
     if (p < 1) throw new Error(`Invalid parameter 'mu': expected at least 1 dimension, received ${p}`);
     if (sigma.length !== p || sigma.some((r) => r.length !== p)) {

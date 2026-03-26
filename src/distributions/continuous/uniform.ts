@@ -90,6 +90,46 @@ export class Uniform extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = -log(b - a) for a <= x <= b, -Infinity otherwise.
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density.
+   */
+  logPdf(x: number): number {
+    if (x < this.a || x > this.b) return -Infinity;
+    return -Math.log(this.b - this.a);
+  }
+
+  /**
+   * Returns the skewness of the Uniform distribution.
+   *
+   * The skewness is always 0 (symmetric distribution).
+   */
+  get skewness(): number {
+    return 0;
+  }
+
+  /**
+   * Returns the excess kurtosis of the Uniform distribution.
+   *
+   * The excess kurtosis is always -6/5.
+   */
+  get kurtosis(): number {
+    return -6 / 5;
+  }
+
+  /**
+   * Returns the mode of the Uniform distribution.
+   *
+   * Any value in [a, b] is a mode. Returns NaN since no unique mode exists.
+   */
+  get mode(): number {
+    return NaN;
+  }
+
+  /**
    * Draws a random sample via linear scaling of a uniform [0,1) variate.
    * @returns A random variate in [a, b).
    */

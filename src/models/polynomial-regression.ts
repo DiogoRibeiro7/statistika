@@ -35,13 +35,13 @@ export function polynomialRegression(
   degree: number,
 ): PolynomialRegressionResult {
   if (!Number.isInteger(degree) || degree < 1) {
-    throw new Error("Degree must be a positive integer");
+    throw new Error(`Invalid parameter 'degree': expected a positive integer, received ${degree}`);
   }
   if (x.length !== y.length) {
-    throw new Error("x and y must have the same length");
+    throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${x.length}, y.length=${y.length}`);
   }
   if (x.length <= degree) {
-    throw new Error("Number of data points must exceed the polynomial degree");
+    throw new Error(`Invalid parameter 'x': expected more data points than polynomial degree (${degree}), received ${x.length}`);
   }
 
   // Build Vandermonde feature matrix: [x, x², ..., x^d]

@@ -1,5 +1,5 @@
 import { BaseContinuous } from "../base";
-import { betaFn, regularizedBeta, quantileBisect } from "../../utils/math";
+import { betaFn, gammaLn, regularizedBeta, quantileBisect } from "../../utils/math";
 import { RandomFn } from "../../types";
 
 /**
@@ -99,6 +99,68 @@ export class FDistribution extends BaseContinuous {
     const num = Math.pow(d1 / d2, half1) * Math.pow(x, half1 - 1);
     const den = Math.pow(1 + (d1 / d2) * x, (d1 + d2) / 2) * betaFn(half1, half2);
     return num / den;
+  }
+
+  /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = (d1/2)*log(d1/d2) + (d1/2 - 1)*log(x)
+   *            - ((d1+d2)/2)*log(1 + d1*x/d2) - lnBeta(d1/2, d2/2)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x <= 0.
+   */
+  logPdf(x: number): number {
+    if (x <= 0) return -Infinity;
+    const { d1, d2 } = this;
+    const half1 = d1 / 2;
+    const half2 = d2 / 2;
+    return (
+      half1 * Math.log(d1 / d2) +
+      (half1 - 1) * Math.log(x) -
+      ((d1 + d2) / 2) * Math.log(1 + (d1 / d2) * x) -
+      (gammaLn(half1) + gammaLn(half2) - gammaLn(half1 + half2))
+    );
+  }
+
+  /**
+   * Returns the skewness of the F-distribution.
+   *
+   * Formula: (2*d1 + d2 - 2) * sqrt(8*(d2 - 4)) / ((d2 - 6) * sqrt(d1*(d1 + d2 - 2)))
+   * Defined only for d2 > 6.
+   */
+  get skewness(): number {
+    if (this.d2 <= 6) return NaN;
+    const { d1, d2 } = this;
+    return (
+      ((2 * d1 + d2 - 2) * Math.sqrt(8 * (d2 - 4))) /
+      ((d2 - 6) * Math.sqrt(d1 * (d1 + d2 - 2)))
+    );
+  }
+
+  /**
+   * Returns the excess kurtosis of the F-distribution.
+   *
+   * Defined only for d2 > 8.
+   */
+  get kurtosis(): number {
+    if (this.d2 <= 8) return NaN;
+    const { d1, d2 } = this;
+    const num =
+      12 * (d1 * (5 * d2 - 22) * (d1 + d2 - 2) + (d2 - 4) * (d2 - 2) * (d2 - 2));
+    const den = d1 * (d2 - 6) * (d2 - 8) * (d1 + d2 - 2);
+    return num / den;
+  }
+
+  /**
+   * Returns the mode of the F-distribution.
+   *
+   * Formula: ((d1 - 2) / d1) * (d2 / (d2 + 2)) for d1 > 2.
+   * Returns 0 for d1 <= 2.
+   */
+  get mode(): number {
+    if (this.d1 <= 2) return 0;
+    return ((this.d1 - 2) / this.d1) * (this.d2 / (this.d2 + 2));
   }
 
   /**

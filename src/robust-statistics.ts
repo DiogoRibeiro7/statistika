@@ -22,7 +22,7 @@ import { mean, median } from "./utils/descriptive";
  * ```
  */
 export function mad(data: Dataset, constant = 1.4826): number {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
   validateNoNaN(data);
   const med = median(data);
   const absDeviations = data.map((v) => Math.abs(v - med));
@@ -51,10 +51,10 @@ export function mad(data: Dataset, constant = 1.4826): number {
  * ```
  */
 export function trimmedMean(data: Dataset, proportion = 0.1): number {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
   validateNoNaN(data);
   if (proportion < 0 || proportion >= 0.5) {
-    throw new Error("Trim proportion must be between 0 (inclusive) and 0.5 (exclusive)");
+    throw new Error(`Invalid parameter 'proportion': expected a value in [0, 0.5), received ${proportion}`);
   }
 
   const sorted = [...data].sort((a, b) => a - b);
@@ -62,7 +62,7 @@ export function trimmedMean(data: Dataset, proportion = 0.1): number {
   const trimmed = sorted.slice(trimCount, sorted.length - trimCount);
 
   if (trimmed.length === 0) {
-    throw new Error("Too few observations after trimming");
+    throw new Error(`Invalid parameter 'proportion': too few observations after trimming, received ${trimmed.length} remaining`);
   }
 
   return mean(trimmed);
@@ -88,10 +88,10 @@ export function trimmedMean(data: Dataset, proportion = 0.1): number {
  * ```
  */
 export function winsorizedMean(data: Dataset, proportion = 0.1): number {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
   validateNoNaN(data);
   if (proportion < 0 || proportion >= 0.5) {
-    throw new Error("Winsorize proportion must be between 0 (inclusive) and 0.5 (exclusive)");
+    throw new Error(`Invalid parameter 'proportion': expected a value in [0, 0.5), received ${proportion}`);
   }
 
   const sorted = [...data].sort((a, b) => a - b);
@@ -130,7 +130,7 @@ export function winsorizedMean(data: Dataset, proportion = 0.1): number {
  * ```
  */
 export function iqr(data: Dataset): number {
-  if (data.length < 4) throw new Error("Dataset must have at least 4 elements");
+  if (data.length < 4) throw new Error(`Invalid parameter 'data': expected at least 4 elements, received ${data.length}`);
   validateNoNaN(data);
   const sorted = [...data].sort((a, b) => a - b);
   const n = sorted.length;
@@ -163,7 +163,7 @@ export function detectOutliers(
   data: Dataset,
   k = 1.5,
 ): { outliers: number[]; indices: number[]; lower: number; upper: number } {
-  if (data.length < 4) throw new Error("Dataset must have at least 4 elements");
+  if (data.length < 4) throw new Error(`Invalid parameter 'data': expected at least 4 elements, received ${data.length}`);
   validateNoNaN(data);
 
   const sorted = [...data].sort((a, b) => a - b);
@@ -215,7 +215,7 @@ export function huberMean(
   maxIterations = 50,
   tol = 1e-6,
 ): number {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
   validateNoNaN(data);
 
   let mu = median(data);
@@ -265,7 +265,7 @@ export function huberMean(
  * ```
  */
 export function biweightMidvariance(data: Dataset, c = 9.0): number {
-  if (data.length < 2) throw new Error("Dataset must have at least 2 elements");
+  if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 elements, received ${data.length}`);
   validateNoNaN(data);
 
   const med = median(data);
@@ -296,7 +296,7 @@ export function biweightMidvariance(data: Dataset, c = 9.0): number {
 function validateNoNaN(data: Dataset): void {
   for (const v of data) {
     if (Number.isNaN(v)) {
-      throw new Error("Dataset must not contain NaN values");
+      throw new Error(`Invalid parameter 'data': expected no NaN values, received NaN`);
     }
   }
 }

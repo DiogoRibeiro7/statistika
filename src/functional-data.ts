@@ -122,7 +122,7 @@ export function polynomialBasis(degree: number, domain: [number, number] = [0, 1
  * ```
  */
 export function fourierBasis(nBasis: number, domain: [number, number] = [0, 1]): BasisSystem {
-  if (nBasis < 1) throw new Error("nBasis must be at least 1");
+  if (nBasis < 1) throw new Error(`Invalid parameter 'nBasis': expected at least 1, received ${nBasis}`);
   const nPairs = Math.floor((nBasis - 1) / 2);
   const actualN = 1 + 2 * nPairs;
 
@@ -161,7 +161,7 @@ export function fourierBasis(nBasis: number, domain: [number, number] = [0, 1]):
  * ```
  */
 export function bsplineBasis(nBasis: number, domain: [number, number] = [0, 1]): BasisSystem {
-  if (nBasis < 4) throw new Error("nBasis must be at least 4 for cubic B-splines");
+  if (nBasis < 4) throw new Error(`Invalid parameter 'nBasis': expected at least 4 for cubic B-splines, received ${nBasis}`);
   const order = 4; // cubic
   const nKnots = nBasis + order;
   const knots: number[] = [];
@@ -221,7 +221,7 @@ export function smoothBasisExpansion(
   lambda = 0,
 ): FunctionalObject {
   const m = tValues.length;
-  if (m !== yValues.length) throw new Error("tValues and yValues must have same length");
+  if (m !== yValues.length) throw new Error(`Invalid parameters 'tValues', 'yValues': expected same length, received tValues.length=${m}, yValues.length=${yValues.length}`);
 
   const k = basis.nBasis;
   // Build Φ matrix (m × k): Φ[j][i] = φᵢ(tⱼ)
@@ -291,7 +291,7 @@ export function functionalPCA(
   lambda = 0,
 ): FPCAResult {
   const n = curves.length;
-  if (n < 2) throw new Error("Need at least 2 curves");
+  if (n < 2) throw new Error(`Invalid parameter 'curves': expected at least 2 curves, received ${n}`);
   const k = basis.nBasis;
   const nComp = Math.min(nComponents ?? k, k, n);
 

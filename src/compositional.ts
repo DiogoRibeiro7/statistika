@@ -213,7 +213,7 @@ export function ilrInverse(y: number[]): number[] {
 export function closure(x: number[], total = 1): number[] {
   let sum = 0;
   for (const xi of x) sum += xi;
-  if (sum === 0) throw new Error("Cannot close a zero vector");
+  if (sum === 0) throw new Error(`Invalid parameter 'x': expected a non-zero vector, received sum=0`);
   return x.map((xi) => (xi / sum) * total);
 }
 
@@ -236,7 +236,7 @@ export function closure(x: number[], total = 1): number[] {
  * ```
  */
 export function perturbation(x: number[], y: number[]): number[] {
-  if (x.length !== y.length) throw new Error("Compositions must have same length");
+  if (x.length !== y.length) throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${x.length}, y.length=${y.length}`);
   const product = x.map((xi, i) => xi * y[i]);
   return closure(product);
 }
@@ -283,7 +283,7 @@ export function powering(x: number[], alpha: number): number[] {
  */
 export function aitchisonInnerProduct(x: number[], y: number[]): number {
   const D = x.length;
-  if (D !== y.length) throw new Error("Compositions must have same length");
+  if (D !== y.length) throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${D}, y.length=${y.length}`);
   let sum = 0;
   for (let i = 0; i < D; i++) {
     for (let j = i + 1; j < D; j++) {
@@ -313,7 +313,7 @@ export function aitchisonInnerProduct(x: number[], y: number[]): number {
  */
 export function aitchisonDistance(x: number[], y: number[]): number {
   const D = x.length;
-  if (D !== y.length) throw new Error("Compositions must have same length");
+  if (D !== y.length) throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${D}, y.length=${y.length}`);
   let sum = 0;
   for (let i = 0; i < D; i++) {
     for (let j = i + 1; j < D; j++) {
@@ -366,7 +366,7 @@ export function aitchisonNorm(x: number[]): number {
  */
 export function compositionalCentre(compositions: number[][]): number[] {
   const n = compositions.length;
-  if (n === 0) throw new Error("Need at least 1 composition");
+  if (n === 0) throw new Error(`Invalid parameter 'compositions': expected at least 1 composition, received ${n}`);
   const D = compositions[0].length;
 
   const logMeans = new Array(D).fill(0);
@@ -401,7 +401,7 @@ export function compositionalCentre(compositions: number[][]): number[] {
  */
 export function variationMatrix(compositions: number[][]): number[][] {
   const n = compositions.length;
-  if (n < 2) throw new Error("Need at least 2 compositions");
+  if (n < 2) throw new Error(`Invalid parameter 'compositions': expected at least 2 compositions, received ${n}`);
   const D = compositions[0].length;
 
   const T: number[][] = Array.from({ length: D }, () => new Array(D).fill(0));
@@ -426,8 +426,8 @@ export function variationMatrix(compositions: number[][]): number[][] {
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function validateComposition(x: number[]): void {
-  if (x.length < 2) throw new Error("Composition must have at least 2 parts");
+  if (x.length < 2) throw new Error(`Invalid parameter 'x': expected at least 2 parts, received ${x.length}`);
   for (let i = 0; i < x.length; i++) {
-    if (x[i] <= 0) throw new Error(`Part x[${i}] must be positive`);
+    if (x[i] <= 0) throw new Error(`Invalid parameter 'x[${i}]': expected a positive number, received ${x[i]}`);
   }
 }

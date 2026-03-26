@@ -120,6 +120,43 @@ export class ZeroInflatedPoisson extends BaseDiscrete {
   }
 
   /**
+   * Computes the log of the probability mass function at `k`.
+   *
+   * For k = 0: log P(X = 0) = log(pi + (1 - pi) * e^{-lambda})
+   * For k >= 1: log P(X = k) = log(1 - pi) + k * log(lambda) - lambda - log(k!)
+   *
+   * @param k - The value at which to evaluate the log-PMF (non-negative integer).
+   * @returns The log-probability. Returns -Infinity for non-integer or negative k.
+   */
+  logPmf(k: number): number {
+    if (!Number.isInteger(k) || k < 0) return -Infinity;
+    if (k === 0) {
+      return Math.log(this.pi + (1 - this.pi) * Math.exp(-this.lambda));
+    }
+    return (
+      Math.log(1 - this.pi) +
+      k * Math.log(this.lambda) -
+      this.lambda -
+      logFactorial(k)
+    );
+  }
+
+  /**
+   * Returns the mode of the Zero-Inflated Poisson distribution.
+   *
+   * Returns 0 if the inflated probability at 0 is the highest;
+   * otherwise returns floor(lambda).
+   */
+  get mode(): number {
+    // Compare P(X=0) with the Poisson mode probability
+    const p0 = this.pmf(0);
+    const poissonMode = Math.floor(this.lambda);
+    const pMode = this.pmf(poissonMode);
+    if (p0 >= pMode) return 0;
+    return poissonMode;
+  }
+
+  /**
    * Computes the cumulative distribution function P(X <= k).
    *
    * Formula: F(k) = pi + (1 - pi) * PoissonCDF(k; lambda)

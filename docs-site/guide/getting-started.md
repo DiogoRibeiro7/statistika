@@ -73,7 +73,7 @@ Available sub-paths:
 
 | Sub-path | Contents |
 |---|---|
-| `statistika/distributions` | All 23 probability distributions |
+| `statistika/distributions` | All 37 probability distributions |
 | `statistika/models` | Regression models (linear, multiple, polynomial, logistic, robust) |
 | `statistika/tests` | Hypothesis tests (t-test, chi-squared, ANOVA, KS, etc.) |
 | `statistika/utils` | Descriptive statistics, linear algebra, special functions |

@@ -66,7 +66,7 @@ export function fitNormal(data: number[]): FitResult<Normal> {
   let sumSq = 0;
   for (let i = 0; i < n; i++) sumSq += (data[i] - mu) ** 2;
   const sigma = Math.sqrt(sumSq / n);
-  if (sigma <= 0) throw new Error("Data has zero variance");
+  if (sigma <= 0) throw new Error(`Invalid parameter 'data': expected non-zero variance, received variance=0`);
 
   const dist = new Normal(mu, sigma);
   const ll = data.reduce((s, x) => s + Math.log(dist.pdf(x)), 0);
@@ -92,7 +92,7 @@ export function fitNormal(data: number[]): FitResult<Normal> {
 export function fitExponential(data: number[]): FitResult<Exponential> {
   validateContinuousData(data);
   for (const x of data) {
-    if (x < 0) throw new Error("Exponential data must be non-negative");
+    if (x < 0) throw new Error(`Invalid parameter 'data': expected non-negative values, received ${x}`);
   }
   const lambda = 1 / mean(data);
   const dist = new Exponential(lambda);
@@ -119,7 +119,7 @@ export function fitExponential(data: number[]): FitResult<Exponential> {
 export function fitPoisson(data: number[]): FitResult<Poisson> {
   validateDiscreteData(data);
   const lambda = mean(data);
-  if (lambda <= 0) throw new Error("Mean must be positive for Poisson");
+  if (lambda <= 0) throw new Error(`Invalid parameter 'data': expected positive mean for Poisson, received mean=${lambda}`);
   const dist = new Poisson(lambda);
   const ll = data.reduce((s, x) => s + Math.log(Math.max(1e-300, dist.pmf(x))), 0);
   return { distribution: dist, logLikelihood: ll, aic: -2 * ll + 2, nParams: 1 };
@@ -146,7 +146,7 @@ export function fitPoisson(data: number[]): FitResult<Poisson> {
 export function fitGamma(data: number[]): FitResult<GammaDistribution> {
   validateContinuousData(data);
   for (const x of data) {
-    if (x <= 0) throw new Error("Gamma data must be positive");
+    if (x <= 0) throw new Error(`Invalid parameter 'data': expected positive values for Gamma, received ${x}`);
   }
   const n = data.length;
   const xBar = mean(data);
@@ -197,7 +197,7 @@ export function fitGamma(data: number[]): FitResult<GammaDistribution> {
 export function fitBeta(data: number[]): FitResult<BetaDistribution> {
   validateContinuousData(data);
   for (const x of data) {
-    if (x <= 0 || x >= 1) throw new Error("Beta data must be in (0, 1)");
+    if (x <= 0 || x >= 1) throw new Error(`Invalid parameter 'data': expected values in (0, 1) for Beta, received ${x}`);
   }
   const m = mean(data);
   const v = variance(data);
@@ -206,7 +206,7 @@ export function fitBeta(data: number[]): FitResult<BetaDistribution> {
   const alpha = m * common;
   const beta = (1 - m) * common;
   if (alpha <= 0 || beta <= 0) {
-    throw new Error("Cannot fit Beta: moment estimates are non-positive");
+    throw new Error(`Invalid parameter 'data': cannot fit Beta distribution, moment estimates are non-positive (alpha=${alpha}, beta=${beta})`);
   }
 
   const dist = new BetaDistribution(alpha, beta);
@@ -233,7 +233,7 @@ export function fitBeta(data: number[]): FitResult<BetaDistribution> {
 export function fitLogNormal(data: number[]): FitResult<LogNormal> {
   validateContinuousData(data);
   for (const x of data) {
-    if (x <= 0) throw new Error("Log-Normal data must be positive");
+    if (x <= 0) throw new Error(`Invalid parameter 'data': expected positive values for Log-Normal, received ${x}`);
   }
   const n = data.length;
   const logData = data.map(Math.log);
@@ -241,7 +241,7 @@ export function fitLogNormal(data: number[]): FitResult<LogNormal> {
   let sumSq = 0;
   for (let i = 0; i < n; i++) sumSq += (logData[i] - mu) ** 2;
   const sigma = Math.sqrt(sumSq / n);
-  if (sigma <= 0) throw new Error("Log-data has zero variance");
+  if (sigma <= 0) throw new Error(`Invalid parameter 'data': expected non-zero log-variance, received variance=0`);
 
   const dist = new LogNormal(mu, sigma);
   const ll = data.reduce((s, x) => s + Math.log(dist.pdf(x)), 0);
@@ -382,7 +382,7 @@ export function andersonDarlingTest(
   alpha = 0.05,
 ): GoodnessOfFitResult {
   const n = data.length;
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${n}`);
 
   const sorted = [...data].sort((a, b) => a - b);
 
@@ -443,7 +443,7 @@ export function cramerVonMisesTest(
   alpha = 0.05,
 ): GoodnessOfFitResult {
   const n = data.length;
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${n}`);
 
   const sorted = [...data].sort((a, b) => a - b);
 
@@ -475,7 +475,7 @@ export function cramerVonMisesTest(
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function validateContinuousData(data: number[]): void {
-  if (data.length < 2) throw new Error("Need at least 2 observations");
+  if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${data.length}`);
   for (let i = 0; i < data.length; i++) {
     if (!Number.isFinite(data[i])) {
       throw new Error(`data[${i}] is not finite`);
@@ -484,7 +484,7 @@ function validateContinuousData(data: number[]): void {
 }
 
 function validateDiscreteData(data: number[]): void {
-  if (data.length < 2) throw new Error("Need at least 2 observations");
+  if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${data.length}`);
   for (let i = 0; i < data.length; i++) {
     if (!Number.isInteger(data[i]) || data[i] < 0) {
       throw new Error(`data[${i}] must be a non-negative integer`);

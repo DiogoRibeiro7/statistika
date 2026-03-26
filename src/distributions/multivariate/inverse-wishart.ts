@@ -20,6 +20,7 @@
 
 import { gammaLn } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { resolveRng } from "../../random";
 
 /**
  * Computes the Cholesky decomposition of a symmetric positive-definite matrix.
@@ -136,7 +137,7 @@ export class InverseWishart {
     public readonly scale: number[][],
     rng?: RandomFn,
   ) {
-    this.rng = rng ?? Math.random;
+    this.rng = resolveRng(rng);
     const p = scale.length;
     if (p < 1) throw new Error(`Invalid parameter 'scale': expected at least 1 dimension, received ${p}`);
     if (scale.some((r) => r.length !== p)) {

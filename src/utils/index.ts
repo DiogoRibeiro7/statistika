@@ -1,4 +1,4 @@
-export { mean, median, variance, stdDev, skewness, kurtosis, percentile, describe } from "./descriptive";
+export { mean, median, variance, stdDev, standardDeviation, skewness, kurtosis, percentile, describe } from "./descriptive";
 export {
   gammaLn,
   gamma,

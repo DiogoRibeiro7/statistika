@@ -365,7 +365,7 @@ export function estimateAbility(
   } = options;
 
   if (responses.length !== items.length) {
-    throw new Error('responses and items must have the same length');
+    throw new Error(`Invalid parameters 'responses', 'items': expected same length, received responses.length=${responses.length}, items.length=${items.length}`);
   }
 
   const { nodes, weights } = gaussHermiteQuadrature(quadPoints);

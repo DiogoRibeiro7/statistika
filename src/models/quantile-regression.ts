@@ -118,14 +118,14 @@ export function multipleQuantileRegression(
   tolerance = 1e-6,
 ): QuantileRegressionResult {
   if (X.length !== y.length) {
-    throw new Error("X and y must have the same length");
+    throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${X.length}, y.length=${y.length}`);
   }
-  if (X.length < 2) throw new Error("Need at least 2 observations");
-  if (tau <= 0 || tau >= 1) throw new Error("tau must be in (0, 1)");
+  if (X.length < 2) throw new Error(`Invalid parameter 'X': expected at least 2 observations, received ${X.length}`);
+  if (tau <= 0 || tau >= 1) throw new Error(`Invalid parameter 'tau': expected a value in (0, 1), received ${tau}`);
 
   const p = X[0].length;
   for (const row of X) {
-    if (row.length !== p) throw new Error("All rows must have the same length");
+    if (row.length !== p) throw new Error(`Invalid parameter 'X': expected all rows to have ${p} columns, received ${row.length}`);
   }
 
   // Add intercept column
@@ -138,7 +138,7 @@ export function multipleQuantileRegression(
     coefficients: beta.slice(1),
     predict: (xNew: number[]) => {
       if (xNew.length !== p) {
-        throw new Error(`Expected ${p} features, got ${xNew.length}`);
+        throw new Error(`Invalid parameter 'xNew': expected ${p} features, received ${xNew.length}`);
       }
       let result = beta[0];
       for (let j = 0; j < p; j++) {
@@ -314,8 +314,8 @@ function solveSystem(A: number[][], b: number[]): number[] {
  */
 function validateInputs(x: Dataset, y: Dataset, tau: number): void {
   if (x.length !== y.length) {
-    throw new Error("x and y must have the same length");
+    throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${x.length}, y.length=${y.length}`);
   }
-  if (x.length < 2) throw new Error("Need at least 2 observations");
-  if (tau <= 0 || tau >= 1) throw new Error("tau must be in (0, 1)");
+  if (x.length < 2) throw new Error(`Invalid parameter 'x': expected at least 2 observations, received ${x.length}`);
+  if (tau <= 0 || tau >= 1) throw new Error(`Invalid parameter 'tau': expected a value in (0, 1), received ${tau}`);
 }

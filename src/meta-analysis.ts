@@ -68,17 +68,17 @@ export interface TrimAndFillResult {
  */
 function validateInputs(effects: number[], variances: number[]): void {
   if (effects.length === 0) {
-    throw new Error("Effects array must not be empty");
+    throw new Error(`Invalid parameter 'effects': expected a non-empty array, received length 0`);
   }
   if (effects.length !== variances.length) {
-    throw new Error("Effects and variances arrays must have the same length");
+    throw new Error(`Invalid parameters 'effects', 'variances': expected same length, received effects.length=${effects.length}, variances.length=${variances.length}`);
   }
   if (effects.length < 2) {
-    throw new Error("At least 2 studies are required for meta-analysis");
+    throw new Error(`Invalid parameter 'effects': expected at least 2 studies, received ${effects.length}`);
   }
   for (let i = 0; i < variances.length; i++) {
     if (variances[i] <= 0) {
-      throw new Error("All variances must be positive");
+      throw new Error(`Invalid parameter 'variances[${i}]': expected a positive number, received ${variances[i]}`);
     }
   }
 }
@@ -312,7 +312,7 @@ export function forestPlotData(
 ): ForestPlotData {
   validateInputs(effects, variances);
   if (labels.length !== effects.length) {
-    throw new Error("Labels array must have the same length as effects");
+    throw new Error(`Invalid parameters 'labels', 'effects': expected same length, received labels.length=${labels.length}, effects.length=${effects.length}`);
   }
 
   const meta = randomEffectsMeta(effects, variances);
@@ -374,19 +374,19 @@ export function funnelPlotData(
   standardErrors: number[],
 ): FunnelPlotData {
   if (effects.length === 0) {
-    throw new Error("Effects array must not be empty");
+    throw new Error(`Invalid parameter 'effects': expected a non-empty array, received length 0`);
   }
   if (effects.length !== standardErrors.length) {
     throw new Error(
-      "Effects and standard errors arrays must have the same length",
+      `Invalid parameters 'effects', 'standardErrors': expected same length, received effects.length=${effects.length}, standardErrors.length=${standardErrors.length}`,
     );
   }
   if (effects.length < 2) {
-    throw new Error("At least 2 studies are required");
+    throw new Error(`Invalid parameter 'effects': expected at least 2 studies, received ${effects.length}`);
   }
   for (let i = 0; i < standardErrors.length; i++) {
     if (standardErrors[i] <= 0) {
-      throw new Error("All standard errors must be positive");
+      throw new Error(`Invalid parameter 'standardErrors[${i}]': expected a positive number, received ${standardErrors[i]}`);
     }
   }
 
@@ -454,19 +454,19 @@ export function eggersTest(
   standardErrors: number[],
 ): PublicationBiasTest {
   if (effects.length === 0) {
-    throw new Error("Effects array must not be empty");
+    throw new Error(`Invalid parameter 'effects': expected a non-empty array, received length 0`);
   }
   if (effects.length !== standardErrors.length) {
     throw new Error(
-      "Effects and standard errors arrays must have the same length",
+      `Invalid parameters 'effects', 'standardErrors': expected same length, received effects.length=${effects.length}, standardErrors.length=${standardErrors.length}`,
     );
   }
   if (effects.length < 3) {
-    throw new Error("At least 3 studies are required for Egger's test");
+    throw new Error(`Invalid parameter 'effects': expected at least 3 studies for Egger's test, received ${effects.length}`);
   }
   for (let i = 0; i < standardErrors.length; i++) {
     if (standardErrors[i] <= 0) {
-      throw new Error("All standard errors must be positive");
+      throw new Error(`Invalid parameter 'standardErrors[${i}]': expected a positive number, received ${standardErrors[i]}`);
     }
   }
 
@@ -554,17 +554,17 @@ export function beggsTest(
   variances: number[],
 ): PublicationBiasTest {
   if (effects.length === 0) {
-    throw new Error("Effects array must not be empty");
+    throw new Error(`Invalid parameter 'effects': expected a non-empty array, received length 0`);
   }
   if (effects.length !== variances.length) {
-    throw new Error("Effects and variances arrays must have the same length");
+    throw new Error(`Invalid parameters 'effects', 'variances': expected same length, received effects.length=${effects.length}, variances.length=${variances.length}`);
   }
   if (effects.length < 3) {
-    throw new Error("At least 3 studies are required for Begg's test");
+    throw new Error(`Invalid parameter 'effects': expected at least 3 studies for Begg's test, received ${effects.length}`);
   }
   for (let i = 0; i < variances.length; i++) {
     if (variances[i] <= 0) {
-      throw new Error("All variances must be positive");
+      throw new Error(`Invalid parameter 'variances[${i}]': expected a positive number, received ${variances[i]}`);
     }
   }
 
@@ -642,17 +642,17 @@ export function trimAndFill(
   variances: number[],
 ): TrimAndFillResult {
   if (effects.length === 0) {
-    throw new Error("Effects array must not be empty");
+    throw new Error(`Invalid parameter 'effects': expected a non-empty array, received length 0`);
   }
   if (effects.length !== variances.length) {
-    throw new Error("Effects and variances arrays must have the same length");
+    throw new Error(`Invalid parameters 'effects', 'variances': expected same length, received effects.length=${effects.length}, variances.length=${variances.length}`);
   }
   if (effects.length < 3) {
-    throw new Error("At least 3 studies are required for trim-and-fill");
+    throw new Error(`Invalid parameter 'effects': expected at least 3 studies for trim-and-fill, received ${effects.length}`);
   }
   for (let i = 0; i < variances.length; i++) {
     if (variances[i] <= 0) {
-      throw new Error("All variances must be positive");
+      throw new Error(`Invalid parameter 'variances[${i}]': expected a positive number, received ${variances[i]}`);
     }
   }
 

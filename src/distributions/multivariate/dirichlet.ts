@@ -22,6 +22,7 @@
 
 import { gammaLn } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { resolveRng } from "../../random";
 
 /**
  * Represents a Dirichlet distribution over the (k-1)-dimensional simplex.
@@ -52,7 +53,7 @@ export class Dirichlet {
    * ```
    */
   constructor(public readonly alpha: number[], rng?: RandomFn) {
-    this.rng = rng ?? Math.random;
+    this.rng = resolveRng(rng);
     const k = alpha.length;
     if (k < 2) throw new Error(`Invalid parameter 'alpha': expected at least 2 dimensions, received ${k}`);
     for (let i = 0; i < k; i++) {

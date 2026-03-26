@@ -19,6 +19,7 @@
 
 import { gammaLn, logFactorial } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { resolveRng } from "../../random";
 
 /**
  * Represents a Multinomial distribution over count vectors.
@@ -53,7 +54,7 @@ export class Multinomial {
     public readonly probs: number[],
     rng?: RandomFn,
   ) {
-    this.rng = rng ?? Math.random;
+    this.rng = resolveRng(rng);
     if (!Number.isInteger(n) || n < 1) {
       throw new Error(`Invalid parameter 'n': expected a positive integer, received ${n}`);
     }

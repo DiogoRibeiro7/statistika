@@ -151,15 +151,15 @@ export function pca(
 ): PCAResult {
   const n = data.length;
   const p = data[0].length;
-  if (n < 2) throw new Error("Need at least 2 observations");
-  if (p < 1) throw new Error("Need at least 1 feature");
+  if (n < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${n}`);
+  if (p < 1) throw new Error(`Invalid parameter 'data': expected at least 1 feature, received ${p}`);
 
   const shouldCenter = options.center !== false;
   const shouldScale = options.scale === true;
   const nComp = options.nComponents ?? p;
 
   if (nComp < 1 || nComp > p) {
-    throw new Error(`nComponents must be between 1 and ${p}`);
+    throw new Error(`Invalid parameter 'nComponents': expected a value in [1, ${p}], received ${nComp}`);
   }
 
   // Center and optionally scale
@@ -269,9 +269,9 @@ export function factorAnalysis(
 ): FactorAnalysisResult {
   const n = data.length;
   const p = data[0].length;
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${n}`);
   if (nFactors < 1 || nFactors > p) {
-    throw new Error(`nFactors must be between 1 and ${p}`);
+    throw new Error(`Invalid parameter 'nFactors': expected a value in [1, ${p}], received ${nFactors}`);
   }
 
   const maxIter = options.maxIter ?? 100;
@@ -406,8 +406,8 @@ export function kMeans(
 ): KMeansResult {
   const n = data.length;
   const p = data[0].length;
-  if (n < k) throw new Error("Number of observations must be >= k");
-  if (k < 1) throw new Error("k must be at least 1");
+  if (n < k) throw new Error(`Invalid parameter 'data': expected at least k (${k}) observations, received ${n}`);
+  if (k < 1) throw new Error(`Invalid parameter 'k': expected at least 1, received ${k}`);
 
   const maxIter = options.maxIter ?? 300;
   const tolSq = (options.tol ?? 1e-6) ** 2;
@@ -551,9 +551,9 @@ export function hierarchicalClustering(
   options: { linkage?: Linkage } = {},
 ): HierarchicalClusterResult {
   const n = data.length;
-  if (n < 1) throw new Error("Need at least 1 observation");
+  if (n < 1) throw new Error(`Invalid parameter 'data': expected at least 1 observation, received ${n}`);
   if (nClusters < 1 || nClusters > n) {
-    throw new Error(`nClusters must be between 1 and ${n}`);
+    throw new Error(`Invalid parameter 'nClusters': expected a value in [1, ${n}], received ${nClusters}`);
   }
 
   const linkage = options.linkage ?? "complete";

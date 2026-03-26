@@ -93,6 +93,47 @@ export class Geometric extends BaseDiscrete {
   }
 
   /**
+   * Computes the log of the probability mass function at `k`.
+   *
+   * log P(X = k) = log(p) + k * log(1 - p)
+   *
+   * @param k - The number of failures (non-negative integer).
+   * @returns The log-probability. Returns -Infinity for non-integer or negative k.
+   */
+  logPmf(k: number): number {
+    if (!Number.isInteger(k) || k < 0) return -Infinity;
+    if (this.p === 1) return k === 0 ? 0 : -Infinity;
+    return Math.log(this.p) + k * Math.log(1 - this.p);
+  }
+
+  /**
+   * Returns the skewness of the Geometric distribution.
+   *
+   * Formula: (2 - p) / sqrt(1 - p)
+   */
+  get skewness(): number {
+    return (2 - this.p) / Math.sqrt(1 - this.p);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Geometric distribution.
+   *
+   * Formula: 6 + p^2 / (1 - p)
+   */
+  get kurtosis(): number {
+    return 6 + (this.p * this.p) / (1 - this.p);
+  }
+
+  /**
+   * Returns the mode of the Geometric distribution.
+   *
+   * The mode is always 0 (the most likely outcome is immediate success).
+   */
+  get mode(): number {
+    return 0;
+  }
+
+  /**
    * Computes the cumulative distribution function P(X <= k).
    *
    * Formula: F(k) = 1 - (1 - p)^(floor(k) + 1)

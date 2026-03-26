@@ -156,6 +156,81 @@ export class BetaDistribution extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = (alpha - 1) * log(x) + (beta - 1) * log(1 - x) - lnBeta(alpha, beta)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x outside [0, 1].
+   */
+  logPdf(x: number): number {
+    if (x < 0 || x > 1) return -Infinity;
+    if (x === 0) {
+      if (this.alpha === 1) return Math.log(this.beta);
+      if (this.alpha < 1) return Infinity;
+      return -Infinity;
+    }
+    if (x === 1) {
+      if (this.beta === 1) return Math.log(this.alpha);
+      if (this.beta < 1) return Infinity;
+      return -Infinity;
+    }
+    return (
+      (this.alpha - 1) * Math.log(x) +
+      (this.beta - 1) * Math.log(1 - x) -
+      (gammaLn(this.alpha) + gammaLn(this.beta) - gammaLn(this.alpha + this.beta))
+    );
+  }
+
+  /**
+   * Returns the skewness of the Beta distribution.
+   *
+   * Formula: 2 * (beta - alpha) * sqrt(alpha + beta + 1) / ((alpha + beta + 2) * sqrt(alpha * beta))
+   */
+  get skewness(): number {
+    const { alpha, beta } = this;
+    return (
+      (2 * (beta - alpha) * Math.sqrt(alpha + beta + 1)) /
+      ((alpha + beta + 2) * Math.sqrt(alpha * beta))
+    );
+  }
+
+  /**
+   * Returns the excess kurtosis of the Beta distribution.
+   *
+   * Formula: 6 * (alpha^3 - alpha^2*(2*beta - 1) + beta^2*(beta + 1) - 2*alpha*beta*(beta + 2))
+   *          / (alpha * beta * (alpha + beta + 2) * (alpha + beta + 3))
+   */
+  get kurtosis(): number {
+    const { alpha, beta } = this;
+    const ab = alpha + beta;
+    return (
+      (6 * (alpha * alpha * alpha - alpha * alpha * (2 * beta - 1) + beta * beta * (beta + 1) - 2 * alpha * beta * (beta + 2))) /
+      (alpha * beta * (ab + 2) * (ab + 3))
+    );
+  }
+
+  /**
+   * Returns the mode of the Beta distribution.
+   *
+   * Formula: (alpha - 1) / (alpha + beta - 2) for alpha > 1 and beta > 1.
+   * Returns NaN if alpha <= 1 or beta <= 1 (mode is at a boundary or undefined).
+   */
+  get mode(): number {
+    if (this.alpha > 1 && this.beta > 1) {
+      return (this.alpha - 1) / (this.alpha + this.beta - 2);
+    }
+    if (this.alpha <= 1 && this.beta <= 1 && this.alpha !== 1 && this.beta !== 1) {
+      // Bimodal (anti-mode in interior); no single mode
+      return NaN;
+    }
+    if (this.alpha <= 1 && this.beta > 1) return 0;
+    if (this.beta <= 1 && this.alpha > 1) return 1;
+    // alpha === 1 && beta === 1: uniform, any value is a mode
+    return NaN;
+  }
+
+  /**
    * Draws a single random sample from the Beta distribution.
    *
    * Uses the ratio of two independent Gamma variates:

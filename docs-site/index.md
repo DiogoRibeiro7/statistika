@@ -4,7 +4,7 @@ layout: home
 hero:
   name: statistika
   text: Comprehensive Statistical Library for Node.js
-  tagline: 31 distributions, hypothesis tests, regression, Bayesian inference, time series, survival analysis, causal inference, and more — all in TypeScript with optional native Fortran acceleration.
+  tagline: 37 distributions, hypothesis tests, regression, Bayesian inference, time series, survival analysis, causal inference, and more — all in TypeScript with optional native Fortran acceleration.
   actions:
     - theme: brand
       text: Get Started
@@ -15,7 +15,7 @@ hero:
 
 features:
   - title: Probability Distributions
-    details: 31 continuous and discrete distributions with PDF/PMF, CDF, quantile functions, survival functions, and random sampling.
+    details: 37 continuous, discrete, and multivariate distributions with PDF/PMF, CDF, quantile functions, survival functions, and random sampling.
   - title: Hypothesis Testing
     details: t-tests, chi-squared, ANOVA, Kolmogorov-Smirnov, Mann-Whitney U, Wilcoxon signed-rank, Fisher's exact test, and more.
   - title: Regression & GLM

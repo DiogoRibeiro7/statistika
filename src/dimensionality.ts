@@ -59,13 +59,13 @@ export function tsne(
   } = {},
 ): TSNEResult {
   const n = data.length;
-  if (n < 4) throw new Error("Need at least 4 observations");
+  if (n < 4) throw new Error(`Invalid parameter 'data': expected at least 4 observations, received ${n}`);
 
   // NaN/Infinity guard
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error("Data must not contain NaN or Infinity");
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
       }
     }
   }
@@ -216,20 +216,20 @@ export function tsne(
  */
 export function silhouetteScore(data: number[][], labels: number[]): number {
   const n = data.length;
-  if (n !== labels.length) throw new Error("Data and labels must have same length");
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n !== labels.length) throw new Error(`Invalid parameters 'data', 'labels': expected same length, received data.length=${n}, labels.length=${labels.length}`);
+  if (n < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${n}`);
 
   // NaN/Infinity guard
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error("Data must not contain NaN or Infinity");
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
       }
     }
   }
 
   const uniqueLabels = [...new Set(labels)];
-  if (uniqueLabels.length < 2) throw new Error("Need at least 2 clusters");
+  if (uniqueLabels.length < 2) throw new Error(`Invalid parameter 'labels': expected at least 2 clusters, received ${uniqueLabels.length}`);
 
   const scores = new Array<number>(n);
 
@@ -283,13 +283,13 @@ export function silhouetteScore(data: number[][], labels: number[]): number {
  */
 export function silhouetteScores(data: number[][], labels: number[]): number[] {
   const n = data.length;
-  if (n !== labels.length) throw new Error("Data and labels must have same length");
+  if (n !== labels.length) throw new Error(`Invalid parameters 'data', 'labels': expected same length, received data.length=${n}, labels.length=${labels.length}`);
 
   // NaN/Infinity guard
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error("Data must not contain NaN or Infinity");
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
       }
     }
   }
@@ -347,13 +347,13 @@ export function daviesBouldinIndex(data: number[][], labels: number[]): number {
   const n = data.length;
   const uniqueLabels = [...new Set(labels)];
   const k = uniqueLabels.length;
-  if (k < 2) throw new Error("Need at least 2 clusters");
+  if (k < 2) throw new Error(`Invalid parameter 'labels': expected at least 2 clusters, received ${k}`);
 
   // NaN/Infinity guard
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error("Data must not contain NaN or Infinity");
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
       }
     }
   }
@@ -419,8 +419,8 @@ export function daviesBouldinIndex(data: number[][], labels: number[]): number {
  */
 export function adjustedRandIndex(labels1: number[], labels2: number[]): number {
   const n = labels1.length;
-  if (n !== labels2.length) throw new Error("Label arrays must have same length");
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n !== labels2.length) throw new Error(`Invalid parameters 'labels1', 'labels2': expected same length, received labels1.length=${n}, labels2.length=${labels2.length}`);
+  if (n < 2) throw new Error(`Invalid parameter 'labels1': expected at least 2 observations, received ${n}`);
 
   const unique1 = [...new Set(labels1)];
   const unique2 = [...new Set(labels2)];
@@ -576,14 +576,14 @@ export function dbscan(
   } = {},
 ): DBSCANResult {
   const n = data.length;
-  if (n < 1) throw new Error("Need at least 1 observation");
+  if (n < 1) throw new Error(`Invalid parameter 'data': expected at least 1 observation, received ${n}`);
 
   const epsilon = options.epsilon ?? 0.5;
   const minPoints = options.minPoints ?? 5;
   const dist = options.distanceMetric ?? euclidean;
 
-  if (epsilon <= 0) throw new Error("epsilon must be positive");
-  if (minPoints < 1) throw new Error("minPoints must be at least 1");
+  if (epsilon <= 0) throw new Error(`Invalid parameter 'epsilon': expected a positive number, received ${epsilon}`);
+  if (minPoints < 1) throw new Error(`Invalid parameter 'minPoints': expected at least 1, received ${minPoints}`);
 
   const labels = new Array<number>(n).fill(-2); // -2 = unvisited
   const corePoints: number[] = [];
@@ -713,7 +713,7 @@ export function optics(
   } = {},
 ): OPTICSResult {
   const n = data.length;
-  if (n < 1) throw new Error("Need at least 1 observation");
+  if (n < 1) throw new Error(`Invalid parameter 'data': expected at least 1 observation, received ${n}`);
 
   const epsilon = options.epsilon ?? Infinity;
   const minPoints = options.minPoints ?? 5;
@@ -892,8 +892,8 @@ export function spectralClustering(
   } = {},
 ): SpectralClusteringResult {
   const n = data.length;
-  if (k < 2) throw new Error("k must be at least 2");
-  if (n < k) throw new Error("Need at least k observations");
+  if (k < 2) throw new Error(`Invalid parameter 'k': expected at least 2, received ${k}`);
+  if (n < k) throw new Error(`Invalid parameter 'data': expected at least k (${k}) observations, received ${n}`);
 
   const sigma = options.sigma ?? 1.0;
   const graphType = options.graphType ?? "knn";
@@ -1184,14 +1184,14 @@ export function umap(
   const rng = options.seed != null ? createRng(options.seed) : Math.random;
 
   if (n < nNeighbors + 1) {
-    throw new Error(`Need at least ${nNeighbors + 1} observations for nNeighbors=${nNeighbors}`);
+    throw new Error(`Invalid parameter 'data': expected at least ${nNeighbors + 1} observations for nNeighbors=${nNeighbors}, received ${n}`);
   }
 
   // NaN/Infinity guard
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error("Data must not contain NaN or Infinity");
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
       }
     }
   }

@@ -20,7 +20,7 @@ statistika is organized into the following modules, each available as a sub-path
 
 | Module | Import Path | Description |
 |---|---|---|
-| **Distributions** | `statistika/distributions` | 23 probability distributions (Normal, Beta, Poisson, etc.) |
+| **Distributions** | `statistika/distributions` | 37 probability distributions (Normal, Beta, Poisson, etc.) |
 | **Models** | `statistika/models` | Regression models (linear, multiple, polynomial, logistic, robust) |
 | **Tests** | `statistika/tests` | Hypothesis tests (t-test, chi-squared, ANOVA, KS, etc.) |
 | **Utils** | `statistika/utils` | Descriptive statistics, linear algebra, special math functions |

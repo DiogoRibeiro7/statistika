@@ -104,6 +104,50 @@ export class LogNormal extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = -0.5 * ((ln(x) - mu) / sigma)^2 - log(x) - log(sigma) - 0.5 * log(2*pi)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x <= 0.
+   */
+  logPdf(x: number): number {
+    if (x <= 0) return -Infinity;
+    const logX = Math.log(x);
+    const z = (logX - this.mu) / this.sigma;
+    return -0.5 * z * z - logX - Math.log(this.sigma) - 0.5 * Math.log(2 * Math.PI);
+  }
+
+  /**
+   * Returns the skewness of the Log-normal distribution.
+   *
+   * Formula: (exp(sigma^2) + 2) * sqrt(exp(sigma^2) - 1)
+   */
+  get skewness(): number {
+    const es2 = Math.exp(this.sigma ** 2);
+    return (es2 + 2) * Math.sqrt(es2 - 1);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Log-normal distribution.
+   *
+   * Formula: exp(4*sigma^2) + 2*exp(3*sigma^2) + 3*exp(2*sigma^2) - 6
+   */
+  get kurtosis(): number {
+    const s2 = this.sigma ** 2;
+    return Math.exp(4 * s2) + 2 * Math.exp(3 * s2) + 3 * Math.exp(2 * s2) - 6;
+  }
+
+  /**
+   * Returns the mode of the Log-normal distribution.
+   *
+   * Formula: exp(mu - sigma^2)
+   */
+  get mode(): number {
+    return Math.exp(this.mu - this.sigma ** 2);
+  }
+
+  /**
    * Evaluates the cumulative distribution function (CDF) at x.
    *
    * Computed as the CDF of the underlying Normal distribution evaluated at ln(x):

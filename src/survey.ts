@@ -56,15 +56,15 @@ export function weightedStats(
 ): WeightedStatsResult {
   const n = data.length;
   if (n !== weights.length) {
-    throw new Error("data and weights must have the same length");
+    throw new Error(`Invalid parameters 'data', 'weights': expected same length, received data.length=${data.length}, weights.length=${weights.length}`);
   }
-  if (n === 0) throw new Error("Need at least 1 observation");
+  if (n === 0) throw new Error(`Invalid parameter 'data': expected at least 1 observation, received 0`);
 
   let sumW = 0;
   let sumW2 = 0;
   let sumWX = 0;
   for (let i = 0; i < n; i++) {
-    if (weights[i] < 0) throw new Error("Weights must be non-negative");
+    if (weights[i] < 0) throw new Error(`Invalid parameter 'weights[${i}]': expected a non-negative number, received ${weights[i]}`);
     sumW += weights[i];
     sumW2 += weights[i] * weights[i];
     sumWX += weights[i] * data[i];
@@ -121,9 +121,9 @@ export function weightedQuantile(
   if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
   const n = data.length;
   if (n !== weights.length) {
-    throw new Error("data and weights must have the same length");
+    throw new Error(`Invalid parameters 'data', 'weights': expected same length, received data.length=${data.length}, weights.length=${weights.length}`);
   }
-  if (n === 0) throw new Error("Need at least 1 observation");
+  if (n === 0) throw new Error(`Invalid parameter 'data': expected at least 1 observation, received 0`);
 
   // Create sorted index-weight pairs
   const indices = Array.from({ length: n }, (_, i) => i);
@@ -274,7 +274,7 @@ export function designEffect(
 ): DesignEffectResult {
   const n = data.length;
   if (n !== weights.length) {
-    throw new Error("data and weights must have the same length");
+    throw new Error(`Invalid parameters 'data', 'weights': expected same length, received data.length=${data.length}, weights.length=${weights.length}`);
   }
   if (n < 2) throw new Error("Need at least 2 observations");
 

@@ -101,6 +101,55 @@ export class Pareto extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = log(alpha) + alpha * log(xm) - (alpha + 1) * log(x)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x < xm.
+   */
+  logPdf(x: number): number {
+    if (x < this.xm) return -Infinity;
+    return Math.log(this.alpha) + this.alpha * Math.log(this.xm) - (this.alpha + 1) * Math.log(x);
+  }
+
+  /**
+   * Returns the skewness of the Pareto distribution.
+   *
+   * Formula: 2 * (1 + alpha) / (alpha - 3) * sqrt((alpha - 2) / alpha)
+   * Defined only for alpha > 3.
+   */
+  get skewness(): number {
+    if (this.alpha <= 3) return NaN;
+    return (
+      (2 * (1 + this.alpha)) / (this.alpha - 3) * Math.sqrt((this.alpha - 2) / this.alpha)
+    );
+  }
+
+  /**
+   * Returns the excess kurtosis of the Pareto distribution.
+   *
+   * Formula: 6 * (alpha^3 + alpha^2 - 6*alpha - 2) / (alpha * (alpha - 3) * (alpha - 4))
+   * Defined only for alpha > 4.
+   */
+  get kurtosis(): number {
+    if (this.alpha <= 4) return NaN;
+    const a = this.alpha;
+    return (
+      (6 * (a * a * a + a * a - 6 * a - 2)) / (a * (a - 3) * (a - 4))
+    );
+  }
+
+  /**
+   * Returns the mode of the Pareto distribution.
+   *
+   * The mode is always `xm` (the minimum value of the support).
+   */
+  get mode(): number {
+    return this.xm;
+  }
+
+  /**
    * Evaluates the cumulative distribution function (CDF) at x.
    *
    * CDF: F(x) = 1 - (xm / x)^alpha

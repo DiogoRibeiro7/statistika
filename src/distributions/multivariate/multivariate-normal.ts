@@ -17,6 +17,7 @@
 
 import { gammaLn } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { resolveRng } from "../../random";
 
 /**
  * Computes the Cholesky decomposition of a symmetric positive-definite matrix.
@@ -125,7 +126,7 @@ export class MultivariateNormal {
     public readonly covariance: number[][],
     rng?: RandomFn,
   ) {
-    this.rng = rng ?? Math.random;
+    this.rng = resolveRng(rng);
     const k = mean.length;
     if (k < 1) throw new Error(`Invalid parameter 'mean': expected at least 1 dimension, received ${k}`);
     if (covariance.length !== k || covariance.some((r) => r.length !== k)) {

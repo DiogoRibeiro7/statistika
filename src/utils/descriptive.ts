@@ -64,6 +64,13 @@ export function stdDev(data: Dataset, sample = true): number {
 }
 
 /**
+ * Alias for {@link stdDev}. Computes the standard deviation of a dataset.
+ *
+ * @see stdDev
+ */
+export const standardDeviation = stdDev;
+
+/**
  * Computes the adjusted Fisher-Pearson sample skewness of a dataset.
  * Uses the bias-corrected formula: [n/((n-1)(n-2))] * Σ[((xᵢ - x̄)/s)³].
  *

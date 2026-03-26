@@ -54,6 +54,48 @@ export class Bernoulli extends BaseDiscrete {
   }
 
   /**
+   * Computes the log of the probability mass function at `k`.
+   *
+   * @param k - The value at which to evaluate the log-PMF (0 or 1).
+   * @returns The log-probability. Returns -Infinity for values other than 0 or 1.
+   */
+  logPmf(k: number): number {
+    if (k === 0) return Math.log(1 - this.p);
+    if (k === 1) return Math.log(this.p);
+    return -Infinity;
+  }
+
+  /**
+   * Returns the skewness of the Bernoulli distribution.
+   *
+   * Formula: (1 - 2*p) / sqrt(p * (1 - p))
+   */
+  get skewness(): number {
+    return (1 - 2 * this.p) / Math.sqrt(this.p * (1 - this.p));
+  }
+
+  /**
+   * Returns the excess kurtosis of the Bernoulli distribution.
+   *
+   * Formula: (1 - 6*p*(1-p)) / (p*(1-p))
+   */
+  get kurtosis(): number {
+    const pq = this.p * (1 - this.p);
+    return (1 - 6 * pq) / pq;
+  }
+
+  /**
+   * Returns the mode of the Bernoulli distribution.
+   *
+   * Returns 1 if p > 0.5, 0 if p < 0.5, NaN if p = 0.5 (bimodal).
+   */
+  get mode(): number {
+    if (this.p > 0.5) return 1;
+    if (this.p < 0.5) return 0;
+    return NaN;
+  }
+
+  /**
    * Cumulative distribution function.
    *
    * F(k) = 0 for k < 0, (1 - p) for 0 <= k < 1, and 1 for k >= 1.

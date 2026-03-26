@@ -1,5 +1,6 @@
 import { Dataset, HypothesisTestResult } from "../types";
 import { normalCdf } from "../utils/linalg";
+import { regularizedGammaP } from "../utils/math";
 
 /**
  * Computes a two-tailed p-value from a z-score using the standard normal CDF.
@@ -257,4 +258,125 @@ function countTieGroups(sorted: number[]): number[] {
     i = j;
   }
   return groups;
+}
+
+/**
+ * Result of a Kruskal-Wallis test.
+ */
+export interface KruskalWallisResult {
+  /** The H test statistic (chi-squared approximation). */
+  statistic: number;
+  /** Approximate p-value from the chi-squared distribution. */
+  pValue: number;
+  /** Degrees of freedom (k - 1, where k is the number of groups). */
+  df: number;
+  /** Whether to reject the null hypothesis at the given alpha. */
+  rejected: boolean;
+}
+
+/**
+ * Chi-squared survival function: P(chi-squared > x) with given degrees of freedom.
+ */
+function chiSquaredSf(x: number, df: number): number {
+  if (x <= 0) return 1;
+  return 1 - regularizedGammaP(df / 2, x / 2);
+}
+
+/**
+ * Performs the Kruskal-Wallis H test for comparing multiple independent samples.
+ *
+ * A non-parametric alternative to one-way ANOVA that tests whether two or
+ * more independent samples come from the same distribution. The test ranks
+ * all observations together and compares the mean ranks across groups.
+ *
+ * The H statistic follows a chi-squared distribution with (k - 1) degrees
+ * of freedom under the null hypothesis, where k is the number of groups.
+ * A tie correction factor is applied when ties are present.
+ *
+ * @param groups - Array of datasets, one per group (at least 2 groups required;
+ *   each group must have at least 1 observation)
+ * @param alpha - Significance level for the test (default 0.05)
+ * @returns A {@link KruskalWallisResult} containing the H statistic, p-value,
+ *   degrees of freedom, and whether the null hypothesis is rejected
+ * @throws {Error} If fewer than 2 groups are provided
+ * @throws {Error} If any group is empty
+ * @throws {Error} If total observations are fewer than 3
+ *
+ * @example
+ * ```ts
+ * const result = kruskalWallisTest([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
+ * console.log(result.statistic, result.pValue, result.df);
+ * ```
+ */
+export function kruskalWallisTest(
+  groups: Dataset[],
+  alpha: number = 0.05,
+): KruskalWallisResult {
+  const k = groups.length;
+  if (k < 2) {
+    throw new Error("kruskalWallisTest requires at least 2 groups (got " + k + ")");
+  }
+  for (let i = 0; i < k; i++) {
+    if (groups[i].length < 1) {
+      throw new Error(
+        "kruskalWallisTest requires at least 1 observation per group (group " + i + " is empty)",
+      );
+    }
+  }
+
+  const N = groups.reduce((sum, g) => sum + g.length, 0);
+  if (N < 3) {
+    throw new Error("kruskalWallisTest requires at least 3 total observations (got " + N + ")");
+  }
+
+  // Combine all observations with group labels
+  const combined: { value: number; group: number }[] = [];
+  for (let gi = 0; gi < k; gi++) {
+    for (const v of groups[gi]) {
+      combined.push({ value: v, group: gi });
+    }
+  }
+  combined.sort((a, b) => a.value - b.value);
+
+  // Assign ranks with tie averaging
+  const values = combined.map((c) => c.value);
+  const ranks = assignRanks(values);
+
+  // Sum of ranks per group
+  const rankSums = new Array<number>(k).fill(0);
+  for (let i = 0; i < combined.length; i++) {
+    rankSums[combined[i].group] += ranks[i];
+  }
+
+  // Compute H statistic
+  // H = (12 / (N*(N+1))) * sum(R_i^2 / n_i) - 3*(N+1)
+  let sumTerm = 0;
+  for (let i = 0; i < k; i++) {
+    const ni = groups[i].length;
+    sumTerm += (rankSums[i] * rankSums[i]) / ni;
+  }
+  let H = (12 / (N * (N + 1))) * sumTerm - 3 * (N + 1);
+
+  // Tie correction
+  const tieGroups = countTieGroups(values);
+  if (tieGroups.length > 0) {
+    let tieCorrection = 0;
+    for (const t of tieGroups) {
+      tieCorrection += t * t * t - t;
+    }
+    const correctionFactor = 1 - tieCorrection / (N * N * N - N);
+    if (correctionFactor > 0) {
+      H = H / correctionFactor;
+    }
+  }
+
+  const df = k - 1;
+  const pValue = chiSquaredSf(H, df);
+
+  return {
+    statistic: H,
+    pValue,
+    df,
+    rejected: pValue < alpha,
+  };
 }

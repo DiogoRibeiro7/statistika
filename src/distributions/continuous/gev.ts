@@ -199,6 +199,32 @@ export class GEV extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = (xi + 1) * log(t(x)) - t(x) - log(sigma)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity outside the support.
+   */
+  logPdf(x: number): number {
+    if (!this.isInSupport(x)) return -Infinity;
+    const tx = this.t(x);
+    if (!isFinite(tx)) return -Infinity;
+    return (this.xi + 1) * Math.log(tx) - tx - Math.log(this.sigma);
+  }
+
+  /**
+   * Returns the mode of the GEV distribution.
+   *
+   * - xi = 0: mode = mu
+   * - xi != 0: mode = mu + sigma * ((1 + xi)^(-xi) - 1) / xi
+   */
+  get mode(): number {
+    if (this.xi === 0) return this.mu;
+    return this.mu + (this.sigma * (Math.pow(1 + this.xi, -this.xi) - 1)) / this.xi;
+  }
+
+  /**
    * Draws a single random sample from the GEV distribution.
    *
    * Uses the inverse CDF method.

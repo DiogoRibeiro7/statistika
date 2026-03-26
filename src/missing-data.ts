@@ -64,10 +64,10 @@ export function analyzeMissing(data: MaybeDataset): MissingDataSummary {
  * ```
  */
 export function listwiseDeletion(...columns: MaybeDataset[]): number[][] {
-  if (columns.length === 0) throw new Error("Must provide at least one column");
+  if (columns.length === 0) throw new Error(`Invalid parameter 'columns': expected at least one column, received length 0`);
   const n = columns[0].length;
   for (const col of columns) {
-    if (col.length !== n) throw new Error("All columns must have the same length");
+    if (col.length !== n) throw new Error(`Invalid parameter 'columns': expected all columns to have same length (${n}), received ${col.length}`);
   }
 
   const result: number[][] = columns.map(() => []);
@@ -110,7 +110,7 @@ export function pairwiseDeletion(
   b: MaybeDataset,
 ): { a: number[]; b: number[]; indices: number[] } {
   if (a.length !== b.length) {
-    throw new Error("Both datasets must have the same length");
+    throw new Error(`Invalid parameters 'a', 'b': expected same length, received a.length=${a.length}, b.length=${b.length}`);
   }
 
   const resultA: number[] = [];
@@ -152,7 +152,7 @@ export function meanImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
     (v): v is number => v != null && !Number.isNaN(v),
   );
-  if (complete.length === 0) throw new Error("No observed values to compute mean");
+  if (complete.length === 0) throw new Error(`Invalid parameter 'data': expected at least one observed value, received 0 non-missing values`);
   const m = mean(complete);
   return data.map((v) => (v != null && !Number.isNaN(v) ? v : m));
 }
@@ -177,7 +177,7 @@ export function medianImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
     (v): v is number => v != null && !Number.isNaN(v),
   );
-  if (complete.length === 0) throw new Error("No observed values to compute median");
+  if (complete.length === 0) throw new Error(`Invalid parameter 'data': expected at least one observed value, received 0 non-missing values`);
   const med = median(complete);
   return data.map((v) => (v != null && !Number.isNaN(v) ? v : med));
 }
@@ -202,7 +202,7 @@ export function modeImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
     (v): v is number => v != null && !Number.isNaN(v),
   );
-  if (complete.length === 0) throw new Error("No observed values to compute mode");
+  if (complete.length === 0) throw new Error(`Invalid parameter 'data': expected at least one observed value, received 0 non-missing values`);
 
   const counts = new Map<number, number>();
   for (const v of complete) {
@@ -254,7 +254,7 @@ export function linearInterpolation(data: MaybeDataset): number[] {
     }
   }
 
-  if (firstIdx === -1) throw new Error("No observed values for interpolation");
+  if (firstIdx === -1) throw new Error(`Invalid parameter 'data': expected at least one observed value for interpolation, received 0 non-missing values`);
 
   // Forward-fill leading missing values
   for (let i = 0; i < firstIdx; i++) {
@@ -309,7 +309,7 @@ export function forwardFill(data: MaybeDataset): number[] {
     (v) => v != null && !Number.isNaN(v as number),
   );
   if (!hasObserved) {
-    throw new Error("Cannot forward-fill: all values are missing");
+    throw new Error(`Invalid parameter 'data': cannot forward-fill when all values are missing`);
   }
 
   const result = new Array<number>(data.length);

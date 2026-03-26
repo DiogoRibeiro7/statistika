@@ -35,24 +35,24 @@ export function multipleRegression(
 ): MultipleRegressionResult {
   const n = X.length;
   if (n !== y.length) {
-    throw new Error("X and y must have the same number of observations");
+    throw new Error(`Invalid parameters 'X', 'y': expected same number of observations, received X.length=${n}, y.length=${y.length}`);
   }
   if (n < 2) {
-    throw new Error("Must have at least 2 observations");
+    throw new Error(`Invalid parameter 'X': expected at least 2 observations, received ${n}`);
   }
 
   const p = X[0].length;
   if (p === 0) {
-    throw new Error("Feature vectors must not be empty");
+    throw new Error(`Invalid parameter 'X': expected non-empty feature vectors, received 0 features`);
   }
   for (let i = 1; i < n; i++) {
     if (X[i].length !== p) {
-      throw new Error("All feature vectors must have the same length");
+      throw new Error(`Invalid parameter 'X[${i}]': expected ${p} features, received ${X[i].length}`);
     }
   }
   if (n <= p) {
     throw new Error(
-      "Number of observations must exceed number of features",
+      `Invalid parameters 'X', 'y': expected more observations than features, received n=${n}, p=${p}`,
     );
   }
 
@@ -99,7 +99,7 @@ export function multipleRegression(
     rSquared,
     predict: (x: number[]) => {
       if (x.length !== p) {
-        throw new Error(`Expected ${p} features, got ${x.length}`);
+        throw new Error(`Invalid parameter 'x': expected ${p} features, received ${x.length}`);
       }
       let result = intercept;
       for (let j = 0; j < p; j++) {

@@ -166,7 +166,7 @@ export function windowedStats(
   windowSize: number,
 ): ObservableLike<StatsSnapshot> {
   if (!Number.isInteger(windowSize) || windowSize < 1) {
-    throw new Error("windowSize must be a positive integer");
+    throw new Error(`Invalid parameter 'windowSize': expected a positive integer, received ${windowSize}`);
   }
 
   return createObservable<StatsSnapshot>((observer) => {
@@ -214,7 +214,7 @@ export function batchStats(
   batchSize: number,
 ): ObservableLike<StatsSnapshot> {
   if (!Number.isInteger(batchSize) || batchSize < 1) {
-    throw new Error("batchSize must be a positive integer");
+    throw new Error(`Invalid parameter 'batchSize': expected a positive integer, received ${batchSize}`);
   }
 
   return createObservable<StatsSnapshot>((observer) => {

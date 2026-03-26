@@ -119,6 +119,68 @@ export class Hypergeometric extends BaseDiscrete {
   }
 
   /**
+   * Computes the log of the probability mass function at `k`.
+   *
+   * log P(X = k) = log(C(K,k)) + log(C(N-K, n-k)) - log(C(N, n))
+   *
+   * @param k - The number of observed successes.
+   * @returns The log-probability. Returns -Infinity outside the support.
+   */
+  logPmf(k: number): number {
+    if (!Number.isInteger(k)) return -Infinity;
+    const { N, K, n } = this;
+    const lo = Math.max(0, n + K - N);
+    const hi = Math.min(n, K);
+    if (k < lo || k > hi) return -Infinity;
+    return (
+      logFactorial(K) - logFactorial(k) - logFactorial(K - k) +
+      logFactorial(N - K) - logFactorial(n - k) - logFactorial(N - K - n + k) -
+      logFactorial(N) + logFactorial(n) + logFactorial(N - n)
+    );
+  }
+
+  /**
+   * Returns the skewness of the Hypergeometric distribution.
+   *
+   * Formula: ((N - 2*K) * sqrt(N - 1) * (N - 2*n)) /
+   *          (sqrt(n * K * (N - K) * (N - n)) * (N - 2))
+   */
+  get skewness(): number {
+    const { N, K, n } = this;
+    if (N <= 2) return NaN;
+    return (
+      ((N - 2 * K) * Math.sqrt(N - 1) * (N - 2 * n)) /
+      (Math.sqrt(n * K * (N - K) * (N - n)) * (N - 2))
+    );
+  }
+
+  /**
+   * Returns the excess kurtosis of the Hypergeometric distribution.
+   *
+   * Formula: ((N-1) * N^2 * [N*(N+1) - 6*K*(N-K) - 6*n*(N-n)]) /
+   *          (n * K * (N-K) * (N-n) * (N-2) * (N-3))
+   */
+  get kurtosis(): number {
+    const { N, K, n } = this;
+    if (N <= 3) return NaN;
+    const denom = n * K * (N - K) * (N - n) * (N - 2) * (N - 3);
+    if (denom === 0) return NaN;
+    const numer =
+      (N - 1) * N * N *
+      (N * (N + 1) - 6 * K * (N - K) - 6 * n * (N - n));
+    return numer / denom;
+  }
+
+  /**
+   * Returns the mode of the Hypergeometric distribution.
+   *
+   * Formula: floor((n + 1) * (K + 1) / (N + 2))
+   */
+  get mode(): number {
+    return Math.floor(((this.n + 1) * (this.K + 1)) / (this.N + 2));
+  }
+
+  /**
    * Computes the cumulative distribution function P(X <= k).
    *
    * Computed by summing the PMF from the lower bound of the support up to floor(k).

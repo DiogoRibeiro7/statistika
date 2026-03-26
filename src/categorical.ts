@@ -47,9 +47,9 @@ export interface ContingencyTableSummary {
  */
 export function contingencyTable(observed: number[][]): ContingencyTableSummary {
   const nRows = observed.length;
-  if (nRows === 0) throw new Error("Table must not be empty");
+  if (nRows === 0) throw new Error(`Invalid parameter 'observed': expected a non-empty table, received 0 rows`);
   const nCols = observed[0].length;
-  if (nCols === 0) throw new Error("Table must have at least 1 column");
+  if (nCols === 0) throw new Error(`Invalid parameter 'observed': expected at least 1 column, received 0 columns`);
 
   for (let i = 0; i < nRows; i++) {
     if (observed[i].length !== nCols) {
@@ -145,11 +145,11 @@ export function cochranMantelHaenszel(
   tables: number[][][],
   alpha = 0.05,
 ): { statistic: number; pValue: number; commonOddsRatio: number; rejected: boolean } {
-  if (tables.length === 0) throw new Error("Must provide at least one table");
+  if (tables.length === 0) throw new Error(`Invalid parameter 'tables': expected at least one table, received length 0`);
 
   for (const table of tables) {
     if (table.length !== 2 || table[0].length !== 2 || table[1].length !== 2) {
-      throw new Error("All tables must be 2×2");
+      throw new Error(`Invalid parameter 'tables': expected all tables to be 2×2, received ${table.length}×${table[0]?.length} table`);
     }
   }
 

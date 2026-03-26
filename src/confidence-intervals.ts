@@ -26,7 +26,7 @@ import { StudentT } from "./distributions/continuous/student-t";
  */
 export function meanCI(data: Dataset, confidence = 0.95): ConfidenceInterval {
   if (data.length < 2) {
-    throw new Error("Dataset must have at least 2 elements");
+    throw new Error(`Invalid parameter 'data': expected at least 2 elements, received ${data.length}`);
   }
   validateConfidence(confidence);
 
@@ -73,7 +73,7 @@ export function twoSampleMeanCI(
   confidence = 0.95,
 ): ConfidenceInterval {
   if (data1.length < 2 || data2.length < 2) {
-    throw new Error("Both datasets must have at least 2 elements");
+    throw new Error(`Invalid parameters 'data1', 'data2': expected at least 2 elements each, received data1.length=${data1.length}, data2.length=${data2.length}`);
   }
   validateConfidence(confidence);
 
@@ -135,7 +135,7 @@ export function pairedMeanCI(
   confidence = 0.95,
 ): ConfidenceInterval {
   if (data1.length !== data2.length) {
-    throw new Error("Paired datasets must have the same length");
+    throw new Error(`Invalid parameters 'data1', 'data2': expected same length, received data1.length=${data1.length}, data2.length=${data2.length}`);
   }
   const diffs = data1.map((v, i) => v - data2[i]);
   return meanCI(diffs, confidence);
@@ -170,13 +170,13 @@ export function proportionCI(
   confidence = 0.95,
 ): ConfidenceInterval {
   if (n < 1) {
-    throw new Error("Number of trials must be at least 1");
+    throw new Error(`Invalid parameter 'n': expected at least 1, received ${n}`);
   }
   if (successes < 0 || successes > n) {
-    throw new Error("Successes must be between 0 and n");
+    throw new Error(`Invalid parameter 'successes': expected a value in [0, ${n}], received ${successes}`);
   }
   if (!Number.isInteger(successes) || !Number.isInteger(n)) {
-    throw new Error("Successes and n must be integers");
+    throw new Error(`Invalid parameters 'successes', 'n': expected integers, received successes=${successes}, n=${n}`);
   }
   validateConfidence(confidence);
 
@@ -229,10 +229,10 @@ export function twoProportionCI(
   confidence = 0.95,
 ): ConfidenceInterval {
   if (n1 < 1 || n2 < 1) {
-    throw new Error("Number of trials must be at least 1");
+    throw new Error(`Invalid parameters 'n1', 'n2': expected at least 1, received n1=${n1}, n2=${n2}`);
   }
   if (successes1 < 0 || successes1 > n1 || successes2 < 0 || successes2 > n2) {
-    throw new Error("Successes must be between 0 and n");
+    throw new Error(`Invalid parameters 'successes1', 'successes2': expected values in [0, n], received successes1=${successes1} (n1=${n1}), successes2=${successes2} (n2=${n2})`);
   }
   validateConfidence(confidence);
 
@@ -281,10 +281,10 @@ export function linearRegressionCI(
   confidence = 0.95,
 ): RegressionCoefficientCI[] {
   if (x.length !== y.length) {
-    throw new Error("x and y datasets must have the same length");
+    throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${x.length}, y.length=${y.length}`);
   }
   if (x.length < 3) {
-    throw new Error("Need at least 3 data points for regression CIs");
+    throw new Error(`Invalid parameter 'x': expected at least 3 data points, received ${x.length}`);
   }
   validateConfidence(confidence);
 
@@ -384,12 +384,12 @@ export function multipleRegressionCI(
 ): RegressionCoefficientCI[] {
   const n = X.length;
   if (n !== y.length) {
-    throw new Error("X and y must have the same number of observations");
+    throw new Error(`Invalid parameters 'X', 'y': expected same number of observations, received X.length=${n}, y.length=${y.length}`);
   }
   const p = X[0].length;
   if (n <= p + 1) {
     throw new Error(
-      "Number of observations must exceed number of parameters (p + 1)",
+      `Invalid parameters 'X', 'y': expected more observations than parameters (p + 1 = ${p + 1}), received n=${n}`,
     );
   }
   validateConfidence(confidence);
@@ -469,7 +469,7 @@ export function multipleRegressionCI(
 
 function validateConfidence(confidence: number): void {
   if (confidence <= 0 || confidence >= 1) {
-    throw new Error("Confidence level must be between 0 and 1 (exclusive)");
+    throw new Error(`Invalid parameter 'confidence': expected a value in (0, 1), received ${confidence}`);
   }
 }
 

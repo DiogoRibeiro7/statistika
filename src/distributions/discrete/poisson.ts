@@ -58,6 +58,46 @@ export class Poisson extends BaseDiscrete {
   }
 
   /**
+   * Computes the log of the probability mass function at `k`.
+   *
+   * log P(X = k) = k * log(lambda) - lambda - log(k!)
+   *
+   * @param k - Non-negative integer value.
+   * @returns The log-probability. Returns -Infinity for non-integer or negative k.
+   */
+  logPmf(k: number): number {
+    if (!Number.isInteger(k) || k < 0) return -Infinity;
+    return k * Math.log(this.lambda) - this.lambda - logFactorial(k);
+  }
+
+  /**
+   * Returns the skewness of the Poisson distribution.
+   *
+   * Formula: 1 / sqrt(lambda)
+   */
+  get skewness(): number {
+    return 1 / Math.sqrt(this.lambda);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Poisson distribution.
+   *
+   * Formula: 1 / lambda
+   */
+  get kurtosis(): number {
+    return 1 / this.lambda;
+  }
+
+  /**
+   * Returns the mode of the Poisson distribution.
+   *
+   * Formula: floor(lambda)
+   */
+  get mode(): number {
+    return Math.floor(this.lambda);
+  }
+
+  /**
    * Cumulative distribution function.
    *
    * P(X <= k) = 1 - P(k + 1, lambda), where P is the regularized lower

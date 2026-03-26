@@ -115,6 +115,70 @@ export class Weibull extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = log(k/lambda) + (k-1)*log(x/lambda) - (x/lambda)^k
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x < 0.
+   */
+  logPdf(x: number): number {
+    if (x < 0) return -Infinity;
+    if (x === 0) {
+      if (this.k === 1) return -Math.log(this.lambda);
+      if (this.k < 1) return Infinity;
+      return -Infinity;
+    }
+    const z = x / this.lambda;
+    return (
+      Math.log(this.k / this.lambda) +
+      (this.k - 1) * Math.log(z) -
+      Math.pow(z, this.k)
+    );
+  }
+
+  /**
+   * Returns the skewness of the Weibull distribution.
+   *
+   * Uses the formula involving gamma functions.
+   */
+  get skewness(): number {
+    const g1 = gamma(1 + 1 / this.k);
+    const g2 = gamma(1 + 2 / this.k);
+    const g3 = gamma(1 + 3 / this.k);
+    const mu = g1;
+    const sigma2 = g2 - g1 * g1;
+    const sigma = Math.sqrt(sigma2);
+    return (g3 - 3 * mu * sigma2 - mu * mu * mu) / (sigma * sigma * sigma);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Weibull distribution.
+   *
+   * Uses the formula involving gamma functions.
+   */
+  get kurtosis(): number {
+    const g1 = gamma(1 + 1 / this.k);
+    const g2 = gamma(1 + 2 / this.k);
+    const g3 = gamma(1 + 3 / this.k);
+    const g4 = gamma(1 + 4 / this.k);
+    const mu = g1;
+    const sigma2 = g2 - g1 * g1;
+    const sigma4 = sigma2 * sigma2;
+    return (g4 - 4 * g3 * mu + 6 * g2 * mu * mu - 3 * mu * mu * mu * mu) / sigma4 - 3;
+  }
+
+  /**
+   * Returns the mode of the Weibull distribution.
+   *
+   * Formula: lambda * ((k - 1) / k)^(1/k) for k > 1, 0 for k <= 1.
+   */
+  get mode(): number {
+    if (this.k <= 1) return 0;
+    return this.lambda * Math.pow((this.k - 1) / this.k, 1 / this.k);
+  }
+
+  /**
    * Evaluates the cumulative distribution function (CDF) at x.
    *
    * CDF: F(x) = 1 - exp(-(x/lambda)^k)

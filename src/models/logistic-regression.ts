@@ -56,21 +56,21 @@ export function logisticRegression(
 
   const n = X.length;
   if (n !== y.length) {
-    throw new Error("X and y must have the same number of observations");
+    throw new Error(`Invalid parameters 'X', 'y': expected same number of observations, received X.length=${n}, y.length=${y.length}`);
   }
   if (n < 2) {
-    throw new Error("Must have at least 2 observations");
+    throw new Error(`Invalid parameter 'X': expected at least 2 observations, received ${n}`);
   }
 
   const p = X[0].length;
   for (let i = 0; i < n; i++) {
     if (X[i].length !== p) {
-      throw new Error("All feature vectors must have the same length");
+      throw new Error(`Invalid parameter 'X[${i}]': expected ${p} features, received ${X[i].length}`);
     }
   }
   for (let i = 0; i < n; i++) {
     if (y[i] !== 0 && y[i] !== 1) {
-      throw new Error("Response variable must be binary (0 or 1)");
+      throw new Error(`Invalid parameter 'y[${i}]': expected binary (0 or 1), received ${y[i]}`);
     }
   }
 
@@ -143,7 +143,7 @@ export function logisticRegression(
     iterations,
     predict: (x: number[]) => {
       if (x.length !== p) {
-        throw new Error(`Expected ${p} features, got ${x.length}`);
+        throw new Error(`Invalid parameter 'x': expected ${p} features, received ${x.length}`);
       }
       let z = intercept;
       for (let j = 0; j < p; j++) {

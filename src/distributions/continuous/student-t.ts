@@ -101,6 +101,55 @@ export class StudentT extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = gammaLn((nu+1)/2) - gammaLn(nu/2) - 0.5*log(nu*pi)
+   *            - ((nu+1)/2) * log(1 + x^2/nu)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density.
+   */
+  logPdf(x: number): number {
+    return (
+      gammaLn((this.nu + 1) / 2) -
+      gammaLn(this.nu / 2) -
+      0.5 * Math.log(this.nu * Math.PI) -
+      ((this.nu + 1) / 2) * Math.log(1 + (x * x) / this.nu)
+    );
+  }
+
+  /**
+   * Returns the skewness of the Student's t-distribution.
+   *
+   * The skewness is 0 for nu > 3, and undefined for nu <= 3.
+   */
+  get skewness(): number {
+    if (this.nu <= 3) return NaN;
+    return 0;
+  }
+
+  /**
+   * Returns the excess kurtosis of the Student's t-distribution.
+   *
+   * Formula: 6 / (nu - 4) for nu > 4.
+   * Returns Infinity for 2 < nu <= 4, NaN for nu <= 2.
+   */
+  get kurtosis(): number {
+    if (this.nu <= 2) return NaN;
+    if (this.nu <= 4) return Infinity;
+    return 6 / (this.nu - 4);
+  }
+
+  /**
+   * Returns the mode of the Student's t-distribution.
+   *
+   * The mode is always 0.
+   */
+  get mode(): number {
+    return 0;
+  }
+
+  /**
    * Evaluates the cumulative distribution function (CDF) at x.
    *
    * Computed using the regularized incomplete Beta function:

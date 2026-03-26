@@ -90,10 +90,10 @@ export function chebyshev(a: Dataset, b: Dataset): number {
  */
 export function minkowski(a: Dataset, b: Dataset, p: number): number {
   assertSameLength(a, b);
-  if (p < 1) throw new Error("Minkowski order p must be >= 1");
+  if (p < 1) throw new Error(`Invalid parameter 'p': expected >= 1, received ${p}`);
   if (!Number.isFinite(p)) {
     if (p === Infinity) return chebyshev(a, b);
-    throw new Error("Minkowski order p must be finite or Infinity");
+    throw new Error(`Invalid parameter 'p': expected a finite number or Infinity, received ${p}`);
   }
 
   let sum = 0;
@@ -129,7 +129,7 @@ export function cosineSimilarity(a: Dataset, b: Dataset): number {
     normB += b[i] * b[i];
   }
   const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  if (denom === 0) throw new Error("Cannot compute cosine similarity for zero vectors");
+  if (denom === 0) throw new Error(`Invalid parameters 'a', 'b': cannot compute cosine similarity for zero vectors`);
   return dot / denom;
 }
 
@@ -220,7 +220,7 @@ export function jaccardDistance(a: number[], b: number[]): number {
  * ```
  */
 export function mahalanobis(point: Dataset, data: Dataset[]): number {
-  if (data.length < 2) throw new Error("Need at least 2 observations");
+  if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${data.length}`);
   const p = point.length;
   const n = data.length;
 
@@ -231,7 +231,7 @@ export function mahalanobis(point: Dataset, data: Dataset[]): number {
   }
 
   if (data.some((row) => row.length !== p)) {
-    throw new Error("All observations must have the same dimensionality as the point");
+    throw new Error(`Invalid parameter 'data': expected all observations to have the same dimensionality as the point (${p}), received mismatched dimensions`);
   }
 
   // NaN / Infinity guards
@@ -329,8 +329,8 @@ export function distanceMatrix(
 // -- Helpers -----------------------------------------------------------------
 
 function assertSameLength(a: Dataset, b: Dataset): void {
-  if (a.length === 0) throw new Error("Vectors must not be empty");
+  if (a.length === 0) throw new Error(`Invalid parameter 'a': expected a non-empty vector, received length 0`);
   if (a.length !== b.length) {
-    throw new Error(`Vectors must have the same length (got ${a.length} and ${b.length})`);
+    throw new Error(`Invalid parameters 'a', 'b': expected same length, received a.length=${a.length}, b.length=${b.length}`);
   }
 }

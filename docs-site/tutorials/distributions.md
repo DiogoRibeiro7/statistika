@@ -1,6 +1,6 @@
 # Tutorial: Working with Distributions
 
-statistika provides 31 probability distributions -- 23 continuous and 8 discrete. Every distribution shares a common interface for computing moments, sampling, and probability calculations.
+statistika provides 37 probability distributions -- 23 continuous, 8 discrete, and 6 multivariate. Every distribution shares a common interface for computing moments, sampling, and probability calculations.
 
 ## Creating a Distribution
 

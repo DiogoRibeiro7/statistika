@@ -67,10 +67,10 @@ export function betaBinomial(
   priorBeta = 1,
 ): BetaBinomialResult {
   if (successes < 0 || trials < 0 || successes > trials) {
-    throw new Error("Invalid successes/trials");
+    throw new Error(`Invalid parameters 'successes', 'trials': expected 0 <= successes <= trials, received successes=${successes}, trials=${trials}`);
   }
   if (priorAlpha <= 0 || priorBeta <= 0) {
-    throw new Error("Prior parameters must be positive");
+    throw new Error(`Invalid parameters 'priorAlpha', 'priorBeta': expected positive numbers, received priorAlpha=${priorAlpha}, priorBeta=${priorBeta}`);
   }
 
   const failures = trials - successes;
@@ -146,9 +146,9 @@ export function normalNormal(
   priorMean = 0,
   priorVariance = 1000,
 ): NormalNormalResult {
-  if (data.length === 0) throw new Error("Data must not be empty");
-  if (knownVariance <= 0) throw new Error("Known variance must be positive");
-  if (priorVariance <= 0) throw new Error("Prior variance must be positive");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
+  if (knownVariance <= 0) throw new Error(`Invalid parameter 'knownVariance': expected a positive number, received ${knownVariance}`);
+  if (priorVariance <= 0) throw new Error(`Invalid parameter 'priorVariance': expected a positive number, received ${priorVariance}`);
 
   const n = data.length;
   const dataMean = data.reduce((a, b) => a + b, 0) / n;
@@ -224,13 +224,13 @@ export function gammaPoisson(
   priorAlpha = 1,
   priorBeta = 1,
 ): GammaPoissonResult {
-  if (data.length === 0) throw new Error("Data must not be empty");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
   if (priorAlpha <= 0 || priorBeta <= 0) {
-    throw new Error("Prior parameters must be positive");
+    throw new Error(`Invalid parameters 'priorAlpha', 'priorBeta': expected positive numbers, received priorAlpha=${priorAlpha}, priorBeta=${priorBeta}`);
   }
   for (const x of data) {
     if (x < 0 || !Number.isInteger(x)) {
-      throw new Error("Data must be non-negative integers");
+      throw new Error(`Invalid parameter 'data': expected non-negative integers, received ${x}`);
     }
   }
 
@@ -339,9 +339,9 @@ export function metropolisHastings(
     random = Math.random,
   } = options;
 
-  if (nSamples < 1) throw new Error("nSamples must be at least 1");
-  if (thin < 1) throw new Error("thin must be at least 1");
-  if (proposalStd <= 0) throw new Error("proposalStd must be positive");
+  if (nSamples < 1) throw new Error(`Invalid parameter 'nSamples': expected at least 1, received ${nSamples}`);
+  if (thin < 1) throw new Error(`Invalid parameter 'thin': expected at least 1, received ${thin}`);
+  if (proposalStd <= 0) throw new Error(`Invalid parameter 'proposalStd': expected a positive number, received ${proposalStd}`);
 
   const totalIterations = burnIn + nSamples * thin;
   const samples: number[] = [];
@@ -439,7 +439,7 @@ export function bayesFactor(
   logLikelihood2: number[],
 ): BayesFactorResult {
   if (logLikelihood1.length === 0 || logLikelihood2.length === 0) {
-    throw new Error("Both log-likelihood arrays must be non-empty");
+    throw new Error(`Invalid parameters 'logLikelihood1', 'logLikelihood2': expected non-empty arrays, received lengths ${logLikelihood1.length} and ${logLikelihood2.length}`);
   }
 
   // Harmonic mean estimator of marginal likelihood:

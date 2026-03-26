@@ -98,14 +98,14 @@ export function coxRegression(
   tolerance = 1e-9,
 ): CoxRegressionResult {
   const n = observations.length;
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n < 2) throw new Error(`Invalid parameter 'observations': expected at least 2 observations, received ${n}`);
 
   const p = observations[0].covariates.length;
-  if (p < 1) throw new Error("Need at least 1 covariate");
+  if (p < 1) throw new Error(`Invalid parameter 'observations': expected at least 1 covariate, received ${p}`);
 
   for (const obs of observations) {
     if (obs.covariates.length !== p) {
-      throw new Error("All observations must have the same number of covariates");
+      throw new Error(`Invalid parameter 'observations': expected all observations to have ${p} covariates, received ${obs.covariates.length}`);
     }
   }
 

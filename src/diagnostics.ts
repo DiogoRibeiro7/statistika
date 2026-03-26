@@ -995,3 +995,106 @@ function jacobiEigenvalues(A: number[][]): number[] {
 
   return Array.from({ length: n }, (_, i) => M[i][i]);
 }
+
+// ---------------------------------------------------------------------------
+// Durbin-Watson test for autocorrelation
+// ---------------------------------------------------------------------------
+
+/**
+ * Result of a Durbin-Watson test for autocorrelation.
+ */
+export interface DurbinWatsonResult {
+  /** The Durbin-Watson d statistic, in [0, 4]. */
+  statistic: number;
+  /**
+   * Interpretation of the statistic:
+   * - "positive": evidence of positive autocorrelation (d < dL)
+   * - "negative": evidence of negative autocorrelation (d > 4 - dL)
+   * - "none": no significant autocorrelation detected (d near 2)
+   */
+  interpretation: "positive" | "negative" | "none";
+}
+
+/**
+ * Performs the Durbin-Watson test for autocorrelation in residuals.
+ *
+ * The Durbin-Watson statistic d tests for first-order autocorrelation
+ * in the residuals of a regression model. The statistic ranges from 0 to 4:
+ *   - d ~ 2: no autocorrelation
+ *   - d < 2: positive autocorrelation
+ *   - d > 2: negative autocorrelation
+ *
+ * The interpretation uses approximate critical bounds:
+ *   - d < dL: positive autocorrelation
+ *   - d > 4 - dL: negative autocorrelation
+ *   - otherwise: no significant autocorrelation
+ *
+ * where dL is approximated as 2 - 2*sqrt(1 - 1.645/sqrt(n)) for large n,
+ * with a fallback heuristic for smaller samples.
+ *
+ * @param residuals - Array of residuals from a regression model (at least 3 required)
+ * @returns A {@link DurbinWatsonResult} containing the d statistic and its interpretation
+ * @throws {Error} If `residuals` has fewer than 3 observations
+ *
+ * @example
+ * ```ts
+ * const result = durbinWatsonTest([0.1, -0.2, 0.15, -0.05, 0.08, -0.12]);
+ * console.log(result.statistic);       // ~2.0 if no autocorrelation
+ * console.log(result.interpretation);  // "none"
+ * ```
+ */
+export function durbinWatsonTest(residuals: Dataset): DurbinWatsonResult {
+  if (residuals.length < 3) {
+    throw new Error("durbinWatsonTest requires at least 3 residuals (got " + residuals.length + ")");
+  }
+
+  const n = residuals.length;
+
+  // Compute DW statistic: d = sum((e_t - e_{t-1})^2) / sum(e_t^2)
+  let numerator = 0;
+  let denominator = 0;
+  for (let i = 0; i < n; i++) {
+    denominator += residuals[i] * residuals[i];
+    if (i > 0) {
+      const diff = residuals[i] - residuals[i - 1];
+      numerator += diff * diff;
+    }
+  }
+
+  if (denominator === 0) {
+    // All residuals are zero: no autocorrelation by definition
+    return { statistic: 2, interpretation: "none" };
+  }
+
+  const d = numerator / denominator;
+
+  // Approximate critical value using a heuristic bound.
+  // For practical purposes, use a simple rule:
+  // At alpha=0.05, approximate lower bound dL based on sample size.
+  // For n >= 15: dL ~ 2 - 2*sqrt(1 - 1.645/sqrt(n))
+  // For small n: use conservative fixed bounds.
+  let dL: number;
+  if (n >= 15) {
+    dL = 2 - 2 * Math.sqrt(1 - 1.645 / Math.sqrt(n));
+  } else {
+    // Conservative bounds for small samples
+    // These are rough approximations for k=1
+    const smallDL: Record<number, number> = {
+      3: 0.61, 4: 0.73, 5: 0.82, 6: 0.90, 7: 0.95,
+      8: 1.00, 9: 1.04, 10: 1.08, 11: 1.12, 12: 1.15,
+      13: 1.18, 14: 1.20,
+    };
+    dL = smallDL[n] ?? 0.6;
+  }
+
+  let interpretation: "positive" | "negative" | "none";
+  if (d < dL) {
+    interpretation = "positive";
+  } else if (d > 4 - dL) {
+    interpretation = "negative";
+  } else {
+    interpretation = "none";
+  }
+
+  return { statistic: d, interpretation };
+}

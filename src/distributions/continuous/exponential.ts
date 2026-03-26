@@ -60,6 +60,46 @@ export class Exponential extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = log(lambda) - lambda * x for x >= 0.
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x < 0.
+   */
+  logPdf(x: number): number {
+    if (x < 0) return -Infinity;
+    return Math.log(this.lambda) - this.lambda * x;
+  }
+
+  /**
+   * Returns the skewness of the Exponential distribution.
+   *
+   * The skewness is always 2.
+   */
+  get skewness(): number {
+    return 2;
+  }
+
+  /**
+   * Returns the excess kurtosis of the Exponential distribution.
+   *
+   * The excess kurtosis is always 6.
+   */
+  get kurtosis(): number {
+    return 6;
+  }
+
+  /**
+   * Returns the mode of the Exponential distribution.
+   *
+   * The mode is always 0.
+   */
+  get mode(): number {
+    return 0;
+  }
+
+  /**
    * Evaluates the CDF at `x`.
    *
    * F(x) = 1 - exp(-lambda * x) for x >= 0.

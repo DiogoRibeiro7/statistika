@@ -9,7 +9,7 @@ A comprehensive statistical modeling and probability distribution library for No
 
 ## Features
 
-- **23 probability distributions** with PDF/PMF, CDF, quantile, survival function, and random sampling
+- **37 probability distributions** with PDF/PMF, CDF, quantile, survival function, and random sampling
 - **Hypothesis testing** — t-tests, chi-squared, ANOVA, KS, Mann-Whitney U, Wilcoxon, Fisher's exact
 - **Regression models** — linear, multiple, polynomial, logistic, robust, quantile, Cox PH
 - **Generalized Linear Models** — Gaussian, Binomial, Poisson, and Gamma families with link functions

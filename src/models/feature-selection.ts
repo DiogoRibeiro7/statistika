@@ -300,7 +300,7 @@ export function ridgeRegression(
   lambda: number,
 ): RegularisedResult {
   validateInputs(X, y);
-  if (lambda < 0) throw new Error("lambda must be non-negative");
+  if (lambda < 0) throw new Error(`Invalid parameter 'lambda': expected a non-negative number, received ${lambda}`);
   const n = X.length;
   const p = X[0].length;
 
@@ -463,8 +463,8 @@ export function elasticNet(
 ): RegularisedResult {
   const { alpha = 0.5, maxIterations = 1000, tolerance = 1e-7 } = options;
   validateInputs(X, y);
-  if (lambda < 0) throw new Error("lambda must be non-negative");
-  if (alpha < 0 || alpha > 1) throw new Error("alpha must be in [0, 1]");
+  if (lambda < 0) throw new Error(`Invalid parameter 'lambda': expected a non-negative number, received ${lambda}`);
+  if (alpha < 0 || alpha > 1) throw new Error(`Invalid parameter 'alpha': expected a value in [0, 1], received ${alpha}`);
   const n = X.length;
   const p = X[0].length;
 
@@ -567,18 +567,18 @@ export function elasticNet(
 function validateInputs(X: number[][], y: number[]): void {
   const n = X.length;
   if (n !== y.length) {
-    throw new Error("X and y must have the same number of observations");
+    throw new Error(`Invalid parameters 'X', 'y': expected same number of observations, received X.length=${n}, y.length=${y.length}`);
   }
   if (n < 2) {
-    throw new Error("Must have at least 2 observations");
+    throw new Error(`Invalid parameter 'X': expected at least 2 observations, received ${n}`);
   }
   const p = X[0].length;
   if (p === 0) {
-    throw new Error("Feature vectors must not be empty");
+    throw new Error(`Invalid parameter 'X': expected non-empty feature vectors, received 0 features`);
   }
   for (let i = 1; i < n; i++) {
     if (X[i].length !== p) {
-      throw new Error("All feature vectors must have the same length");
+      throw new Error(`Invalid parameter 'X[${i}]': expected ${p} features, received ${X[i].length}`);
     }
   }
 }

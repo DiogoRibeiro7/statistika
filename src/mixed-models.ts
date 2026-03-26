@@ -109,7 +109,7 @@ export function lmmRandomIntercept(
 ): LMMResult {
   const { maxIterations = 200, tolerance = 1e-8 } = options;
   const n = y.length;
-  if (groups.length !== n) throw new Error("y and groups must have same length");
+  if (groups.length !== n) throw new Error(`Invalid parameters 'y', 'groups': expected same length, received y.length=${n}, groups.length=${groups.length}`);
 
   // Build design matrix with intercept
   const xMat = buildDesignMatrix(X, n);
@@ -272,9 +272,9 @@ export function lmmRandomSlope(
   const { maxIterations = 200, tolerance = 1e-8 } = options;
   const n = y.length;
   if (X.length !== n || groups.length !== n) {
-    throw new Error("y, X, and groups must have same length");
+    throw new Error(`Invalid parameters 'y', 'X', 'groups': expected same length, received y.length=${n}, X.length=${X.length}, groups.length=${groups.length}`);
   }
-  if (X[0].length < 1) throw new Error("X must have at least 1 column for random slope");
+  if (X[0].length < 1) throw new Error(`Invalid parameter 'X': expected at least 1 column for random slope, received ${X[0].length}`);
 
   // Build design matrix with intercept
   const xMat = X.map((row) => [1, ...row]);
@@ -481,12 +481,12 @@ export function lmmRandomSlope(
  */
 export function icc(values: number[], groups: (number | string)[]): ICCResult {
   const n = values.length;
-  if (n !== groups.length) throw new Error("values and groups must have same length");
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n !== groups.length) throw new Error(`Invalid parameters 'values', 'groups': expected same length, received values.length=${n}, groups.length=${groups.length}`);
+  if (n < 2) throw new Error(`Invalid parameter 'values': expected at least 2 observations, received ${n}`);
 
   const { groupLabels, groupIndices } = mapGroups(groups);
   const nGroups = groupLabels.length;
-  if (nGroups < 2) throw new Error("Need at least 2 groups");
+  if (nGroups < 2) throw new Error(`Invalid parameter 'groups': expected at least 2 groups, received ${nGroups}`);
 
   const grandMean = mean(values);
 
@@ -558,7 +558,7 @@ export function lrtTest(
   full: number,
   dfDiff: number,
 ): MixedModelLRTResult {
-  if (dfDiff < 1) throw new Error("dfDiff must be positive");
+  if (dfDiff < 1) throw new Error(`Invalid parameter 'dfDiff': expected a positive integer, received ${dfDiff}`);
   const statistic = -2 * (restricted - full);
   // Chi-squared p-value approximation
   const pValue = 1 - chiSquaredCdf(Math.max(0, statistic), dfDiff);
