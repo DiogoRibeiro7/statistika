@@ -165,7 +165,7 @@ export function distanceBandWeights(
  */
 export function knnWeights(points: SpatialPoint[], k: number): SpatialWeights {
   const n = points.length;
-  if (k >= n) throw new Error("k must be less than the number of points");
+  if (k >= n) throw new Error(`Invalid parameter 'k': expected less than number of points (${n}), received ${k}`);
   const D = spatialDistanceMatrix(points);
   const W: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
 
@@ -207,8 +207,8 @@ export function knnWeights(points: SpatialPoint[], k: number): SpatialWeights {
  */
 export function moranI(values: number[], W: SpatialWeights): MoranResult {
   const n = values.length;
-  if (n < 3) throw new Error("Need at least 3 observations");
-  if (W.length !== n) throw new Error("Weights matrix must match values length");
+  if (n < 3) throw new Error(`Invalid parameter 'values': expected at least 3 observations, received ${n}`);
+  if (W.length !== n) throw new Error(`Invalid parameter 'W': expected length ${n} to match values, received ${W.length}`);
 
   const xBar = mean(values);
   const dev = values.map((v) => v - xBar);
@@ -275,7 +275,7 @@ export function moranI(values: number[], W: SpatialWeights): MoranResult {
  */
 export function gearyC(values: number[], W: SpatialWeights): GearyResult {
   const n = values.length;
-  if (n < 3) throw new Error("Need at least 3 observations");
+  if (n < 3) throw new Error(`Invalid parameter 'values': expected at least 3 observations, received ${n}`);
 
   const xBar = mean(values);
   let S0 = 0;
@@ -338,8 +338,8 @@ export function empiricalVariogram(
   maxDist?: number,
 ): VariogramBin[] {
   const n = points.length;
-  if (n !== values.length) throw new Error("points and values must have same length");
-  if (n < 3) throw new Error("Need at least 3 observations");
+  if (n !== values.length) throw new Error(`Invalid parameter 'values': expected length ${n} to match points, received ${values.length}`);
+  if (n < 3) throw new Error(`Invalid parameter 'points': expected at least 3 observations, received ${n}`);
 
   const D = spatialDistanceMatrix(points);
 
@@ -398,7 +398,7 @@ export function fitVariogramModel(
   bins: VariogramBin[],
   type: VariogramModel["type"] = "spherical",
 ): VariogramModel {
-  if (bins.length < 2) throw new Error("Need at least 2 variogram bins");
+  if (bins.length < 2) throw new Error(`Invalid parameter 'bins': expected at least 2 variogram bins, received ${bins.length}`);
 
   // Initial estimates
   const maxSV = Math.max(...bins.map((b) => b.semivariance));
@@ -491,8 +491,8 @@ export function ordinaryKriging(
   model: VariogramModel,
 ): KrigingResult {
   const n = points.length;
-  if (n !== values.length) throw new Error("points and values must have same length");
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n !== values.length) throw new Error(`Invalid parameter 'values': expected length ${n} to match points, received ${values.length}`);
+  if (n < 2) throw new Error(`Invalid parameter 'points': expected at least 2 observations, received ${n}`);
 
   const totalSill = model.nugget + model.sill;
 

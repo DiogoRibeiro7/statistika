@@ -118,7 +118,7 @@ export class Mat {
    */
   private constructor(rows: number, cols: number, data?: Float64Array) {
     if (rows <= 0 || cols <= 0) {
-      throw new Error("Matrix dimensions must be positive");
+      throw new Error(`Invalid parameter 'rows'/'cols': expected positive dimensions, received rows=${rows}, cols=${cols}`);
     }
     this.rows = rows;
     this.cols = cols;
@@ -147,13 +147,13 @@ export class Mat {
    */
   static from(data: number[][]): Mat {
     const rows = data.length;
-    if (rows === 0) throw new Error("Matrix must have at least one row");
+    if (rows === 0) throw new Error("Invalid parameter 'data': expected at least one row, received 0 rows");
     const cols = data[0].length;
-    if (cols === 0) throw new Error("Matrix must have at least one column");
+    if (cols === 0) throw new Error("Invalid parameter 'data': expected at least one column, received 0 columns");
     const flat = new Float64Array(rows * cols);
     for (let i = 0; i < rows; i++) {
       if (data[i].length !== cols) {
-        throw new Error("All rows must have the same length");
+        throw new Error(`Invalid parameter 'data': expected ${cols} columns at row ${i}, received ${data[i].length}`);
       }
       for (let j = 0; j < cols; j++) {
         flat[i * cols + j] = data[i][j];
@@ -304,7 +304,7 @@ export class Mat {
    */
   toVector(): number[] {
     if (this.cols !== 1) {
-      throw new Error("toVector() requires a column vector (cols === 1)");
+      throw new Error(`Invalid state: expected column vector (cols === 1), received cols=${this.cols}`);
     }
     return this.col(0);
   }
@@ -364,7 +364,7 @@ export class Mat {
   add(other: Mat): Mat {
     if (!this.sameSize(other)) {
       throw new Error(
-        `Dimension mismatch: (${this.rows},${this.cols}) vs (${other.rows},${other.cols})`,
+        `Invalid parameter 'other': expected dimensions (${this.rows},${this.cols}), received (${other.rows},${other.cols})`,
       );
     }
     const result = new Float64Array(this.data.length);
@@ -384,7 +384,7 @@ export class Mat {
   subtract(other: Mat): Mat {
     if (!this.sameSize(other)) {
       throw new Error(
-        `Dimension mismatch: (${this.rows},${this.cols}) vs (${other.rows},${other.cols})`,
+        `Invalid parameter 'other': expected dimensions (${this.rows},${this.cols}), received (${other.rows},${other.cols})`,
       );
     }
     const result = new Float64Array(this.data.length);
@@ -430,7 +430,7 @@ export class Mat {
   multiply(other: Mat): Mat {
     if (this.cols !== other.rows) {
       throw new Error(
-        `Cannot multiply (${this.rows},${this.cols}) by (${other.rows},${other.cols})`,
+        `Invalid parameter 'other': expected ${this.cols} rows for multiplication, received (${other.rows},${other.cols})`,
       );
     }
     if (native) {
@@ -468,7 +468,7 @@ export class Mat {
    * @throws Error if the matrix is not square
    */
   trace(): number {
-    if (!this.isSquare()) throw new Error("Trace requires a square matrix");
+    if (!this.isSquare()) throw new Error(`Invalid state: expected square matrix for trace, received (${this.rows},${this.cols})`);
     let sum = 0;
     for (let i = 0; i < this.rows; i++) {
       sum += this.data[i * this.cols + i];
@@ -529,7 +529,7 @@ export class Mat {
    * @throws Error if the matrix is singular or nearly singular
    */
   lu(): LUResult {
-    if (!this.isSquare()) throw new Error("LU requires a square matrix");
+    if (!this.isSquare()) throw new Error(`Invalid state: expected square matrix for LU, received (${this.rows},${this.cols})`);
     if (native) {
       return nativeLU(this);
     }
@@ -546,7 +546,7 @@ export class Mat {
    * @throws Error if rows < cols
    */
   qr(): QRResult {
-    if (this.rows < this.cols) throw new Error("QR requires rows >= cols");
+    if (this.rows < this.cols) throw new Error(`Invalid state: expected rows >= cols for QR, received (${this.rows},${this.cols})`);
     if (native) {
       return nativeQR(this);
     }
@@ -564,7 +564,7 @@ export class Mat {
    */
   cholesky(): Mat {
     if (!this.isSquare()) {
-      throw new Error("Cholesky requires a square matrix");
+      throw new Error(`Invalid state: expected square matrix for Cholesky, received (${this.rows},${this.cols})`);
     }
     if (native) {
       return nativeCholesky(this);
@@ -600,19 +600,19 @@ export class Mat {
    * @returns Solution vector x.
    */
   solve(b: number[] | Mat): number[] {
-    if (!this.isSquare()) throw new Error("solve requires a square matrix");
+    if (!this.isSquare()) throw new Error(`Invalid state: expected square matrix for solve, received (${this.rows},${this.cols})`);
     const n = this.rows;
     const bVec = b instanceof Mat ? b.toVector() : b;
     if (bVec.length !== n) {
       throw new Error(
-        `RHS length ${bVec.length} does not match matrix size ${n}`,
+        `Invalid parameter 'b': expected length ${n} to match matrix size, received ${bVec.length}`,
       );
     }
 
     if (native) {
       const result = native.solve(this.toArray(), bVec, n);
       if (result.info !== 0) {
-        throw new Error("Singular matrix: features may be linearly dependent");
+        throw new Error("Invalid state: expected non-singular matrix for solve, received singular matrix");
       }
       return result.x;
     }
@@ -660,7 +660,7 @@ export class Mat {
     const bVec = b instanceof Mat ? b.toVector() : b;
     if (bVec.length !== this.rows) {
       throw new Error(
-        `RHS length ${bVec.length} does not match matrix rows ${this.rows}`,
+        `Invalid parameter 'b': expected length ${this.rows} to match matrix rows, received ${bVec.length}`,
       );
     }
 
@@ -686,7 +686,7 @@ export class Mat {
       }
       const diag = RFull.data[i * RFull.cols + i];
       if (Math.abs(diag) < 1e-14) {
-        throw new Error("Matrix is rank-deficient; cannot solve via QR");
+        throw new Error("Invalid state: expected full-rank matrix for QR solve, received rank-deficient matrix");
       }
       x[i] = (Qtb[i] - sum) / diag;
     }
@@ -704,7 +704,7 @@ export class Mat {
    */
   det(): number {
     if (!this.isSquare())
-      throw new Error("Determinant requires a square matrix");
+      throw new Error(`Invalid state: expected square matrix for determinant, received (${this.rows},${this.cols})`);
     const { U, sign } = this.lu();
     let det = sign;
     for (let i = 0; i < this.rows; i++) {
@@ -722,7 +722,7 @@ export class Mat {
    * @throws Error if the matrix is not square
    */
   inverse(): Mat | null {
-    if (!this.isSquare()) throw new Error("Inverse requires a square matrix");
+    if (!this.isSquare()) throw new Error(`Invalid state: expected square matrix for inverse, received (${this.rows},${this.cols})`);
     const n = this.rows;
     try {
       const inv = Mat.zeros(n, n);
@@ -856,7 +856,7 @@ function nativeLU(A: Mat): LUResult {
   const n = A.rows;
   const result = native!.lu(A.toArray(), n);
   if (result.info !== 0) {
-    throw new Error("Matrix is singular or nearly singular");
+    throw new Error("Invalid state: expected non-singular matrix, received singular or nearly singular matrix");
   }
 
   const luData = result.lu;
@@ -932,7 +932,7 @@ function nativeCholesky(A: Mat): Mat {
   const result = native!.cholesky(A.toArray(), n);
   if (result.info > 0) {
     throw new Error(
-      "Matrix is not positive definite (non-positive diagonal encountered)",
+      "Invalid state: expected positive definite matrix, received non-positive diagonal",
     );
   }
   if (result.info !== 0) {
@@ -1002,7 +1002,7 @@ function tsLU(A: Mat): LUResult {
     }
 
     if (maxVal < 1e-14) {
-      throw new Error("Matrix is singular or nearly singular");
+      throw new Error("Invalid state: expected non-singular matrix, received singular or nearly singular matrix");
     }
 
     // Swap rows in U
@@ -1120,7 +1120,7 @@ function tsCholesky(A: Mat): Mat {
         const diag = A.data[i * n + i] - sum;
         if (diag <= 0) {
           throw new Error(
-            "Matrix is not positive definite (non-positive diagonal encountered)",
+            "Invalid state: expected positive definite matrix, received non-positive diagonal",
           );
         }
         L.data[i * n + j] = Math.sqrt(diag);

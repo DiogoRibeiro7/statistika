@@ -302,7 +302,7 @@ async function doLoadWasm(): Promise<WasmModule | null> {
           wasmFree(aPtr);
           wasmFree(lPtr);
           throw new Error(
-            `WASM cholesky failed with info = ${info} (not positive-definite)`,
+            `Invalid state: expected positive definite matrix for WASM cholesky, received info=${info}`,
           );
         }
 

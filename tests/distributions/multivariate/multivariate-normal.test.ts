@@ -28,7 +28,7 @@ describe("MultivariateNormal", () => {
             [0, 1],
           ],
         ),
-    ).toThrow("not positive definite");
+    ).toThrow("positive definite");
   });
 
   it("pdf is positive at the mean", () => {

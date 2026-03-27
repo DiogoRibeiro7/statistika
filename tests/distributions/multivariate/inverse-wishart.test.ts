@@ -29,7 +29,7 @@ describe("InverseWishart", () => {
           [-1, 0],
           [0, 1],
         ]),
-    ).toThrow("not positive definite");
+    ).toThrow("positive definite");
   });
 
   it("throws for empty scale matrix", () => {
@@ -47,7 +47,7 @@ describe("InverseWishart", () => {
 
   it("mean throws for df <= p + 1", () => {
     const iwSmallDf = new InverseWishart(3, scale); // df=3, p=2, need df > 3
-    expect(() => iwSmallDf.mean()).toThrow("undefined");
+    expect(() => iwSmallDf.mean()).toThrow("expected df");
   });
 
   it("logPdf returns finite value for positive-definite matrix", () => {

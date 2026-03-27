@@ -77,13 +77,13 @@ export function leveneTest(
 ): LeveneTestResult {
   const k = groups.length;
   if (k < 2) {
-    throw new Error("leveneTest requires at least 2 groups (got " + k + ")");
+    throw new Error(`Invalid parameter 'groups': expected at least 2 groups, received ${k}`);
   }
 
   for (let i = 0; i < k; i++) {
     if (groups[i].length < 2) {
       throw new Error(
-        "leveneTest requires at least 2 observations per group (group " + i + " has " + groups[i].length + ")",
+        `Invalid parameter 'groups': expected at least 2 observations in group ${i}, received ${groups[i].length}`,
       );
     }
   }

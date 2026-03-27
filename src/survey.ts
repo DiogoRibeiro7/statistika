@@ -70,7 +70,7 @@ export function weightedStats(
     sumWX += weights[i] * data[i];
   }
 
-  if (sumW === 0) throw new Error("Sum of weights must be positive");
+  if (sumW === 0) throw new Error(`Invalid parameter 'weights': expected positive sum, received ${sumW}`);
 
   const wMean = sumWX / sumW;
 
@@ -118,7 +118,7 @@ export function weightedQuantile(
   weights: number[],
   p: number,
 ): number {
-  if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+  if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected value in [0, 1], received ${p}`);
   const n = data.length;
   if (n !== weights.length) {
     throw new Error(`Invalid parameters 'data', 'weights': expected same length, received data.length=${data.length}, weights.length=${weights.length}`);
@@ -131,7 +131,7 @@ export function weightedQuantile(
 
   let sumW = 0;
   for (let i = 0; i < n; i++) sumW += weights[i];
-  if (sumW === 0) throw new Error("Sum of weights must be positive");
+  if (sumW === 0) throw new Error(`Invalid parameter 'weights': expected positive sum, received ${sumW}`);
 
   const target = p * sumW;
   let cumW = 0;
@@ -192,15 +192,15 @@ export function horvitzThompson(
 ): HorvitzThompsonResult {
   const n = y.length;
   if (n !== inclusionProbs.length) {
-    throw new Error("y and inclusionProbs must have the same length");
+    throw new Error(`Invalid parameter 'inclusionProbs': expected length ${n} to match y, received length ${inclusionProbs.length}`);
   }
   if (populationSize < n) {
-    throw new Error("Population size must be at least as large as sample size");
+    throw new Error(`Invalid parameter 'populationSize': expected at least ${n} (sample size), received ${populationSize}`);
   }
 
   for (let i = 0; i < n; i++) {
     if (inclusionProbs[i] <= 0 || inclusionProbs[i] > 1) {
-      throw new Error("Inclusion probabilities must be in (0, 1]");
+      throw new Error(`Invalid parameter 'inclusionProbs': expected value in (0, 1] at index ${i}, received ${inclusionProbs[i]}`);
     }
   }
 
@@ -276,7 +276,7 @@ export function designEffect(
   if (n !== weights.length) {
     throw new Error(`Invalid parameters 'data', 'weights': expected same length, received data.length=${data.length}, weights.length=${weights.length}`);
   }
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${n}`);
 
   const ws = weightedStats(data, weights);
 
@@ -351,9 +351,9 @@ export function ratioEstimator(
 ): RatioEstimatorResult {
   const n = y.length;
   if (n !== x.length || n !== weights.length) {
-    throw new Error("y, x, and weights must have the same length");
+    throw new Error(`Invalid parameter 'y'/'x'/'weights': expected same length, received y.length=${y.length}, x.length=${x.length}, weights.length=${weights.length}`);
   }
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n < 2) throw new Error(`Invalid parameter 'y': expected at least 2 observations, received ${n}`);
 
   let sumWY = 0;
   let sumWX = 0;
@@ -364,7 +364,7 @@ export function ratioEstimator(
     sumW += weights[i];
   }
 
-  if (sumWX === 0) throw new Error("Weighted sum of x must be non-zero");
+  if (sumWX === 0) throw new Error(`Invalid parameter 'x'/'weights': expected non-zero weighted sum of x, received ${sumWX}`);
 
   const ratio = sumWY / sumWX;
   const total = ratio * xTotal;
@@ -416,7 +416,7 @@ export function postStratify(
 ): number[] {
   const n = weights.length;
   if (n !== strata.length) {
-    throw new Error("weights and strata must have the same length");
+    throw new Error(`Invalid parameter 'strata': expected length ${n} to match weights, received length ${strata.length}`);
   }
 
   // Compute weighted sum per stratum
@@ -432,7 +432,7 @@ export function postStratify(
     const s = strata[i];
     const popCount = populationCounts[s];
     if (popCount === undefined) {
-      throw new Error(`No population count for stratum ${s}`);
+      throw new Error(`Invalid parameter 'populationCounts': expected entry for stratum ${s}, received undefined`);
     }
     const factor = popCount / stratumWeightSum[s];
     adjustedWeights[i] = weights[i] * factor;

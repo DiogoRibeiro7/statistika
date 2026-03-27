@@ -67,7 +67,7 @@ describe("andersonDarlingTest", () => {
   });
 
   it("throws for constant data (zero variance)", () => {
-    expect(() => andersonDarlingTest([5, 5, 5, 5])).toThrow("variance is zero");
+    expect(() => andersonDarlingTest([5, 5, 5, 5])).toThrow("non-constant data");
   });
 
   it("returns correct result structure", () => {

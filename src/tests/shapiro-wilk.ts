@@ -105,7 +105,7 @@ export function shapiroWilkTest(
   alpha: number = 0.05,
 ): ShapiroWilkResult {
   if (data.length < 3) {
-    throw new Error("shapiroWilkTest requires at least 3 observations (got " + data.length + ")");
+    throw new Error(`Invalid parameter 'data': expected at least 3 observations, received ${data.length}`);
   }
 
   const n = data.length;
@@ -124,7 +124,7 @@ export function shapiroWilkTest(
   }
 
   if (ss === 0) {
-    throw new Error("shapiroWilkTest requires non-constant data (all values are identical)");
+    throw new Error("Invalid parameter 'data': expected non-constant data, received all identical values");
   }
 
   // Get the coefficients

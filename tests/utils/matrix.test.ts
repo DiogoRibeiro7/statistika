@@ -18,7 +18,7 @@ describe("Mat.from", () => {
   });
 
   it("throws on jagged arrays", () => {
-    expect(() => Mat.from([[1, 2], [3]])).toThrow("same length");
+    expect(() => Mat.from([[1, 2], [3]])).toThrow("expected 2 columns");
   });
 
   it("throws on empty array", () => {
@@ -155,8 +155,8 @@ describe("arithmetic", () => {
   });
 
   it("throws on dimension mismatch", () => {
-    expect(() => A.add(Mat.zeros(3, 3))).toThrow("Dimension mismatch");
-    expect(() => A.multiply(Mat.zeros(3, 2))).toThrow("Cannot multiply");
+    expect(() => A.add(Mat.zeros(3, 3))).toThrow("Invalid parameter 'other'");
+    expect(() => A.multiply(Mat.zeros(3, 2))).toThrow("Invalid parameter 'other'");
   });
 
   it("transpose", () => {
@@ -301,7 +301,7 @@ describe("Cholesky decomposition", () => {
 
   it("throws on non-positive-definite matrix", () => {
     expect(() => Mat.from([[1, 2], [2, 1]]).cholesky()).toThrow(
-      "not positive definite",
+      "positive definite",
     );
   });
 
@@ -425,7 +425,7 @@ describe("solve", () => {
   });
 
   it("throws on dimension mismatch", () => {
-    expect(() => Mat.from([[1, 2], [3, 4]]).solve([1])).toThrow("does not match");
+    expect(() => Mat.from([[1, 2], [3, 4]]).solve([1])).toThrow("Invalid parameter 'b'");
   });
 });
 

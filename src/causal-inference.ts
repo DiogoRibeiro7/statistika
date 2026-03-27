@@ -369,7 +369,7 @@ export function differenceInDifferences(
 
   for (const [key, arr] of Object.entries(groups)) {
     if (arr.length === 0) {
-      throw new Error(`No observations in group: ${key === "tp" ? "treated+post" : key === "tc" ? "treated+pre" : key === "cp" ? "control+post" : "control+pre"}`);
+      throw new Error(`Invalid parameter 'y'/'treatment'/'post': expected at least 1 observation in group ${key === "tp" ? "treated+post" : key === "tc" ? "treated+pre" : key === "cp" ? "control+post" : "control+pre"}, received 0`);
     }
   }
 

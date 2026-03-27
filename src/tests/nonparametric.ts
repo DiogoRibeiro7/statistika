@@ -54,7 +54,7 @@ export function mannWhitneyU(
   alpha: number = 0.05,
 ): HypothesisTestResult {
   if (data1.length < 1 || data2.length < 1) {
-    throw new Error("Both samples must have at least 1 observation");
+    throw new Error(`Invalid parameter 'data1'/'data2': expected at least 1 observation per sample, received data1.length=${data1.length}, data2.length=${data2.length}`);
   }
 
   const n1 = data1.length;
@@ -148,10 +148,10 @@ export function wilcoxonSignedRank(
   alpha: number = 0.05,
 ): HypothesisTestResult {
   if (data1.length !== data2.length) {
-    throw new Error("Paired samples must have equal length");
+    throw new Error(`Invalid parameter 'data1'/'data2': expected equal length for paired samples, received data1.length=${data1.length}, data2.length=${data2.length}`);
   }
   if (data1.length < 2) {
-    throw new Error("Need at least 2 paired observations");
+    throw new Error(`Invalid parameter 'data1'/'data2': expected at least 2 paired observations, received ${data1.length}`);
   }
 
   // Compute differences, excluding zeros
@@ -314,19 +314,19 @@ export function kruskalWallisTest(
 ): KruskalWallisResult {
   const k = groups.length;
   if (k < 2) {
-    throw new Error("kruskalWallisTest requires at least 2 groups (got " + k + ")");
+    throw new Error(`Invalid parameter 'groups': expected at least 2 groups, received ${k}`);
   }
   for (let i = 0; i < k; i++) {
     if (groups[i].length < 1) {
       throw new Error(
-        "kruskalWallisTest requires at least 1 observation per group (group " + i + " is empty)",
+        `Invalid parameter 'groups': expected at least 1 observation in group ${i}, received ${groups[i].length}`,
       );
     }
   }
 
   const N = groups.reduce((sum, g) => sum + g.length, 0);
   if (N < 3) {
-    throw new Error("kruskalWallisTest requires at least 3 total observations (got " + N + ")");
+    throw new Error(`Invalid parameter 'groups': expected at least 3 total observations, received ${N}`);
   }
 
   // Combine all observations with group labels

@@ -53,14 +53,14 @@ function tsGamma(x: number): number {
 
 function tsLogFactorial(n: number): number {
   if (n < 0 || !Number.isInteger(n)) {
-    throw new Error("logFactorial requires a non-negative integer");
+    throw new Error(`Invalid parameter 'n': expected non-negative integer, received ${n}`);
   }
   return tsGammaLn(n + 1);
 }
 
 function tsFactorial(n: number): number {
   if (n < 0 || !Number.isInteger(n)) {
-    throw new Error("factorial requires a non-negative integer");
+    throw new Error(`Invalid parameter 'n': expected non-negative integer, received ${n}`);
   }
   if (n > 170) return Infinity;
   return Math.exp(tsLogFactorial(n));
@@ -124,7 +124,7 @@ function gammaPContinuedFraction(s: number, x: number): number {
 }
 
 function tsRegularizedGammaP(s: number, x: number): number {
-  if (x < 0) throw new Error("x must be non-negative");
+  if (x < 0) throw new Error(`Invalid parameter 'x': expected non-negative value, received ${x}`);
   if (x === 0) return 0;
   if (x < s + 1) {
     return gammaPSeries(s, x);
@@ -161,7 +161,7 @@ function betaCF(x: number, a: number, b: number): number {
 }
 
 function tsRegularizedBeta(x: number, a: number, b: number): number {
-  if (x < 0 || x > 1) throw new Error("x must be in [0, 1]");
+  if (x < 0 || x > 1) throw new Error(`Invalid parameter 'x': expected value in [0, 1], received ${x}`);
   if (x === 0) return 0;
   if (x === 1) return 1;
   if (x > (a + 1) / (a + b + 2)) {
@@ -341,7 +341,7 @@ export function quantileBisect(
   upper: number,
   tolerance = 1e-12,
 ): number {
-  if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+  if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected value in [0, 1], received ${p}`);
   if (p === 0) return lower;
   if (p === 1) return upper;
 

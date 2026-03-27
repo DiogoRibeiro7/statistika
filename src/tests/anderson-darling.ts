@@ -73,7 +73,7 @@ export function andersonDarlingTest(
   alpha: number = 0.05,
 ): AndersonDarlingResult {
   if (data.length < 2) {
-    throw new Error("andersonDarlingTest requires at least 2 observations (got " + data.length + ")");
+    throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${data.length}`);
   }
 
   const n = data.length;
@@ -81,7 +81,7 @@ export function andersonDarlingTest(
   const s = Math.sqrt(variance(data, true));
 
   if (s === 0) {
-    throw new Error("andersonDarlingTest requires non-constant data (variance is zero)");
+    throw new Error("Invalid parameter 'data': expected non-constant data, received zero variance");
   }
 
   // Standardize and sort

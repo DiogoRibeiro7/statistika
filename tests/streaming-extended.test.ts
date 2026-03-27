@@ -139,7 +139,7 @@ describe("Extended Streaming Statistics", () => {
 
     it("throws on no observations for mean", () => {
       const sk = new OnlineSkewnessKurtosis();
-      expect(() => sk.mean).toThrow("No observations");
+      expect(() => sk.mean).toThrow("expected at least 1 observation");
     });
 
     it("throws on fewer than 2 for variance", () => {
@@ -170,7 +170,7 @@ describe("Extended Streaming Statistics", () => {
       sk.pushAll([1, 2, 3, 4, 5]);
       sk.reset();
       expect(sk.count).toBe(0);
-      expect(() => sk.mean).toThrow("No observations");
+      expect(() => sk.mean).toThrow("expected at least 1 observation");
     });
   });
 
@@ -217,12 +217,12 @@ describe("Extended Streaming Statistics", () => {
 
     it("throws on no observations for meanX", () => {
       const corr = new OnlineCorrelation();
-      expect(() => corr.meanX).toThrow("No observations");
+      expect(() => corr.meanX).toThrow("expected at least 1 observation");
     });
 
     it("throws on no observations for meanY", () => {
       const corr = new OnlineCorrelation();
-      expect(() => corr.meanY).toThrow("No observations");
+      expect(() => corr.meanY).toThrow("expected at least 1 observation");
     });
 
     it("throws on fewer than 2 for correlation", () => {
@@ -253,7 +253,7 @@ describe("Extended Streaming Statistics", () => {
       corr.pushAll([1, 2, 3], [4, 5, 6]);
       corr.reset();
       expect(corr.count).toBe(0);
-      expect(() => corr.meanX).toThrow("No observations");
+      expect(() => corr.meanX).toThrow("expected at least 1 observation");
     });
   });
 
@@ -397,7 +397,7 @@ describe("Extended Streaming Statistics", () => {
 
     it("throws on no observations for means", () => {
       const mat = new OnlineCovarianceMatrix(2);
-      expect(() => mat.means).toThrow("No observations");
+      expect(() => mat.means).toThrow("expected at least 1 observation");
     });
 
     it("throws on fewer than 2 for covarianceMatrix", () => {
@@ -429,7 +429,7 @@ describe("Extended Streaming Statistics", () => {
       ]);
       mat.reset();
       expect(mat.count).toBe(0);
-      expect(() => mat.means).toThrow("No observations");
+      expect(() => mat.means).toThrow("expected at least 1 observation");
     });
 
     it("dim getter returns correct dimension", () => {

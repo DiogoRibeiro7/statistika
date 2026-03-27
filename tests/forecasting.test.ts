@@ -124,7 +124,7 @@ describe("Forecasting", () => {
     });
 
     it("throws on NaN in series", () => {
-      expect(() => seasonalDecompose([1, NaN, 3, 4, 5, 6, 7, 8], 4)).toThrow("not finite");
+      expect(() => seasonalDecompose([1, NaN, 3, 4, 5, 6, 7, 8], 4)).toThrow("finite");
     });
   });
 
@@ -137,7 +137,7 @@ describe("Forecasting", () => {
     it("throws on non-finite values", () => {
       const bad = Array.from({ length: 20 }, (_, i) => i);
       bad[5] = NaN;
-      expect(() => adfTest(bad)).toThrow("not finite");
+      expect(() => adfTest(bad)).toThrow("finite");
     });
 
     it("returns expected fields", () => {
@@ -157,7 +157,7 @@ describe("Forecasting", () => {
     it("throws on non-finite values", () => {
       const bad = Array.from({ length: 20 }, (_, i) => i);
       bad[5] = Infinity;
-      expect(() => autoArima(bad)).toThrow("not finite");
+      expect(() => autoArima(bad)).toThrow("finite");
     });
 
     it("returns selectedOrder with p, d, q", () => {
@@ -226,7 +226,7 @@ describe("Forecasting", () => {
     it("throws on Infinity in series", () => {
       const bad = Array.from({ length: 20 }, (_, i) => i);
       bad[5] = Infinity;
-      expect(() => adfTest(bad)).toThrow("not finite");
+      expect(() => adfTest(bad)).toThrow("finite");
     });
 
     it("pValue is between 0 and 1", () => {
@@ -277,7 +277,7 @@ describe("Forecasting", () => {
     });
 
     it("throws on Infinity in series", () => {
-      expect(() => seasonalDecompose([1, 2, Infinity, 4, 5, 6, 7, 8], 4)).toThrow("not finite");
+      expect(() => seasonalDecompose([1, 2, Infinity, 4, 5, 6, 7, 8], 4)).toThrow("finite");
     });
 
     it("seasonal component sums close to zero across one period", () => {

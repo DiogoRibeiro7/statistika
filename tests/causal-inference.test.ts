@@ -148,7 +148,7 @@ describe("differenceInDifferences", () => {
   it("throws when a group is empty", () => {
     expect(() =>
       differenceInDifferences([1, 2], [1, 1], [0, 1]),
-    ).toThrow("No observations");
+    ).toThrow("expected at least 1 observation");
   });
 
   it("throws for mismatched lengths", () => {

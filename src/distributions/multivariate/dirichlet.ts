@@ -122,7 +122,7 @@ export class Dirichlet {
    */
   logPdf(x: number[]): number {
     if (x.length !== this.dim) {
-      throw new Error(`x must have length ${this.dim}`);
+      throw new Error(`Invalid parameter 'x': expected length ${this.dim}, received ${x.length}`);
     }
 
     let sum = 0;

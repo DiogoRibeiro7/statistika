@@ -478,7 +478,7 @@ function validateContinuousData(data: number[]): void {
   if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${data.length}`);
   for (let i = 0; i < data.length; i++) {
     if (!Number.isFinite(data[i])) {
-      throw new Error(`data[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'data': expected finite number at index ${i}, received ${data[i]}`);
     }
   }
 }
@@ -487,7 +487,7 @@ function validateDiscreteData(data: number[]): void {
   if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${data.length}`);
   for (let i = 0; i < data.length; i++) {
     if (!Number.isInteger(data[i]) || data[i] < 0) {
-      throw new Error(`data[${i}] must be a non-negative integer`);
+      throw new Error(`Invalid parameter 'data': expected non-negative integer at index ${i}, received ${data[i]}`);
     }
   }
 }

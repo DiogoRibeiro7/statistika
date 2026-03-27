@@ -62,7 +62,7 @@ export function kFoldCV(
     for (let i = 1; i < n; i++) {
       if (X[i].length !== p) {
         throw new Error(
-          `Inconsistent row lengths in X: row 0 has ${p} columns but row ${i} has ${X[i].length} columns`,
+          `Invalid parameter 'X': expected ${p} columns at row ${i}, received ${X[i].length}`,
         );
       }
     }

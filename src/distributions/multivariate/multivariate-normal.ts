@@ -41,7 +41,7 @@ function cholesky(A: number[][]): number[][] {
       if (i === j) {
         const diag = A[i][i] - sum;
         if (diag <= 0) {
-          throw new Error("Matrix is not positive definite");
+          throw new Error(`Invalid parameter 'sigma': expected positive definite matrix, received non-positive diagonal at index ${i}`);
         }
         L[i][j] = Math.sqrt(diag);
       } else {
@@ -177,7 +177,7 @@ export class MultivariateNormal {
    */
   logPdf(x: number[]): number {
     if (x.length !== this.dim) {
-      throw new Error(`x must have length ${this.dim}`);
+      throw new Error(`Invalid parameter 'x': expected length ${this.dim}, received ${x.length}`);
     }
     const k = this.dim;
     const diff = x.map((v, i) => v - this.mean[i]);

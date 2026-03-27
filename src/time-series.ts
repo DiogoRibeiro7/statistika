@@ -280,7 +280,7 @@ export function difference(series: number[], d = 1): number[] {
   let result = series;
   for (let iter = 0; iter < d; iter++) {
     if (result.length < 2) {
-      throw new Error("Series too short for further differencing");
+      throw new Error(`Invalid parameter 'series': expected at least 2 elements for differencing, received ${result.length}`);
     }
     const diff: number[] = new Array(result.length - 1);
     for (let i = 1; i < result.length; i++) {

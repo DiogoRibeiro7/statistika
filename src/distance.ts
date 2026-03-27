@@ -226,7 +226,7 @@ export function mahalanobis(point: Dataset, data: Dataset[]): number {
 
   if (n <= p) {
     throw new Error(
-      `Need more observations than dimensions: n=${n} must be > p=${p}`,
+      `Invalid parameter 'data': expected more observations than dimensions, received n=${n}, p=${p}`,
     );
   }
 
@@ -237,13 +237,13 @@ export function mahalanobis(point: Dataset, data: Dataset[]): number {
   // NaN / Infinity guards
   for (let j = 0; j < p; j++) {
     if (!Number.isFinite(point[j])) {
-      throw new Error(`point[${j}] is not finite`);
+      throw new Error(`Invalid parameter 'point': expected finite number at index ${j}, received ${point[j]}`);
     }
   }
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < p; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error(`data[${i}][${j}] is not finite`);
+        throw new Error(`Invalid parameter 'data': expected finite number at [${i}][${j}], received ${data[i][j]}`);
       }
     }
   }
@@ -273,7 +273,7 @@ export function mahalanobis(point: Dataset, data: Dataset[]): number {
   // Invert covariance matrix (uses LAPACK when available)
   const inv = invertMatrix(cov);
   if (inv === null) {
-    throw new Error("Covariance matrix is singular and cannot be inverted");
+    throw new Error("Invalid parameter 'data': expected non-singular covariance matrix, received singular matrix");
   }
 
   // Compute (x - mu)' * Sigma^{-1} * (x - mu)

@@ -45,7 +45,7 @@ describe("Streaming/Online Statistics", () => {
       stats.pushAll([1, 2, 3]);
       stats.reset();
       expect(stats.count).toBe(0);
-      expect(() => stats.mean).toThrow("No observations");
+      expect(() => stats.mean).toThrow("expected at least 1 observation");
     });
   });
 
@@ -101,13 +101,13 @@ describe("Streaming/Online Statistics", () => {
     });
 
     it("throws on invalid quantile", () => {
-      expect(() => new OnlineQuantile(0)).toThrow("between 0 and 1");
-      expect(() => new OnlineQuantile(1)).toThrow("between 0 and 1");
+      expect(() => new OnlineQuantile(0)).toThrow("Invalid parameter 'quantile'");
+      expect(() => new OnlineQuantile(1)).toThrow("Invalid parameter 'quantile'");
     });
 
     it("throws on no observations", () => {
       const q = new OnlineQuantile(0.5);
-      expect(() => q.estimate).toThrow("No observations");
+      expect(() => q.estimate).toThrow("expected at least 1 observation");
     });
 
     it("throws on NaN push", () => {
@@ -150,7 +150,7 @@ describe("Streaming/Online Statistics", () => {
 
     it("throws on mean with no observations", () => {
       const stats = new OnlineStats();
-      expect(() => stats.mean).toThrow("No observations");
+      expect(() => stats.mean).toThrow("expected at least 1 observation");
     });
 
     it("throws on variance with fewer than 2 observations", () => {
@@ -161,12 +161,12 @@ describe("Streaming/Online Statistics", () => {
 
     it("throws on min with no observations", () => {
       const stats = new OnlineStats();
-      expect(() => stats.min).toThrow("No observations");
+      expect(() => stats.min).toThrow("expected at least 1 observation");
     });
 
     it("throws on max with no observations", () => {
       const stats = new OnlineStats();
-      expect(() => stats.max).toThrow("No observations");
+      expect(() => stats.max).toThrow("expected at least 1 observation");
     });
 
     it("computes populationVariance", () => {
@@ -178,7 +178,7 @@ describe("Streaming/Online Statistics", () => {
 
     it("throws on populationVariance with no observations", () => {
       const stats = new OnlineStats();
-      expect(() => stats.populationVariance).toThrow("No observations");
+      expect(() => stats.populationVariance).toThrow("expected at least 1 observation");
     });
 
     it("merge with empty OnlineStats does nothing", () => {
@@ -227,12 +227,12 @@ describe("Streaming/Online Statistics", () => {
 
     it("throws on meanX with no observations", () => {
       const cov = new OnlineCovariance();
-      expect(() => cov.meanX).toThrow("No observations");
+      expect(() => cov.meanX).toThrow("expected at least 1 observation");
     });
 
     it("throws on meanY with no observations", () => {
       const cov = new OnlineCovariance();
-      expect(() => cov.meanY).toThrow("No observations");
+      expect(() => cov.meanY).toThrow("expected at least 1 observation");
     });
 
     it("throws on correlation with fewer than 2 observations", () => {
@@ -257,7 +257,7 @@ describe("Streaming/Online Statistics", () => {
       cov.pushAll([1, 2, 3], [4, 5, 6]);
       cov.reset();
       expect(cov.count).toBe(0);
-      expect(() => cov.meanX).toThrow("No observations");
+      expect(() => cov.meanX).toThrow("expected at least 1 observation");
     });
 
     it("computes correct covariance and means", () => {

@@ -190,7 +190,7 @@ export function glm(
   for (let i = 0; i < n; i++) {
     if (X[i].length !== p) {
       throw new Error(
-        `Inconsistent row length at row ${i}: expected ${p} columns but got ${X[i].length}`,
+        `Invalid parameter 'X': expected ${p} columns at row ${i}, received ${X[i].length}`,
       );
     }
   }
@@ -198,11 +198,11 @@ export function glm(
   // NaN / Infinity guards
   for (let i = 0; i < n; i++) {
     if (!Number.isFinite(y[i])) {
-      throw new Error(`y[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'y': expected finite number at index ${i}, received ${y[i]}`);
     }
     for (let j = 0; j < p; j++) {
       if (!Number.isFinite(X[i][j])) {
-        throw new Error(`X[${i}][${j}] is not finite`);
+        throw new Error(`Invalid parameter 'X': expected finite number at [${i}][${j}], received ${X[i][j]}`);
       }
     }
   }

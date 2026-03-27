@@ -30,7 +30,7 @@ export function adfTest(
   // NaN / Infinity guard
   for (let i = 0; i < n; i++) {
     if (!Number.isFinite(series[i])) {
-      throw new Error(`series[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'series': expected finite number at index ${i}, received ${series[i]}`);
     }
   }
 
@@ -136,7 +136,7 @@ export function autoArima(
   // NaN / Infinity guard
   for (let i = 0; i < series.length; i++) {
     if (!Number.isFinite(series[i])) {
-      throw new Error(`series[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'series': expected finite number at index ${i}, received ${series[i]}`);
     }
   }
 

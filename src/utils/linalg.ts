@@ -63,7 +63,7 @@ function tsSolveLinearSystem(A: Matrix, b: number[]): number[] {
     [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
 
     if (Math.abs(aug[col][col]) < 1e-12) {
-      throw new Error("Singular matrix: features may be linearly dependent");
+      throw new Error("Invalid parameter 'A': expected non-singular matrix, received singular matrix (features may be linearly dependent)");
     }
 
     for (let row = col + 1; row < n; row++) {
@@ -268,7 +268,7 @@ export function solveLinearSystem(A: Matrix, b: number[]): number[] {
     const n = A.length;
     const result = native.solve(A, b, n);
     if (result.info !== 0) {
-      throw new Error("Singular matrix: features may be linearly dependent");
+      throw new Error("Invalid parameter 'A': expected non-singular matrix, received singular matrix (features may be linearly dependent)");
     }
     return result.x;
   }

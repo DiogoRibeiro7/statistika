@@ -108,10 +108,10 @@ export function kaplanMeier(
   confidence = 0.95,
 ): KaplanMeierResult {
   if (observations.length === 0) {
-    throw new Error("Need at least 1 observation");
+    throw new Error(`Invalid parameter 'observations': expected at least 1 observation, received ${observations.length}`);
   }
   if (confidence <= 0 || confidence >= 1) {
-    throw new Error("Confidence level must be between 0 and 1");
+    throw new Error(`Invalid parameter 'confidence': expected value in (0, 1), received ${confidence}`);
   }
 
   // Sort by time, events before censored at the same time
@@ -250,7 +250,7 @@ export function nelsonAalen(
   observations: SurvivalObservation[],
 ): NelsonAalenResult {
   if (observations.length === 0) {
-    throw new Error("Need at least 1 observation");
+    throw new Error(`Invalid parameter 'observations': expected at least 1 observation, received ${observations.length}`);
   }
 
   const sorted = [...observations].sort((a, b) => {
@@ -339,7 +339,7 @@ export function logRankTest(
   alpha = 0.05,
 ): LogRankResult {
   if (group1.length === 0 || group2.length === 0) {
-    throw new Error("Both groups must have at least 1 observation");
+    throw new Error(`Invalid parameter 'group1'/'group2': expected at least 1 observation per group, received group1.length=${group1.length}, group2.length=${group2.length}`);
   }
 
   // Collect all unique event times across both groups

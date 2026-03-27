@@ -42,12 +42,12 @@ export function fisherExactTest(
   const [[a, b], [c, d]] = table;
 
   if ([a, b, c, d].some((v) => v < 0 || !Number.isInteger(v))) {
-    throw new Error("Table entries must be non-negative integers");
+    throw new Error(`Invalid parameter 'table': expected non-negative integers, received [${a}, ${b}, ${c}, ${d}]`);
   }
 
   const n = a + b + c + d;
   if (n === 0) {
-    throw new Error("Table must have at least one observation");
+    throw new Error(`Invalid parameter 'table': expected at least one observation, received total 0`);
   }
 
   const r1 = a + b; // row 1 total

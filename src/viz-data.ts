@@ -236,7 +236,7 @@ export function normalQQPlot(data: number[]): QQPoint[] {
  * ```
  */
 export function boxPlotStats(data: number[]): BoxPlotStats {
-  if (data.length === 0) throw new Error("Need at least 1 observation");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': expected at least 1 observation, received ${data.length}`);
 
   const sorted = [...data].sort((a, b) => a - b);
   const n = sorted.length;

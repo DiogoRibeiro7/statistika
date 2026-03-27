@@ -282,7 +282,7 @@ function solveSystem(A: number[][], b: number[]): number[] {
     [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
 
     if (Math.abs(aug[col][col]) < 1e-12) {
-      throw new Error("Singular matrix in quantile regression");
+      throw new Error("Invalid parameter 'X': expected non-singular design matrix, received singular matrix in quantile regression");
     }
 
     for (let row = col + 1; row < n; row++) {

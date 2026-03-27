@@ -127,7 +127,7 @@ function choleskyDecomposition(A: number[][]): number[][] {
       if (i === j) {
         const val = A[i][i] - sum;
         if (val <= 0) {
-          throw new Error("Matrix is not positive definite");
+          throw new Error(`Invalid state: expected positive definite matrix, received non-positive diagonal at index ${i}`);
         }
         L[i][j] = Math.sqrt(val);
       } else {
@@ -238,7 +238,7 @@ export function varFit(data: number[][], p: number): VARResult {
   const nobs = T - p;
 
   if (nobs <= 0) {
-    throw new Error(`Not enough observations (T=${T}) for lag order p=${p}`);
+    throw new Error(`Invalid parameter 'data'/'p': expected T > p, received T=${T}, p=${p}`);
   }
 
   // Build the regressor matrix Z [nobs x (k*p + 1)] with intercept as first column
@@ -698,7 +698,7 @@ export function johansenTest(data: number[][], p: number): JohansenResult {
 
   const nobs = dY.length - p;
   if (nobs <= 0) {
-    throw new Error("Not enough observations for Johansen test");
+    throw new Error(`Invalid parameter 'data': expected enough observations for Johansen test, received nobs=${nobs}`);
   }
 
   // Build regressors: lagged differences and lagged levels

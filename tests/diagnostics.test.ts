@@ -60,7 +60,7 @@ describe("Diagnostics", () => {
     });
 
     it("throws on mismatched lengths", () => {
-      expect(() => residualDiagnostics([1, 2], [1])).toThrow("same length");
+      expect(() => residualDiagnostics([1, 2], [1])).toThrow("Invalid parameter 'predicted'");
     });
   });
 

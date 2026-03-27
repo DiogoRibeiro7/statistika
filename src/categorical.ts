@@ -54,16 +54,16 @@ export function contingencyTable(observed: number[][]): ContingencyTableSummary 
   for (let i = 0; i < nRows; i++) {
     if (observed[i].length !== nCols) {
       throw new Error(
-        `All rows must have the same number of columns: row 0 has ${nCols}, but row ${i} has ${observed[i].length}`,
+        `Invalid parameter 'observed': expected ${nCols} columns at row ${i}, received ${observed[i].length}`,
       );
     }
     for (let j = 0; j < nCols; j++) {
       const v = observed[i][j];
       if (Number.isNaN(v)) {
-        throw new Error(`Cell count must not be NaN (at row ${i}, col ${j})`);
+        throw new Error(`Invalid parameter 'observed': expected finite number at [${i}][${j}], received NaN`);
       }
       if (v < 0) {
-        throw new Error(`Cell count must not be negative, got ${v} (at row ${i}, col ${j})`);
+        throw new Error(`Invalid parameter 'observed': expected non-negative count at [${i}][${j}], received ${v}`);
       }
     }
   }
@@ -106,7 +106,7 @@ export function mcnemarsTest(
   alpha = 0.05,
 ): { statistic: number; pValue: number; rejected: boolean } {
   if (table.length !== 2 || table[0].length !== 2 || table[1].length !== 2) {
-    throw new Error("McNemar's test requires a 2×2 table");
+    throw new Error(`Invalid parameter 'table': expected a 2x2 table, received ${table.length}x${table[0]?.length ?? 0}`);
   }
 
   const b = table[0][1]; // discordant pair 1

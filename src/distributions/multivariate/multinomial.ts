@@ -145,7 +145,7 @@ export class Multinomial {
    */
   logPmf(x: number[]): number {
     if (x.length !== this.k) {
-      throw new Error(`x must have length ${this.k}`);
+      throw new Error(`Invalid parameter 'x': expected length ${this.k}, received ${x.length}`);
     }
 
     let sum = 0;

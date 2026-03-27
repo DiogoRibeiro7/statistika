@@ -38,7 +38,7 @@ export class OnlineStats {
    * @throws {Error} If no observations have been added
    */
   get mean(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._mean;
   }
 
@@ -48,7 +48,7 @@ export class OnlineStats {
    * @throws {Error} If fewer than 2 observations have been added
    */
   get variance(): number {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     return this._m2 / (this._count - 1);
   }
 
@@ -58,7 +58,7 @@ export class OnlineStats {
    * @throws {Error} If no observations have been added
    */
   get populationVariance(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._m2 / this._count;
   }
 
@@ -77,7 +77,7 @@ export class OnlineStats {
    * @throws {Error} If no observations have been added
    */
   get min(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._min;
   }
 
@@ -87,7 +87,7 @@ export class OnlineStats {
    * @throws {Error} If no observations have been added
    */
   get max(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._max;
   }
 
@@ -212,7 +212,7 @@ export class OnlineCovariance {
    * @throws {Error} If fewer than 2 observation pairs have been added
    */
   get covariance(): number {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     return this._c / (this._count - 1);
   }
 
@@ -222,7 +222,7 @@ export class OnlineCovariance {
    * @throws {Error} If fewer than 2 observation pairs have been added
    */
   get correlation(): number {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     const denom = Math.sqrt(this._m2x * this._m2y);
     if (denom === 0) return 0;
     return this._c / denom;
@@ -234,7 +234,7 @@ export class OnlineCovariance {
    * @throws {Error} If no observations have been added
    */
   get meanX(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._meanX;
   }
 
@@ -244,7 +244,7 @@ export class OnlineCovariance {
    * @throws {Error} If no observations have been added
    */
   get meanY(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._meanY;
   }
 
@@ -354,7 +354,7 @@ export class OnlineQuantile {
    * @throws {Error} If no observations have been added
    */
   get estimate(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     if (this._count < 5) {
       // Not enough for P², use simple sort-based fallback
       const sorted = this.q.slice(0, this._count).sort((a, b) => a - b);
@@ -503,7 +503,7 @@ export class OnlineSkewnessKurtosis {
    * @throws {Error} If no observations have been added
    */
   get mean(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._mean;
   }
 
@@ -513,7 +513,7 @@ export class OnlineSkewnessKurtosis {
    * @throws {Error} If fewer than 2 observations have been added
    */
   get variance(): number {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     return this._m2 / (this._count - 1);
   }
 
@@ -527,7 +527,7 @@ export class OnlineSkewnessKurtosis {
    * @throws {Error} If fewer than 3 observations have been added
    */
   get skewness(): number {
-    if (this._count < 3) throw new Error("Need at least 3 observations");
+    if (this._count < 3) throw new Error(`Invalid state 'count': expected at least 3 observations, received ${this._count}`);
     if (this._m2 === 0) return 0;
     const n = this._count;
     return (
@@ -547,7 +547,7 @@ export class OnlineSkewnessKurtosis {
    * @throws {Error} If fewer than 4 observations have been added
    */
   get kurtosis(): number {
-    if (this._count < 4) throw new Error("Need at least 4 observations");
+    if (this._count < 4) throw new Error(`Invalid state 'count': expected at least 4 observations, received ${this._count}`);
     if (this._m2 === 0) return 0;
     const n = this._count;
     const kurtPop = (n * this._m4) / (this._m2 * this._m2);
@@ -643,7 +643,7 @@ export class OnlineCorrelation {
    * @throws {Error} If fewer than 2 observation pairs have been added
    */
   get correlation(): number {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     const denom = Math.sqrt(this._m2x * this._m2y);
     if (denom === 0) return 0;
     return this._c / denom;
@@ -655,7 +655,7 @@ export class OnlineCorrelation {
    * @throws {Error} If no observations have been added
    */
   get meanX(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._meanX;
   }
 
@@ -665,7 +665,7 @@ export class OnlineCorrelation {
    * @throws {Error} If no observations have been added
    */
   get meanY(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._meanY;
   }
 
@@ -675,7 +675,7 @@ export class OnlineCorrelation {
    * @throws {Error} If fewer than 2 observation pairs have been added
    */
   get covariance(): number {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     return this._c / (this._count - 1);
   }
 
@@ -787,7 +787,7 @@ export class OnlineCovarianceMatrix {
    * @throws {Error} If no observations have been added
    */
   get means(): number[] {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._mean.slice();
   }
 
@@ -797,7 +797,7 @@ export class OnlineCovarianceMatrix {
    * @throws {Error} If fewer than 2 observations have been added
    */
   get covarianceMatrix(): number[][] {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     const p = this._dim;
     const cov: number[][] = Array.from({ length: p }, () => new Array<number>(p));
     for (let i = 0; i < p; i++) {
@@ -814,7 +814,7 @@ export class OnlineCovarianceMatrix {
    * @throws {Error} If fewer than 2 observations have been added
    */
   get correlationMatrix(): number[][] {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     const p = this._dim;
     const corr: number[][] = Array.from({ length: p }, () => new Array<number>(p));
     for (let i = 0; i < p; i++) {

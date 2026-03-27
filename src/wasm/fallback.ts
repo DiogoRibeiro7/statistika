@@ -106,7 +106,7 @@ function solve(a: Float64Array, b: Float64Array, n: number): Float64Array {
     }
 
     if (maxVal < 1e-15) {
-      throw new Error("Matrix is singular or nearly singular");
+      throw new Error("Invalid state: expected non-singular matrix, received singular or nearly singular matrix");
     }
 
     // Swap rows
@@ -168,7 +168,7 @@ function cholesky(a: Float64Array, n: number): Float64Array {
       if (i === j) {
         const diag = a[i * n + i] - sum;
         if (diag <= 0) {
-          throw new Error("Matrix is not positive-definite");
+          throw new Error("Invalid state: expected positive definite matrix, received non-positive diagonal");
         }
         L[i * n + j] = Math.sqrt(diag);
       } else {

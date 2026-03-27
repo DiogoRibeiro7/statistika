@@ -192,7 +192,7 @@ export async function parallelMCMC(options: {
     seeds,
   } = options;
 
-  if (numChains < 1) throw new Error("numChains must be at least 1");
+  if (numChains < 1) throw new Error(`Invalid parameter 'numChains': expected at least 1, received ${numChains}`);
 
   const workerScript = resolveWorkerScript();
 
@@ -374,10 +374,10 @@ export async function parallelCrossValidation(options: {
   const n = data.length;
 
   if (n !== labels.length) {
-    throw new Error("data and labels must have the same length");
+    throw new Error(`Invalid parameter 'labels': expected length ${n} to match data, received length ${labels.length}`);
   }
-  if (nFolds < 2) throw new Error("nFolds must be at least 2");
-  if (nFolds > n) throw new Error("nFolds cannot exceed the number of observations");
+  if (nFolds < 2) throw new Error(`Invalid parameter 'nFolds': expected at least 2, received ${nFolds}`);
+  if (nFolds > n) throw new Error(`Invalid parameter 'nFolds': expected at most ${n} (number of observations), received ${nFolds}`);
 
   // Create fold indices
   const indices = Array.from({ length: n }, (_, i) => i);

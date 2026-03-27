@@ -314,7 +314,7 @@ export function ridgeRegression(
   if (native) {
     const result = native.ridgeSolve(Xs, yc, lambda);
     if (result.info !== 0) {
-      throw new Error("Ridge solve failed (singular system)");
+      throw new Error("Invalid parameter 'X': expected non-singular system for ridge solve, received singular system");
     }
     betaStd = result.beta;
   } else {

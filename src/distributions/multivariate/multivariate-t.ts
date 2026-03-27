@@ -45,7 +45,7 @@ function cholesky(A: number[][]): number[][] {
       for (let k = 0; k < j; k++) sum += L[i][k] * L[j][k];
       if (i === j) {
         const diag = A[i][i] - sum;
-        if (diag <= 0) throw new Error("Matrix is not positive definite");
+        if (diag <= 0) throw new Error(`Invalid parameter 'sigma': expected positive definite matrix, received non-positive diagonal at index ${i}`);
         L[i][j] = Math.sqrt(diag);
       } else {
         L[i][j] = (A[i][j] - sum) / L[j][j];
@@ -127,7 +127,7 @@ export class MultivariateT {
    */
   mean(): number[] {
     if (this.df <= 1) {
-      throw new Error("Mean is undefined for df <= 1");
+      throw new Error(`Invalid state 'df': expected df > 1 for mean to be defined, received ${this.df}`);
     }
     return [...this.mu];
   }
@@ -142,7 +142,7 @@ export class MultivariateT {
    */
   covariance(): number[][] {
     if (this.df <= 2) {
-      throw new Error("Covariance is undefined for df <= 2");
+      throw new Error(`Invalid state 'df': expected df > 2 for covariance to be defined, received ${this.df}`);
     }
     const p = this.dim;
     const factor = this.df / (this.df - 2);
@@ -165,7 +165,7 @@ export class MultivariateT {
   logPdf(x: number[]): number {
     const p = this.dim;
     if (x.length !== p) {
-      throw new Error(`x must be a ${p}-dimensional vector`);
+      throw new Error(`Invalid parameter 'x': expected ${p}-dimensional vector, received length ${x.length}`);
     }
 
     // Compute (x - mu)

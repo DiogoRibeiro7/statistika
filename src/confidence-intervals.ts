@@ -434,7 +434,7 @@ export function multipleRegressionCI(
 
   // Invert X^T X using Gauss-Jordan elimination
   const inv = invertMatrix(XtX);
-  if (!inv) throw new Error("Singular matrix cannot be inverted");
+  if (!inv) throw new Error("Invalid parameter 'X': expected non-singular X'X matrix, received singular matrix");
 
   const alpha = 1 - confidence;
   const t = new StudentT(df);

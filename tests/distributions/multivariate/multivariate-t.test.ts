@@ -42,7 +42,7 @@ describe("MultivariateT", () => {
           ],
           5,
         ),
-    ).toThrow("not positive definite");
+    ).toThrow("positive definite");
   });
 
   it("mean equals mu for df > 1", () => {
@@ -58,9 +58,9 @@ describe("MultivariateT", () => {
 
   it("mean throws for df <= 1", () => {
     const mvt1 = new MultivariateT([0, 0], sigma, 1);
-    expect(() => mvt1.mean()).toThrow("undefined");
+    expect(() => mvt1.mean()).toThrow("Invalid state 'df'");
     const mvt05 = new MultivariateT([0, 0], sigma, 0.5);
-    expect(() => mvt05.mean()).toThrow("undefined");
+    expect(() => mvt05.mean()).toThrow("Invalid state 'df'");
   });
 
   it("covariance is (df/(df-2)) * sigma for df > 2", () => {
@@ -74,9 +74,9 @@ describe("MultivariateT", () => {
 
   it("covariance throws for df <= 2", () => {
     const mvt2 = new MultivariateT([0, 0], sigma, 2);
-    expect(() => mvt2.covariance()).toThrow("undefined");
+    expect(() => mvt2.covariance()).toThrow("Invalid state 'df'");
     const mvt1 = new MultivariateT([0, 0], sigma, 1.5);
-    expect(() => mvt1.covariance()).toThrow("undefined");
+    expect(() => mvt1.covariance()).toThrow("Invalid state 'df'");
   });
 
   it("logPdf returns finite value at the mode", () => {
