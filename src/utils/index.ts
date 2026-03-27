@@ -1,5 +1,13 @@
 export { mean, median, variance, stdDev, standardDeviation, skewness, kurtosis, percentile, describe } from "./descriptive";
 export {
+  LRUCache,
+  setCacheEnabled,
+  isCacheEnabled,
+  clearAllCaches,
+  getAllCacheStats,
+} from "./lru-cache";
+export type { CacheStats } from "./lru-cache";
+export {
   gammaLn,
   gamma,
   logFactorial,

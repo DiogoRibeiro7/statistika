@@ -1,5 +1,6 @@
 import { nativeAddon } from "./native-addon";
 import { getAccelerated, hasWasm } from "../wasm";
+import { cachedUnary, cachedBinary } from "./lru-cache";
 
 // Try to load the native Fortran addon; fall back to pure-TS implementations.
 interface NativeSpecial {
@@ -188,11 +189,11 @@ function tsRegularizedBeta(x: number, a: number, b: number): number {
  * @example
  * gammaLn(5); // ln(24) ≈ 3.178
  */
-export function gammaLn(x: number): number {
+export const gammaLn: (x: number) => number = cachedUnary((x: number): number => {
   if (native) return native.gammaLn(x);
   if (hasWasm) return getAccelerated().gammaLn(x);
   return tsGammaLn(x);
-}
+});
 
 /**
  * Computes the gamma function Γ(x) = exp(gammaLn(x)).
@@ -258,11 +259,11 @@ export function binomialCoeff(n: number, k: number): number {
  * @param b - Second shape parameter (positive).
  * @returns B(a, b).
  */
-export function betaFn(a: number, b: number): number {
+export const betaFn: (a: number, b: number) => number = cachedBinary((a: number, b: number): number => {
   if (native) return native.betaFn(a, b);
   if (hasWasm) return getAccelerated().betaFn(a, b);
   return tsBetaFn(a, b);
-}
+});
 
 /**
  * Computes the error function erf(x) = (2/√π) ∫₀ˣ e^(-t²) dt.
@@ -271,11 +272,11 @@ export function betaFn(a: number, b: number): number {
  * @param x - Input value.
  * @returns erf(x), in the range [-1, 1].
  */
-export function erf(x: number): number {
+export const erf: (x: number) => number = cachedUnary((x: number): number => {
   if (native) return native.erf(x);
   if (hasWasm) return getAccelerated().erf(x);
   return tsErf(x);
-}
+});
 
 /**
  * Computes the complementary error function erfc(x) = 1 - erf(x).
@@ -283,11 +284,11 @@ export function erf(x: number): number {
  * @param x - Input value.
  * @returns erfc(x), in the range [0, 2].
  */
-export function erfc(x: number): number {
+export const erfc: (x: number) => number = cachedUnary((x: number): number => {
   if (native) return native.erfc(x);
   if (hasWasm) return getAccelerated().erfc(x);
   return tsErfc(x);
-}
+});
 
 /**
  * Computes the lower regularized incomplete gamma function P(s, x) = γ(s,x) / Γ(s).
