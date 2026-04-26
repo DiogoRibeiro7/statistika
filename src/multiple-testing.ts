@@ -280,14 +280,14 @@ function validateAlpha(alpha: number): void {
 
 function validatePValues(pValues: number[]): void {
   if (pValues.length === 0) {
-    throw new Error(`Invalid parameter 'pValues': expected a non-empty array, received length 0`);
+    throw new Error(`Invalid parameter 'pValues': must not be empty, received length 0`);
   }
   for (const p of pValues) {
     if (Number.isNaN(p)) {
       throw new Error(`Invalid parameter 'pValues': expected no NaN values, received NaN`);
     }
     if (p < 0 || p > 1) {
-      throw new Error(`Invalid parameter 'pValues': expected values in [0, 1], received ${p}`);
+      throw new Error(`Invalid parameter 'pValues': expected values between 0 and 1, received ${p}`);
     }
   }
 }

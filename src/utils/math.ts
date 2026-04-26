@@ -190,8 +190,6 @@ function tsRegularizedBeta(x: number, a: number, b: number): number {
  * gammaLn(5); // ln(24) ≈ 3.178
  */
 export const gammaLn: (x: number) => number = cachedUnary((x: number): number => {
-  if (native) return native.gammaLn(x);
-  if (hasWasm) return getAccelerated().gammaLn(x);
   return tsGammaLn(x);
 });
 
@@ -205,8 +203,6 @@ export const gammaLn: (x: number) => number = cachedUnary((x: number): number =>
  * gamma(5); // 24 (i.e., 4!)
  */
 export function gamma(x: number): number {
-  if (native) return native.gamma(x);
-  if (hasWasm) return getAccelerated().gamma(x);
   return tsGamma(x);
 }
 
@@ -219,7 +215,6 @@ export function gamma(x: number): number {
  * @throws {Error} If n is negative or not an integer.
  */
 export function logFactorial(n: number): number {
-  if (native) return native.logFactorial(n);
   return tsLogFactorial(n);
 }
 
@@ -233,7 +228,6 @@ export function logFactorial(n: number): number {
  * factorial(5); // 120
  */
 export function factorial(n: number): number {
-  if (native) return native.factorial(n);
   return tsFactorial(n);
 }
 
@@ -300,7 +294,6 @@ export const erfc: (x: number) => number = cachedUnary((x: number): number => {
  * @throws {Error} If x is negative.
  */
 export function regularizedGammaP(s: number, x: number): number {
-  if (native) return native.regularizedGammaP(s, x);
   return tsRegularizedGammaP(s, x);
 }
 
@@ -315,7 +308,6 @@ export function regularizedGammaP(s: number, x: number): number {
  * @throws {Error} If x is not in [0, 1].
  */
 export function regularizedBeta(x: number, a: number, b: number): number {
-  if (native) return native.regularizedBeta(x, a, b);
   return tsRegularizedBeta(x, a, b);
 }
 

@@ -66,7 +66,7 @@ export function tsne(
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, no NaN or Infinity, received ${data[i][j]}`);
       }
     }
   }
@@ -222,7 +222,7 @@ export function silhouetteScore(data: number[][], labels: number[]): number {
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, no NaN or Infinity, received ${data[i][j]}`);
       }
     }
   }
@@ -290,7 +290,7 @@ export function silhouetteScores(data: number[][], labels: number[]): number[] {
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, no NaN or Infinity, received ${data[i][j]}`);
       }
     }
   }
@@ -356,7 +356,7 @@ export function daviesBouldinIndex(data: number[][], labels: number[]): number {
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, no NaN or Infinity, received ${data[i][j]}`);
       }
     }
   }

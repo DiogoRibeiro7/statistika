@@ -152,7 +152,7 @@ export function meanImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
     (v): v is number => v != null && !Number.isNaN(v),
   );
-  if (complete.length === 0) throw new Error(`Invalid parameter 'data': expected at least one observed value, received 0 non-missing values`);
+  if (complete.length === 0) throw new Error(`No observed values: expected at least one non-missing value`);
   const m = mean(complete);
   return data.map((v) => (v != null && !Number.isNaN(v) ? v : m));
 }
@@ -177,7 +177,7 @@ export function medianImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
     (v): v is number => v != null && !Number.isNaN(v),
   );
-  if (complete.length === 0) throw new Error(`Invalid parameter 'data': expected at least one observed value, received 0 non-missing values`);
+  if (complete.length === 0) throw new Error(`No observed values: expected at least one non-missing value`);
   const med = median(complete);
   return data.map((v) => (v != null && !Number.isNaN(v) ? v : med));
 }
@@ -202,7 +202,7 @@ export function modeImputation(data: MaybeDataset): number[] {
   const complete = data.filter(
     (v): v is number => v != null && !Number.isNaN(v),
   );
-  if (complete.length === 0) throw new Error(`Invalid parameter 'data': expected at least one observed value, received 0 non-missing values`);
+  if (complete.length === 0) throw new Error(`No observed values: expected at least one non-missing value`);
 
   const counts = new Map<number, number>();
   for (const v of complete) {
@@ -254,7 +254,7 @@ export function linearInterpolation(data: MaybeDataset): number[] {
     }
   }
 
-  if (firstIdx === -1) throw new Error(`Invalid parameter 'data': expected at least one observed value for interpolation, received 0 non-missing values`);
+  if (firstIdx === -1) throw new Error(`No observed values: expected at least one non-missing value for interpolation`);
 
   // Forward-fill leading missing values
   for (let i = 0; i < firstIdx; i++) {

@@ -22,7 +22,7 @@ import { mean, median } from "./utils/descriptive";
  * ```
  */
 export function mad(data: Dataset, constant = 1.4826): number {
-  if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': must not be empty, received length 0`);
   validateNoNaN(data);
   const med = median(data);
   const absDeviations = data.map((v) => Math.abs(v - med));
@@ -54,7 +54,7 @@ export function trimmedMean(data: Dataset, proportion = 0.1): number {
   if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
   validateNoNaN(data);
   if (proportion < 0 || proportion >= 0.5) {
-    throw new Error(`Invalid parameter 'proportion': expected a value in [0, 0.5), received ${proportion}`);
+    throw new Error(`Invalid parameter 'proportion': expected a value between 0 and 0.5, received ${proportion}`);
   }
 
   const sorted = [...data].sort((a, b) => a - b);
@@ -91,7 +91,7 @@ export function winsorizedMean(data: Dataset, proportion = 0.1): number {
   if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
   validateNoNaN(data);
   if (proportion < 0 || proportion >= 0.5) {
-    throw new Error(`Invalid parameter 'proportion': expected a value in [0, 0.5), received ${proportion}`);
+    throw new Error(`Invalid parameter 'proportion': expected a value between 0 and 0.5, received ${proportion}`);
   }
 
   const sorted = [...data].sort((a, b) => a - b);

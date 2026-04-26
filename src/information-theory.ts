@@ -288,7 +288,7 @@ function validateDistribution(probs: number[]): void {
   }
   const sum = probs.reduce((a, b) => a + b, 0);
   if (Math.abs(sum - 1) > 1e-6) {
-    throw new Error(`Invalid parameter 'probs': expected values summing to 1, received sum=${sum}`);
+    throw new Error(`Invalid parameter 'probs': expected values to sum to 1, received sum=${sum}`);
   }
 }
 

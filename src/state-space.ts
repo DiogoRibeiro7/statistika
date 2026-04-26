@@ -378,25 +378,6 @@ export function kalmanFilter(
     }
   }
 
-  // Fast path: univariate observations with no missing data → Fortran kernel
-  if (hasNativeKalman && p === 1) {
-    const hasMissing = observations.some((obs) => isNaN(obs[0]));
-    if (!hasMissing) {
-      const y = observations.map((obs) => obs[0]);
-      const Hflat = H[0]; // 1 x m row vector
-      const Rscalar = R[0][0];
-      const result = nativeKalmanFilter(F, Hflat, Q, Rscalar, y, x0, P0);
-      return {
-        states: result.states,
-        covariances: [], // Not computed in fast path
-        predictions: [], // Not computed in fast path
-        logLikelihood: result.logLikelihood,
-        innovations: [], // Not computed in fast path
-        innovationCovariances: [],
-      };
-    }
-  }
-
   const Ft = transpose(F);
   const Ht = transpose(H);
 

@@ -60,7 +60,9 @@ After installing the system dependencies, build the native extensions:
 yarn build
 ```
 
-This runs both the Fortran compilation and TypeScript compilation. If `gfortran` is not found, the native build step is skipped silently and the library falls back to pure TypeScript implementations.
+This runs both the Fortran compilation and TypeScript compilation. If `gfortran` is not found or the native toolchain is not available, the native build step is skipped and the library falls back to pure TypeScript implementations.
+
+On Windows, `yarn build` will try the native Fortran build when `gfortran` is installed on `PATH`. This usually requires a compatible Windows native addon toolchain such as MSYS2/MinGW or Visual Studio build tools, plus LAPACK available to the compiler. If LAPACK is unavailable, the build still completes with special functions only and TypeScript fallbacks for linear algebra.
 
 ### TypeScript-only Build
 
