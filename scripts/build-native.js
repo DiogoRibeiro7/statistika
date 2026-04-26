@@ -265,6 +265,20 @@ function main() {
     }
   }
 
+  // Compile sampling.f90
+  const samplingSrc = path.join(ROOT, "native/fortran/sampling.f90");
+  const samplingObj = path.join(ROOT, "native/fortran/sampling.o");
+  if (fs.existsSync(samplingSrc)) {
+    if (
+      !run(
+        `gfortran ${FORTRAN_COMPILE_FLAGS} -o ${samplingObj} ${samplingSrc}`,
+        "Fortran sampling compilation",
+      )
+    ) {
+      try { fs.unlinkSync(samplingObj); } catch {}
+    }
+  }
+
   // Compile linalg.f90 (only if LAPACK is available and source exists)
   if (hasLapack && fs.existsSync(linalgSrc)) {
     const linalgObj = path.join(ROOT, "native/fortran/linalg.o");
@@ -451,6 +465,7 @@ end subroutine
       path.join(ROOT, "native/fortran/time_series.o"),
       path.join(ROOT, "native/fortran/kalman.o"),
       path.join(ROOT, "native/fortran/optimization.o"),
+      path.join(ROOT, "native/fortran/sampling.o"),
     ].filter((p) => fs.existsSync(p));
     const releaseDir = path.join(ROOT, "build", "Release");
     if (!linkFortranBridgeDll(bridgeObjs, hasLapack, releaseDir)) {

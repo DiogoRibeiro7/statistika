@@ -2,6 +2,7 @@ import { BaseContinuous } from "../base";
 import { gammaLn, regularizedBeta, quantileBisect } from "../../utils/math";
 import { GammaDistribution } from "./gamma";
 import { RandomFn } from "../../types";
+import { hasNativeSampling, betaSampleBatch } from "../../utils/native-sampling";
 
 /**
  * Beta distribution defined on the interval [0, 1].
@@ -242,5 +243,19 @@ export class BetaDistribution extends BaseContinuous {
     const x = new GammaDistribution(this.alpha, 1, this.rng).sample();
     const y = new GammaDistribution(this.beta, 1, this.rng).sample();
     return x / (x + y);
+  }
+
+  sampleN(n: number): number[] {
+    if (!Number.isInteger(n) || n < 0) {
+      throw new Error(`Invalid parameter 'n': expected a non-negative integer, received ${n}`);
+    }
+    if (n === 0) return [];
+
+    if (hasNativeSampling) {
+      const seed = Math.max(1, Math.min(2147483646, Math.floor(this.rng() * 2147483647)));
+      return betaSampleBatch(n, this.alpha, this.beta, seed);
+    }
+
+    return super.sampleN(n);
   }
 }

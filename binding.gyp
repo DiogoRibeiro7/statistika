@@ -25,6 +25,7 @@
                             "<(module_root_dir)/native/fortran/time_series.o",
                             "<(module_root_dir)/native/fortran/kalman.o",
                             "<(module_root_dir)/native/fortran/optimization.o",
+                            "<(module_root_dir)/native/fortran/sampling.o",
                             "-llapack",
                             "-lblas",
                             "-lgfortran"
@@ -42,6 +43,7 @@
                             "<(module_root_dir)/native/fortran/time_series.o",
                             "<(module_root_dir)/native/fortran/kalman.o",
                             "<(module_root_dir)/native/fortran/optimization.o",
+                            "<(module_root_dir)/native/fortran/sampling.o",
                             "-lgfortran"
                         ]
                     }

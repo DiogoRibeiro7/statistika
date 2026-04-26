@@ -1,6 +1,7 @@
 import { BaseContinuous } from "../base";
 import { gammaLn, regularizedGammaP, quantileBisect } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { hasNativeSampling, gammaSampleBatch } from "../../utils/native-sampling";
 
 /**
  * Gamma distribution parameterized by `shape` (alpha) and `rate` (beta).
@@ -189,6 +190,20 @@ export class GammaDistribution extends BaseContinuous {
         return (d * v) / this.rate;
       }
     }
+  }
+
+  sampleN(n: number): number[] {
+    if (!Number.isInteger(n) || n < 0) {
+      throw new Error(`Invalid parameter 'n': expected a non-negative integer, received ${n}`);
+    }
+    if (n === 0) return [];
+
+    if (hasNativeSampling) {
+      const seed = Math.max(1, Math.min(2147483646, Math.floor(this.rng() * 2147483647)));
+      return gammaSampleBatch(n, this.shape, this.rate, seed);
+    }
+
+    return super.sampleN(n);
   }
 }
 

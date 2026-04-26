@@ -1,5 +1,6 @@
 import { BaseContinuous } from "../base";
 import { RandomFn } from "../../types";
+import { hasNativeSampling, uniformSampleBatch } from "../../utils/native-sampling";
 
 /**
  * Continuous Uniform distribution on the interval [a, b].
@@ -135,5 +136,19 @@ export class Uniform extends BaseContinuous {
    */
   sample(): number {
     return this.a + this.rng() * (this.b - this.a);
+  }
+
+  sampleN(n: number): number[] {
+    if (!Number.isInteger(n) || n < 0) {
+      throw new Error(`Invalid parameter 'n': expected a non-negative integer, received ${n}`);
+    }
+    if (n === 0) return [];
+
+    if (hasNativeSampling) {
+      const seed = Math.max(1, Math.min(2147483646, Math.floor(this.rng() * 2147483647)));
+      return uniformSampleBatch(n, this.a, this.b, seed);
+    }
+
+    return super.sampleN(n);
   }
 }
