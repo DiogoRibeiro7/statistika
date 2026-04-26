@@ -67,7 +67,7 @@ export class Multinomial {
       sum += probs[i];
     }
     if (Math.abs(sum - 1) > 1e-8) {
-      throw new Error(`Invalid parameter 'probs': expected values summing to 1, received sum=${sum}`);
+      throw new Error(`Invalid parameter 'probs': expected values that sum to 1, received sum=${sum}`);
     }
 
     this.k = k;

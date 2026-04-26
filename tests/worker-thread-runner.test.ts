@@ -18,7 +18,9 @@ jest.setTimeout(30_000);
 // ---------------------------------------------------------------------------
 
 function runnerPath(): string {
-  return join(__dirname, "..", "src", "worker-thread-runner.ts");
+  const tsPath = join(__dirname, "..", "src", "worker-thread-runner.ts");
+  const jsPath = join(__dirname, "..", "dist", "cjs", "worker-thread-runner.js");
+  return existsSync(jsPath) ? jsPath : tsPath;
 }
 
 /**

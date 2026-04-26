@@ -1,6 +1,7 @@
 import { Dataset } from "./types";
 import { mean, variance } from "./utils/descriptive";
 import { euclidean } from "./distance";
+import { pairwiseEuclidean } from "./utils/native-stats";
 import { createRng } from "./utils/linalg";
 
 /**
@@ -65,7 +66,7 @@ export function tsne(
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, no NaN or Infinity, received ${data[i][j]}`);
       }
     }
   }
@@ -75,10 +76,8 @@ export function tsne(
   const iterations = options.iterations ?? 500;
   const rng = options.seed != null ? createRng(options.seed) : Math.random;
 
-  // Compute pairwise distances
-  const dist = Array.from({ length: n }, (_, i) =>
-    Array.from({ length: n }, (_, j) => euclidean(data[i], data[j])),
-  );
+  // Compute pairwise distances (uses Fortran BLAS when available)
+  const dist = pairwiseEuclidean(data);
 
   // Compute P (symmetrized conditional probabilities)
   const P = computeJointProbabilities(dist, perplexity, n);
@@ -223,7 +222,7 @@ export function silhouetteScore(data: number[][], labels: number[]): number {
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, no NaN or Infinity, received ${data[i][j]}`);
       }
     }
   }
@@ -231,6 +230,8 @@ export function silhouetteScore(data: number[][], labels: number[]): number {
   const uniqueLabels = [...new Set(labels)];
   if (uniqueLabels.length < 2) throw new Error(`Invalid parameter 'labels': expected at least 2 clusters, received ${uniqueLabels.length}`);
 
+  // Compute pairwise distances once (uses Fortran BLAS when available)
+  const distMatrix = pairwiseEuclidean(data);
   const scores = new Array<number>(n);
 
   for (let i = 0; i < n; i++) {
@@ -243,7 +244,7 @@ export function silhouetteScore(data: number[][], labels: number[]): number {
 
     for (let j = 0; j < n; j++) {
       if (i === j) continue;
-      const d = euclidean(data[i], data[j]);
+      const d = distMatrix[i][j];
 
       if (labels[j] === labels[i]) {
         aDist += d;
@@ -289,11 +290,13 @@ export function silhouetteScores(data: number[][], labels: number[]): number[] {
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, no NaN or Infinity, received ${data[i][j]}`);
       }
     }
   }
 
+  // Compute pairwise distances once (uses Fortran BLAS when available)
+  const distMatrix = pairwiseEuclidean(data);
   const scores = new Array<number>(n);
 
   for (let i = 0; i < n; i++) {
@@ -303,7 +306,7 @@ export function silhouetteScores(data: number[][], labels: number[]): number[] {
 
     for (let j = 0; j < n; j++) {
       if (i === j) continue;
-      const d = euclidean(data[i], data[j]);
+      const d = distMatrix[i][j];
 
       if (labels[j] === labels[i]) {
         aDist += d;
@@ -353,7 +356,7 @@ export function daviesBouldinIndex(data: number[][], labels: number[]): number {
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < data[i].length; j++) {
       if (!Number.isFinite(data[i][j])) {
-        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, received ${data[i][j]}`);
+        throw new Error(`Invalid parameter 'data[${i}][${j}]': expected a finite number, no NaN or Infinity, received ${data[i][j]}`);
       }
     }
   }
@@ -903,12 +906,14 @@ export function spectralClustering(
   const rng = options.seed != null ? createRng(options.seed) : Math.random;
 
   // Step 1: Build affinity matrix W using RBF kernel
+  // Compute pairwise distances once (uses Fortran BLAS when available)
+  const distMatrixSC = pairwiseEuclidean(data);
   const W = Array.from({ length: n }, () => new Array<number>(n).fill(0));
   const twoSigmaSq = 2 * sigma * sigma;
 
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
-      const d = euclidean(data[i], data[j]);
+      const d = distMatrixSC[i][j];
       const w = Math.exp(-(d * d) / twoSigmaSq);
       W[i][j] = w;
       W[j][i] = w;
@@ -938,8 +943,7 @@ export function spectralClustering(
     // epsilon-neighborhood
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
-        const d = euclidean(data[i], data[j]);
-        if (d > epsRadius) {
+        if (distMatrixSC[i][j] > epsRadius) {
           W[i][j] = 0;
           W[j][i] = 0;
         }
@@ -1197,9 +1201,8 @@ export function umap(
   }
 
   // Step 1: Compute pairwise distances and k-nearest neighbors
-  const distMatrix = Array.from({ length: n }, (_, i) =>
-    Array.from({ length: n }, (_, j) => euclidean(data[i], data[j])),
-  );
+  // Uses Fortran BLAS when available
+  const distMatrix = pairwiseEuclidean(data);
 
   // kNN for each point (sorted by distance, excluding self)
   const knnIndices: number[][] = [];

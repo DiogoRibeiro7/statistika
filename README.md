@@ -49,6 +49,8 @@ yarn build
 
 If `gfortran` is not available, the library falls back to pure TypeScript implementations automatically.
 
+On Windows, `yarn build` will now attempt a native Fortran build if `gfortran` is installed and LAPACK is available. This generally requires a compatible Windows native toolchain (MSYS2/MinGW or Visual Studio build tools) and LAPACK on `PATH`. If the native build cannot be completed, the TypeScript fallback remains usable.
+
 ### TypeScript-only build
 
 ```bash

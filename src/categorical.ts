@@ -149,7 +149,7 @@ export function cochranMantelHaenszel(
 
   for (const table of tables) {
     if (table.length !== 2 || table[0].length !== 2 || table[1].length !== 2) {
-      throw new Error(`Invalid parameter 'tables': expected all tables to be 2×2, received ${table.length}×${table[0]?.length} table`);
+      throw new Error(`Invalid parameter 'tables': expected all tables to be 2x2, received ${table.length}×${table[0]?.length} table`);
     }
   }
 

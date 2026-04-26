@@ -41,7 +41,7 @@ export function polynomialRegression(
     throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${x.length}, y.length=${y.length}`);
   }
   if (x.length <= degree) {
-    throw new Error(`Invalid parameter 'x': expected more data points than polynomial degree (${degree}), received ${x.length}`);
+    throw new Error(`Invalid parameter 'x': expected more data points than polynomial degree (${degree}), received ${x.length} (n must exceed degree)`);
   }
 
   // Build Vandermonde feature matrix: [x, x², ..., x^d]

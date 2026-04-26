@@ -225,7 +225,7 @@ export function forecastWithIntervals(
     throw new Error(`Invalid parameter 'steps': expected a positive integer, received ${steps}`);
   }
   if (!Number.isFinite(confidence) || confidence <= 0 || confidence >= 1) {
-    throw new Error(`Invalid parameter 'confidence': expected a value in (0, 1), received ${confidence}`);
+    throw new Error(`Invalid parameter 'confidence': confidence must be in (0, 1), received ${confidence}`);
   }
 
   const point = model.forecast(steps);

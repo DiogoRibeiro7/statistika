@@ -189,7 +189,7 @@ export class SeededRng {
    * @throws {Error} If k exceeds array length or is negative
    */
   choose<T>(arr: T[], k: number): T[] {
-    if (k > arr.length) throw new Error(`Invalid parameter 'k': expected at most ${arr.length} (array length), received ${k}`);
+    if (k > arr.length) throw new Error(`Invalid parameter 'k': cannot exceed array length ${arr.length}, received ${k}`);
     if (k < 0) throw new Error(`Invalid parameter 'k': expected a non-negative number, received ${k}`);
     const copy = [...arr];
     this.shuffle(copy);

@@ -47,12 +47,12 @@ export function multipleRegression(
   }
   for (let i = 1; i < n; i++) {
     if (X[i].length !== p) {
-      throw new Error(`Invalid parameter 'X[${i}]': expected ${p} features, received ${X[i].length}`);
+      throw new Error(`Invalid parameter 'X[${i}]': expected ${p} features with the same length, received ${X[i].length}`);
     }
   }
   if (n <= p) {
     throw new Error(
-      `Invalid parameters 'X', 'y': expected more observations than features, received n=${n}, p=${p}`,
+      `Invalid parameters 'X', 'y': expected more observations than features (n must exceed p), received n=${n}, p=${p}`,
     );
   }
 
@@ -99,7 +99,7 @@ export function multipleRegression(
     rSquared,
     predict: (x: number[]) => {
       if (x.length !== p) {
-        throw new Error(`Invalid parameter 'x': expected ${p} features, received ${x.length}`);
+        throw new Error(`Invalid parameter 'x': Expected ${p} features, received ${x.length}`);
       }
       let result = intercept;
       for (let j = 0; j < p; j++) {

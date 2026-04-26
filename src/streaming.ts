@@ -839,7 +839,7 @@ export class OnlineCovarianceMatrix {
    */
   push(values: number[]): void {
     if (values.length !== this._dim) {
-      throw new Error(`Invalid parameter 'values': expected ${this._dim} values, received ${values.length}`);
+      throw new Error(`Invalid parameter 'values': Expected ${this._dim} values, got ${values.length}`);
     }
     for (const v of values) {
       if (Number.isNaN(v)) {

@@ -143,7 +143,7 @@ export function logisticRegression(
     iterations,
     predict: (x: number[]) => {
       if (x.length !== p) {
-        throw new Error(`Invalid parameter 'x': expected ${p} features, received ${x.length}`);
+        throw new Error(`Invalid parameter 'x': Expected ${p} features, received ${x.length}`);
       }
       let z = intercept;
       for (let j = 0; j < p; j++) {

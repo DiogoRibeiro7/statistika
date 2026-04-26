@@ -11,6 +11,7 @@
 
 import { Worker } from "node:worker_threads";
 import { cpus } from "node:os";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { mean, variance } from "./utils/descriptive";
 
@@ -20,19 +21,16 @@ import { mean, variance } from "./utils/descriptive";
 
 function resolveWorkerScript(): string {
   // In compiled output the runner sits next to this file.
-  // During development (ts-node / jest) we need to point at the .ts source
-  // and rely on ts-node to compile it.
+  // During development (ts-node / jest) we may need to point at the .ts source
+  // or the compiled dist/cjs output if available.
   const base = typeof __dirname !== "undefined" ? __dirname : process.cwd();
-  // Try .js first (compiled), then .ts (source)
   const jsPath = join(base, "worker-thread-runner.js");
   const tsPath = join(base, "worker-thread-runner.ts");
+  const distPath = join(base, "..", "dist", "cjs", "worker-thread-runner.js");
 
-  try {
-    require.resolve(jsPath);
-    return jsPath;
-  } catch {
-    return tsPath;
-  }
+  if (existsSync(jsPath)) return jsPath;
+  if (existsSync(distPath)) return distPath;
+  return tsPath;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +190,7 @@ export async function parallelMCMC(options: {
     seeds,
   } = options;
 
-  if (numChains < 1) throw new Error(`Invalid parameter 'numChains': expected at least 1, received ${numChains}`);
+  if (numChains < 1) throw new Error(`numChains must be at least 1`);
 
   const workerScript = resolveWorkerScript();
 
@@ -374,10 +372,10 @@ export async function parallelCrossValidation(options: {
   const n = data.length;
 
   if (n !== labels.length) {
-    throw new Error(`Invalid parameter 'labels': expected length ${n} to match data, received length ${labels.length}`);
+    throw new Error(`data and labels must have the same length`);
   }
-  if (nFolds < 2) throw new Error(`Invalid parameter 'nFolds': expected at least 2, received ${nFolds}`);
-  if (nFolds > n) throw new Error(`Invalid parameter 'nFolds': expected at most ${n} (number of observations), received ${nFolds}`);
+  if (nFolds < 2) throw new Error(`nFolds must be at least 2`);
+  if (nFolds > n) throw new Error(`nFolds cannot exceed the number of observations`);
 
   // Create fold indices
   const indices = Array.from({ length: n }, (_, i) => i);

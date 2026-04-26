@@ -90,7 +90,7 @@ export function chebyshev(a: Dataset, b: Dataset): number {
  */
 export function minkowski(a: Dataset, b: Dataset, p: number): number {
   assertSameLength(a, b);
-  if (p < 1) throw new Error(`Invalid parameter 'p': expected >= 1, received ${p}`);
+  if (p < 1) throw new Error(`Invalid parameter 'p': p must be >= 1, received ${p}`);
   if (!Number.isFinite(p)) {
     if (p === Infinity) return chebyshev(a, b);
     throw new Error(`Invalid parameter 'p': expected a finite number or Infinity, received ${p}`);

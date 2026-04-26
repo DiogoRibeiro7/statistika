@@ -53,8 +53,8 @@ export function informationCriteria(
   k: number,
   n: number,
 ): InformationCriteria {
-  if (k < 1) throw new Error(`Invalid parameter 'k': expected at least 1, received ${k}`);
-  if (n < 1) throw new Error(`Invalid parameter 'n': expected at least 1, received ${n}`);
+  if (k < 1) throw new Error(`Invalid parameter 'k': k must be at least 1, received ${k}`);
+  if (n < 1) throw new Error(`Invalid parameter 'n': n must be at least 1, received ${n}`);
   if (!Number.isFinite(logLikelihood)) {
     throw new Error(`Invalid parameter 'logLikelihood': expected a finite number, received ${logLikelihood}`);
   }
@@ -122,7 +122,7 @@ export function likelihoodRatioTest(
   }
   if (dfFull <= dfRestricted) {
     throw new Error(
-      `Invalid parameters 'dfRestricted', 'dfFull': expected dfFull > dfRestricted, received dfRestricted=${dfRestricted}, dfFull=${dfFull}`,
+      `Invalid parameters 'dfRestricted', 'dfFull': full model must have more parameters than restricted model, received dfRestricted=${dfRestricted}, dfFull=${dfFull}`,
     );
   }
 

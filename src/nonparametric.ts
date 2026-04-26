@@ -90,7 +90,7 @@ export function kernelDensity(
   const kernelName = options.kernel ?? "gaussian";
   const K = kernels[kernelName];
   if (!K) {
-    throw new Error(`Invalid parameter 'kernel': expected one of [${Object.keys(kernels).join(", ")}], received "${kernelName}"`);
+    throw new Error(`Unknown kernel: ${kernelName}`);
   }
 
   const h = options.bandwidth ?? silvermanBandwidth(data);

@@ -29,11 +29,11 @@ subroutine c_garch11_loglik(eps, pT, omega, alpha1, beta1, &
   real(c_double), intent(out) :: sigma2_out(*)
   real(c_double), intent(out) :: loglik_out
 
-  integer :: T, t
+  integer :: n_obs, t
   real(c_double) :: ll, s2
   real(c_double), parameter :: LOG2PI = 1.8378770664093453d0
 
-  T = pT
+  n_obs = pT
 
   ! Initialize with unconditional variance
   if (alpha1 + beta1 < 1.0d0) then
@@ -41,16 +41,16 @@ subroutine c_garch11_loglik(eps, pT, omega, alpha1, beta1, &
   else
     ! Fallback: sample variance
     s2 = 0.0d0
-    do t = 1, T
+    do t = 1, n_obs
       s2 = s2 + eps(t) * eps(t)
     end do
-    s2 = s2 / dble(T)
+    s2 = s2 / dble(n_obs)
   end if
 
   sigma2_out(1) = s2
   ll = -0.5d0 * (LOG2PI + log(max(s2, 1.0d-300)) + eps(1) * eps(1) / max(s2, 1.0d-300))
 
-  do t = 2, T
+  do t = 2, n_obs
     s2 = omega + alpha1 * eps(t-1) * eps(t-1) + beta1 * sigma2_out(t-1)
     s2 = max(s2, 1.0d-12)
     sigma2_out(t) = s2
@@ -84,11 +84,11 @@ subroutine c_garch_pq_loglik(eps, pT, omega, alpha, beta, &
   real(c_double), intent(out) :: sigma2_out(*)
   real(c_double), intent(out) :: loglik_out
 
-  integer :: T, p_ord, q_ord, t, j, maxpq
+  integer :: n_obs, p_ord, q_ord, t, j, maxpq
   real(c_double) :: ll, s2, sum_ab, init_var
   real(c_double), parameter :: LOG2PI = 1.8378770664093453d0
 
-  T = pT
+  n_obs = pT
   p_ord = pp
   q_ord = pq
   maxpq = max(p_ord, q_ord)
@@ -107,25 +107,25 @@ subroutine c_garch_pq_loglik(eps, pT, omega, alpha, beta, &
     init_var = omega / (1.0d0 - sum_ab)
   else
     init_var = 0.0d0
-    do t = 1, T
+    do t = 1, n_obs
       init_var = init_var + eps(t) * eps(t)
     end do
-    init_var = init_var / dble(T)
+    init_var = init_var / dble(n_obs)
   end if
 
   ! Initialize first maxpq variances
-  do t = 1, min(maxpq, T)
+  do t = 1, min(maxpq, n_obs)
     sigma2_out(t) = init_var
   end do
 
   ll = 0.0d0
-  do t = 1, min(maxpq, T)
+  do t = 1, min(maxpq, n_obs)
     ll = ll - 0.5d0 * (LOG2PI + log(max(sigma2_out(t), 1.0d-300)) + &
          eps(t) * eps(t) / max(sigma2_out(t), 1.0d-300))
   end do
 
   ! Main recursion
-  do t = maxpq + 1, T
+  do t = maxpq + 1, n_obs
     s2 = omega
     do j = 1, q_ord
       s2 = s2 + alpha(j) * eps(t - j) * eps(t - j)
@@ -165,27 +165,27 @@ subroutine c_gjr_garch11_loglik(eps, pT, omega, alpha1, beta1, gamma1, &
   real(c_double), intent(out) :: sigma2_out(*)
   real(c_double), intent(out) :: loglik_out
 
-  integer :: T, t
+  integer :: n_obs, t
   real(c_double) :: ll, s2, indicator
   real(c_double), parameter :: LOG2PI = 1.8378770664093453d0
 
-  T = pT
+  n_obs = pT
 
   ! Initialize
   if (alpha1 + beta1 + 0.5d0 * gamma1 < 1.0d0) then
     s2 = omega / (1.0d0 - alpha1 - beta1 - 0.5d0 * gamma1)
   else
     s2 = 0.0d0
-    do t = 1, T
+    do t = 1, n_obs
       s2 = s2 + eps(t) * eps(t)
     end do
-    s2 = s2 / dble(T)
+    s2 = s2 / dble(n_obs)
   end if
 
   sigma2_out(1) = s2
   ll = -0.5d0 * (LOG2PI + log(max(s2, 1.0d-300)) + eps(1) * eps(1) / max(s2, 1.0d-300))
 
-  do t = 2, T
+  do t = 2, n_obs
     if (eps(t-1) < 0.0d0) then
       indicator = 1.0d0
     else
@@ -225,29 +225,29 @@ subroutine c_egarch11_loglik(eps, pT, omega, alpha1, beta1, gamma1, &
   real(c_double), intent(out) :: sigma2_out(*)
   real(c_double), intent(out) :: loglik_out
 
-  integer :: T, t
+  integer :: n_obs, t
   real(c_double) :: ll, log_s2, z, s2
   real(c_double), parameter :: LOG2PI = 1.8378770664093453d0
   real(c_double), parameter :: SQRT_2_OVER_PI = 0.7978845608028654d0
 
-  T = pT
+  n_obs = pT
 
   ! Initialize log-variance from unconditional
   if (abs(1.0d0 - beta1) > 1.0d-10) then
     log_s2 = omega / (1.0d0 - beta1)
   else
     log_s2 = 0.0d0
-    do t = 1, T
+    do t = 1, n_obs
       log_s2 = log_s2 + eps(t) * eps(t)
     end do
-    log_s2 = log(log_s2 / dble(T))
+    log_s2 = log(log_s2 / dble(n_obs))
   end if
 
   s2 = exp(log_s2)
   sigma2_out(1) = s2
   ll = -0.5d0 * (LOG2PI + log_s2 + eps(1) * eps(1) / max(s2, 1.0d-300))
 
-  do t = 2, T
+  do t = 2, n_obs
     z = eps(t-1) / sqrt(max(sigma2_out(t-1), 1.0d-300))
     log_s2 = omega + beta1 * log(max(sigma2_out(t-1), 1.0d-300)) + &
              alpha1 * (abs(z) - SQRT_2_OVER_PI) + gamma1 * z

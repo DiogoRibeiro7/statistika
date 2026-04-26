@@ -109,7 +109,7 @@ export class Wishart {
     if (scale.some((r) => r.length !== p)) {
       throw new Error(`Invalid parameter 'scale': expected a square matrix, received non-square matrix`);
     }
-    if (df < p) throw new Error(`Invalid parameter 'df': expected >= dimension (${p}), received ${df}`);
+    if (df < p) throw new Error(`Invalid parameter 'df': Degrees of freedom must be at least dimension (${p}), received ${df}`);
     this.dim = p;
     this.name = `Wishart(df=${df}, dim=${p})`;
     this.L = cholesky(scale);
