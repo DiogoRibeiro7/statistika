@@ -10,6 +10,7 @@
 
 import { mean } from "../utils/descriptive";
 import { solveLinearSystem, randomSample } from "../utils/linalg";
+import { weightedCrossProducts } from "../utils/native-stats";
 
 // ---- Huber Regression ----
 
@@ -354,29 +355,9 @@ export function ransacRegression(
  */
 function olsSolve(X: number[][], y: number[]): number[] {
   const n = X.length;
-  const p = X[0].length;
-
-  // X'X
-  const XtX: number[][] = [];
-  for (let j = 0; j < p; j++) {
-    XtX[j] = new Array(p).fill(0);
-    for (let k = 0; k < p; k++) {
-      for (let i = 0; i < n; i++) {
-        XtX[j][k] += X[i][j] * X[i][k];
-      }
-    }
-  }
-
-  // X'y
-  const Xty = new Array(p).fill(0);
-  for (let j = 0; j < p; j++) {
-    for (let i = 0; i < n; i++) {
-      Xty[j] += X[i][j] * y[i];
-    }
-  }
-
-  // Solve via Cholesky or direct inverse for small p
-  return solveLinearSystem(XtX, Xty);
+  const ones = new Array(n).fill(1);
+  const { XtWX, XtWz } = weightedCrossProducts(X, ones, y);
+  return solveLinearSystem(XtWX, XtWz);
 }
 
 /**
@@ -389,26 +370,7 @@ function olsSolve(X: number[][], y: number[]): number[] {
  * @returns The WLS coefficient vector of length p.
  */
 function wlsSolve(X: number[][], y: number[], w: number[]): number[] {
-  const n = X.length;
-  const p = X[0].length;
-
-  const XtWX: number[][] = [];
-  for (let j = 0; j < p; j++) {
-    XtWX[j] = new Array(p).fill(0);
-    for (let k = 0; k < p; k++) {
-      for (let i = 0; i < n; i++) {
-        XtWX[j][k] += X[i][j] * w[i] * X[i][k];
-      }
-    }
-  }
-
-  const XtWy = new Array(p).fill(0);
-  for (let j = 0; j < p; j++) {
-    for (let i = 0; i < n; i++) {
-      XtWy[j] += X[i][j] * w[i] * y[i];
-    }
-  }
-
-  return solveLinearSystem(XtWX, XtWy);
+  const { XtWX, XtWz } = weightedCrossProducts(X, w, y);
+  return solveLinearSystem(XtWX, XtWz);
 }
 
