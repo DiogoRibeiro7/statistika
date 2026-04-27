@@ -126,6 +126,9 @@ extern "C" {
                                     double* result, const int* n);
   void fortran_normal_sample_batch(int seed, double mu, double sigma,
                                     double* result, const int* n);
+  void fortran_normal_log_density_batch(double mu, double sigma,
+                                        const double* x, double* result,
+                                        const int* n);
   void fortran_gamma_sample_batch(int seed, double shape, double rate,
                                    double* result, const int* n);
   void fortran_beta_sample_batch(int seed, double alpha, double beta,
@@ -653,6 +656,26 @@ Napi::Value BetaSampleBatch(const Napi::CallbackInfo& info) {
 
   std::vector<double> result(n);
   fortran_beta_sample_batch(seed, alpha, beta, result.data(), &n);
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+// normalLogDensityBatch(n: number, mu: number, sigma: number, x: number[]) => number[]
+Napi::Value NormalLogDensityBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[0].As<Napi::Number>().Int32Value();
+  double mu = info[1].As<Napi::Number>().DoubleValue();
+  double sigma = info[2].As<Napi::Number>().DoubleValue();
+  Napi::Array xArr = info[3].As<Napi::Array>();
+
+  std::vector<double> x = jsArrayToVector(env, xArr, n);
+  std::vector<double> result(n);
+
+  fortran_normal_log_density_batch(mu, sigma, x.data(), result.data(), &n);
 
   Napi::Array jsResult = Napi::Array::New(env, n);
   for (int i = 0; i < n; i++) {
@@ -1246,6 +1269,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("welfordBatch", Napi::Function::New(env, WelfordBatch));
   exports.Set("uniformSampleBatch", Napi::Function::New(env, UniformSampleBatch));
   exports.Set("normalSampleBatch", Napi::Function::New(env, NormalSampleBatch));
+  exports.Set("normalLogDensityBatch", Napi::Function::New(env, NormalLogDensityBatch));
   exports.Set("gammaSampleBatch", Napi::Function::New(env, GammaSampleBatch));
   exports.Set("betaSampleBatch", Napi::Function::New(env, BetaSampleBatch));
 

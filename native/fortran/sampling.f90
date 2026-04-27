@@ -4,6 +4,7 @@ module sampling_mod
   private
   public :: fortran_uniform_sample_batch
   public :: fortran_normal_sample_batch
+  public :: fortran_normal_log_density_batch
   public :: fortran_gamma_sample_batch
   public :: fortran_beta_sample_batch
 
@@ -139,6 +140,22 @@ contains
       i = i + 2
     end do
   end subroutine fortran_normal_sample_batch
+
+  subroutine fortran_normal_log_density_batch(mu, sigma, x, result, n) bind(C, name="fortran_normal_log_density_batch")
+    real(c_double), intent(in), value :: mu, sigma
+    real(c_double), intent(in) :: x(*)
+    real(c_double), intent(out) :: result(*)
+    integer(c_int), intent(in), value :: n
+    integer(c_int) :: i
+    real(c_double) :: var, diff, scale
+
+    var = sigma * sigma
+    scale = -0.5d0 * log(2.0d0 * 3.141592653589793d0 * var)
+    do i = 1, n
+      diff = x(i) - mu
+      result(i) = scale - 0.5d0 * diff * diff / var
+    end do
+  end subroutine fortran_normal_log_density_batch
 
   subroutine fortran_gamma_sample_batch(seed, shape, rate, result, n) bind(C, name="fortran_gamma_sample_batch")
     integer(c_int), intent(in), value :: seed
