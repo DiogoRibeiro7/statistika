@@ -263,26 +263,31 @@ export const betaFn: (a: number, b: number) => number = cachedBinary((a: number,
  * Computes the error function erf(x) = (2/√π) ∫₀ˣ e^(-t²) dt.
  * Uses the Abramowitz & Stegun rational approximation as fallback.
  *
+ * This function is intentionally not memoized: the approximation is cheaper
+ * than the generic LRU bookkeeping for typical scalar calls.
+ *
  * @param x - Input value.
  * @returns erf(x), in the range [-1, 1].
  */
-export const erf: (x: number) => number = cachedUnary((x: number): number => {
+export function erf(x: number): number {
   if (native) return native.erf(x);
   if (hasWasm) return getAccelerated().erf(x);
   return tsErf(x);
-});
+}
 
 /**
  * Computes the complementary error function erfc(x) = 1 - erf(x).
  *
+ * This function is intentionally not memoized for the same reason as erf().
+ *
  * @param x - Input value.
  * @returns erfc(x), in the range [0, 2].
  */
-export const erfc: (x: number) => number = cachedUnary((x: number): number => {
+export function erfc(x: number): number {
   if (native) return native.erfc(x);
   if (hasWasm) return getAccelerated().erfc(x);
   return tsErfc(x);
-});
+}
 
 /**
  * Computes the lower regularized incomplete gamma function P(s, x) = γ(s,x) / Γ(s).
