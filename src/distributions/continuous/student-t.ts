@@ -74,23 +74,7 @@ export class StudentT extends BaseContinuous {
     return this.nu / (this.nu - 2);
   }
 
-  /**
-   * Evaluates the probability density function (PDF) at x.
-   *
-   * PDF: f(x) = Gamma((nu+1)/2) / (sqrt(nu*pi) * Gamma(nu/2)) * (1 + x^2/nu)^(-(nu+1)/2)
-   *
-   * Computed in log-space for numerical stability.
-   *
-   * @param x - The point at which to evaluate the density.
-   * @returns The probability density f(x) >= 0.
-   *
-   * @example
-   * ```ts
-   * const dist = new StudentT(5);
-   * dist.pdf(0);  // peak density at the center
-   * dist.pdf(3);  // density in the tails
-   * ```
-   */
+  /** Evaluates the probability density function (PDF) at x. */
   pdf(x: number): number {
     const logPdf =
       gammaLn((this.nu + 1) / 2) -
@@ -100,15 +84,7 @@ export class StudentT extends BaseContinuous {
     return Math.exp(logPdf);
   }
 
-  /**
-   * Computes the log of the probability density function at `x`.
-   *
-   * log f(x) = gammaLn((nu+1)/2) - gammaLn(nu/2) - 0.5*log(nu*pi)
-   *            - ((nu+1)/2) * log(1 + x^2/nu)
-   *
-   * @param x - The point at which to evaluate the log-density.
-   * @returns The log-density.
-   */
+  /** Computes the log of the probability density function at `x`. */
   logPdf(x: number): number {
     return (
       gammaLn((this.nu + 1) / 2) -
@@ -118,54 +94,25 @@ export class StudentT extends BaseContinuous {
     );
   }
 
-  /**
-   * Returns the skewness of the Student's t-distribution.
-   *
-   * The skewness is 0 for nu > 3, and undefined for nu <= 3.
-   */
+  /** Returns the skewness of the Student's t-distribution. */
   get skewness(): number {
     if (this.nu <= 3) return NaN;
     return 0;
   }
 
-  /**
-   * Returns the excess kurtosis of the Student's t-distribution.
-   *
-   * Formula: 6 / (nu - 4) for nu > 4.
-   * Returns Infinity for 2 < nu <= 4, NaN for nu <= 2.
-   */
+  /** Returns the excess kurtosis of the Student's t-distribution. */
   get kurtosis(): number {
     if (this.nu <= 2) return NaN;
     if (this.nu <= 4) return Infinity;
     return 6 / (this.nu - 4);
   }
 
-  /**
-   * Returns the mode of the Student's t-distribution.
-   *
-   * The mode is always 0.
-   */
+  /** Returns the mode of the Student's t-distribution. */
   get mode(): number {
     return 0;
   }
 
-  /**
-   * Evaluates the cumulative distribution function (CDF) at x.
-   *
-   * Computed using the regularized incomplete Beta function:
-   * F(x) = 1 - 0.5 * I_{nu/(nu+x^2)}(nu/2, 1/2) for x >= 0,
-   * and F(x) = 0.5 * I_{nu/(nu+x^2)}(nu/2, 1/2) for x < 0.
-   *
-   * @param x - The point at which to evaluate the CDF.
-   * @returns P(X <= x), a probability in [0, 1].
-   *
-   * @example
-   * ```ts
-   * const dist = new StudentT(10);
-   * dist.cdf(0);    // 0.5 (symmetric about 0)
-   * dist.cdf(2.23); // ~0.975 for a 95% confidence interval
-   * ```
-   */
+  /** Evaluates the cumulative distribution function (CDF) at x. */
   cdf(x: number): number {
     const t2 = x * x;
     const xt = this.nu / (this.nu + t2);
@@ -176,46 +123,33 @@ export class StudentT extends BaseContinuous {
   /**
    * Computes the quantile (inverse CDF) for a given probability.
    *
-   * Uses the symmetry property (Q(p) = -Q(1-p) for p < 0.5) and
-   * bisection search on the CDF.
-   *
-   * @param p - A probability in [0, 1].
-   * @returns The quantile value.
-   * @throws {Error} If p is not in [0, 1].
-   *
-   * @example
-   * ```ts
-   * const dist = new StudentT(10);
-   * dist.quantile(0.5);   // 0 (median)
-   * dist.quantile(0.975); // t critical value for 95% two-sided test
-   * ```
+   * The positive half is bracketed adaptively before bisection. This avoids
+   * using the theoretical variance as a search bound, because the variance is
+   * infinite for 1 < nu <= 2 and undefined for nu <= 1 even though every
+   * interior Student-t quantile is finite.
    */
   quantile(p: number): number {
     if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected a value in [0, 1], received ${p}`);
     if (p === 0) return -Infinity;
     if (p === 1) return Infinity;
-    // Use symmetry
+    if (p === 0.5) return 0;
+
+    // Use symmetry so the numerical search only needs the positive half-line.
     if (p < 0.5) return -this.quantile(1 - p);
-    const upper = 10 * Math.sqrt(this.variance() || 100);
+
+    let upper = 1;
+    while (this.cdf(upper) < p && upper < Number.MAX_VALUE / 2) {
+      upper *= 2;
+    }
+
     return quantileBisect((x) => this.cdf(x), p, 0, upper);
   }
 
-  /**
-   * Draws a single random sample from the Student's t-distribution.
-   *
-   * Uses the representation T = Z / sqrt(V/nu), where Z ~ Normal(0,1)
-   * generated via the Box-Muller transform, and V ~ Chi-squared(nu)
-   * generated via a Gamma distribution.
-   *
-   * @returns A random variate from the t-distribution.
-   */
+  /** Draws a single random sample from the Student's t-distribution. */
   sample(): number {
-    // Ratio of standard normal to sqrt(chi-squared / nu)
     const u1 = this.rng();
     const u2 = this.rng();
     const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-    // Chi-squared with nu degrees of freedom via sum of squared normals
-    // For efficiency, use gamma sampling
     const chi2 = new GammaDistribution(this.nu / 2, 0.5, this.rng).sample();
     return z / Math.sqrt(chi2 / this.nu);
   }
