@@ -263,26 +263,33 @@ export const betaFn: (a: number, b: number) => number = cachedBinary((a: number,
  * Computes the error function erf(x) = (2/√π) ∫₀ˣ e^(-t²) dt.
  * Uses the Abramowitz & Stegun rational approximation as fallback.
  *
+ * This function is intentionally not memoized: the approximation is cheaper
+ * than the generic LRU bookkeeping for typical scalar calls. The backend is
+ * selected once at module initialization to keep the scalar hot path small.
+ *
  * @param x - Input value.
  * @returns erf(x), in the range [-1, 1].
  */
-export const erf: (x: number) => number = cachedUnary((x: number): number => {
-  if (native) return native.erf(x);
-  if (hasWasm) return getAccelerated().erf(x);
-  return tsErf(x);
-});
+export const erf: (x: number) => number = native
+  ? (x: number): number => native.erf(x)
+  : hasWasm
+    ? (x: number): number => getAccelerated().erf(x)
+    : tsErf;
 
 /**
  * Computes the complementary error function erfc(x) = 1 - erf(x).
  *
+ * This function is intentionally not memoized for the same reason as erf().
+ * The backend is selected once at module initialization.
+ *
  * @param x - Input value.
  * @returns erfc(x), in the range [0, 2].
  */
-export const erfc: (x: number) => number = cachedUnary((x: number): number => {
-  if (native) return native.erfc(x);
-  if (hasWasm) return getAccelerated().erfc(x);
-  return tsErfc(x);
-});
+export const erfc: (x: number) => number = native
+  ? (x: number): number => native.erfc(x)
+  : hasWasm
+    ? (x: number): number => getAccelerated().erfc(x)
+    : tsErfc;
 
 /**
  * Computes the lower regularized incomplete gamma function P(s, x) = γ(s,x) / Γ(s).

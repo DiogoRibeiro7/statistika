@@ -11,6 +11,9 @@ permissions:
   contents: read
   pull-requests: write
 
+env:
+  YARN_VERSION: 4.13.0
+
 jobs:
   benchmark:
     name: Run Benchmarks
@@ -21,9 +24,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
 
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+
+      - run: yarn install --immutable
 
       - run: yarn build:ts
 
@@ -77,7 +84,6 @@ jobs:
 
             <sub>Compared against baselines in \`benchmark/BASELINES.md\`. Threshold: >10% slower triggers a warning.</sub>`;
 
-            // Find existing benchmark comment to update
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,

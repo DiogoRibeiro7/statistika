@@ -1,6 +1,6 @@
 /**
  * Lightweight LRU (Least Recently Used) cache for memoizing expensive
- * pure-function evaluations such as gammaLn, erf, etc.
+ * pure-function evaluations such as gammaLn, etc.
  */
 
 export interface CacheStats {
