@@ -1,6 +1,6 @@
 /**
  * Lightweight LRU (Least Recently Used) cache for memoizing expensive
- * pure-function evaluations such as gammaLn, erf, etc.
+ * pure-function evaluations such as gammaLn, etc.
  */
 
 export interface CacheStats {
@@ -104,11 +104,6 @@ export function getAllCacheStats(): CacheStats {
 
 /**
  * Creates a cached wrapper around a single-argument numeric function.
- *
- * A one-entry hot cache handles repeated evaluations without the string-key
- * conversion and LRU Map churn. This matters for inexpensive functions such
- * as erf/erfc, where the cache bookkeeping can otherwise cost more than the
- * numerical approximation itself.
  */
 export function cachedUnary(
   fn: (x: number) => number,
@@ -116,32 +111,13 @@ export function cachedUnary(
 ): (x: number) => number {
   const cache = new LRUCache<number>(size);
   caches.push(cache);
-
-  let hasHotValue = false;
-  let hotX = 0;
-  let hotValue = 0;
-
   return (x: number): number => {
     if (!cacheEnabled) return fn(x);
-
-    if (hasHotValue && Object.is(x, hotX)) {
-      return hotValue;
-    }
-
-    const key = String(x);
+    const key = "" + x;
     const cached = cache.get(key);
-    if (cached !== undefined) {
-      hasHotValue = true;
-      hotX = x;
-      hotValue = cached;
-      return cached;
-    }
-
+    if (cached !== undefined) return cached;
     const result = fn(x);
     cache.set(key, result);
-    hasHotValue = true;
-    hotX = x;
-    hotValue = result;
     return result;
   };
 }
@@ -155,35 +131,13 @@ export function cachedBinary(
 ): (a: number, b: number) => number {
   const cache = new LRUCache<number>(size);
   caches.push(cache);
-
-  let hasHotValue = false;
-  let hotA = 0;
-  let hotB = 0;
-  let hotValue = 0;
-
   return (a: number, b: number): number => {
     if (!cacheEnabled) return fn(a, b);
-
-    if (hasHotValue && Object.is(a, hotA) && Object.is(b, hotB)) {
-      return hotValue;
-    }
-
-    const key = `${a},${b}`;
+    const key = a + "," + b;
     const cached = cache.get(key);
-    if (cached !== undefined) {
-      hasHotValue = true;
-      hotA = a;
-      hotB = b;
-      hotValue = cached;
-      return cached;
-    }
-
+    if (cached !== undefined) return cached;
     const result = fn(a, b);
     cache.set(key, result);
-    hasHotValue = true;
-    hotA = a;
-    hotB = b;
-    hotValue = result;
     return result;
   };
 }
