@@ -12,7 +12,7 @@ permissions:
   pull-requests: write
 
 env:
-  YARN_VERSION: 4.18.0
+  YARN_VERSION: 4.13.0
 
 jobs:
   benchmark:
@@ -24,7 +24,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
 
       - name: Activate Yarn
         run: |
@@ -85,7 +84,6 @@ jobs:
 
             <sub>Compared against baselines in \`benchmark/BASELINES.md\`. Threshold: >10% slower triggers a warning.</sub>`;
 
-            // Find existing benchmark comment to update
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
