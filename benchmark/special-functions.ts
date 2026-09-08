@@ -79,21 +79,57 @@ function bench(
   };
 }
 
+function nativeCall(fn: (mod: NativeSpecial) => void): (() => void) | null {
+  if (!nativeMod) return null;
+  const mod = nativeMod;
+  return () => fn(mod);
+}
+
 const benchmarks: BenchmarkResult[] = [
-  bench("gammaLn(5.5)", () => mathModule.gammaLn(5.5), nativeMod ? () => nativeMod.gammaLn(5.5) : null, ITERATIONS),
-  bench("gammaLn(0.1)", () => mathModule.gammaLn(0.1), nativeMod ? () => nativeMod.gammaLn(0.1) : null, ITERATIONS),
-  bench("gamma(5.5)", () => mathModule.gamma(5.5), nativeMod ? () => nativeMod.gamma(5.5) : null, ITERATIONS),
-  bench("betaFn(2, 5)", () => mathModule.betaFn(2, 5), nativeMod ? () => nativeMod.betaFn(2, 5) : null, ITERATIONS),
-  bench("betaFn(0.5, 0.5)", () => mathModule.betaFn(0.5, 0.5), nativeMod ? () => nativeMod.betaFn(0.5, 0.5) : null, ITERATIONS),
-  bench("erf(1.0)", () => mathModule.erf(1.0), nativeMod ? () => nativeMod.erf(1.0) : null, ITERATIONS),
-  bench("erf(2.5)", () => mathModule.erf(2.5), nativeMod ? () => nativeMod.erf(2.5) : null, ITERATIONS),
-  bench("erfc(1.0)", () => mathModule.erfc(1.0), nativeMod ? () => nativeMod.erfc(1.0) : null, ITERATIONS),
-  bench("regularizedGammaP(2, 3)", () => mathModule.regularizedGammaP(2, 3), nativeMod ? () => nativeMod.regularizedGammaP(2, 3) : null, ITERATIONS),
-  bench("regularizedGammaP(10, 5)", () => mathModule.regularizedGammaP(10, 5), nativeMod ? () => nativeMod.regularizedGammaP(10, 5) : null, ITERATIONS),
-  bench("regularizedBeta(0.5, 2, 5)", () => mathModule.regularizedBeta(0.5, 2, 5), nativeMod ? () => nativeMod.regularizedBeta(0.5, 2, 5) : null, ITERATIONS),
-  bench("regularizedBeta(0.3, 0.5, 0.5)", () => mathModule.regularizedBeta(0.3, 0.5, 0.5), nativeMod ? () => nativeMod.regularizedBeta(0.3, 0.5, 0.5) : null, ITERATIONS),
-  bench("logFactorial(100)", () => mathModule.logFactorial(100), nativeMod ? () => nativeMod.logFactorial(100) : null, ITERATIONS),
-  bench("binomialCoeff(20, 10)", () => mathModule.binomialCoeff(20, 10), nativeMod ? () => nativeMod.binomialCoeff(20, 10) : null, ITERATIONS),
+  bench("gammaLn(5.5)", () => mathModule.gammaLn(5.5), nativeCall((mod) => mod.gammaLn(5.5)), ITERATIONS),
+  bench("gammaLn(0.1)", () => mathModule.gammaLn(0.1), nativeCall((mod) => mod.gammaLn(0.1)), ITERATIONS),
+  bench("gamma(5.5)", () => mathModule.gamma(5.5), nativeCall((mod) => mod.gamma(5.5)), ITERATIONS),
+  bench("betaFn(2, 5)", () => mathModule.betaFn(2, 5), nativeCall((mod) => mod.betaFn(2, 5)), ITERATIONS),
+  bench("betaFn(0.5, 0.5)", () => mathModule.betaFn(0.5, 0.5), nativeCall((mod) => mod.betaFn(0.5, 0.5)), ITERATIONS),
+  bench("erf(1.0)", () => mathModule.erf(1.0), nativeCall((mod) => mod.erf(1.0)), ITERATIONS),
+  bench("erf(2.5)", () => mathModule.erf(2.5), nativeCall((mod) => mod.erf(2.5)), ITERATIONS),
+  bench("erfc(1.0)", () => mathModule.erfc(1.0), nativeCall((mod) => mod.erfc(1.0)), ITERATIONS),
+  bench(
+    "regularizedGammaP(2, 3)",
+    () => mathModule.regularizedGammaP(2, 3),
+    nativeCall((mod) => mod.regularizedGammaP(2, 3)),
+    ITERATIONS,
+  ),
+  bench(
+    "regularizedGammaP(10, 5)",
+    () => mathModule.regularizedGammaP(10, 5),
+    nativeCall((mod) => mod.regularizedGammaP(10, 5)),
+    ITERATIONS,
+  ),
+  bench(
+    "regularizedBeta(0.5, 2, 5)",
+    () => mathModule.regularizedBeta(0.5, 2, 5),
+    nativeCall((mod) => mod.regularizedBeta(0.5, 2, 5)),
+    ITERATIONS,
+  ),
+  bench(
+    "regularizedBeta(0.3, 0.5, 0.5)",
+    () => mathModule.regularizedBeta(0.3, 0.5, 0.5),
+    nativeCall((mod) => mod.regularizedBeta(0.3, 0.5, 0.5)),
+    ITERATIONS,
+  ),
+  bench(
+    "logFactorial(100)",
+    () => mathModule.logFactorial(100),
+    nativeCall((mod) => mod.logFactorial(100)),
+    ITERATIONS,
+  ),
+  bench(
+    "binomialCoeff(20, 10)",
+    () => mathModule.binomialCoeff(20, 10),
+    nativeCall((mod) => mod.binomialCoeff(20, 10)),
+    ITERATIONS,
+  ),
 ];
 
 console.log("\n=== Special Functions Benchmark ===");
