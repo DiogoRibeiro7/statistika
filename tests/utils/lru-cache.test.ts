@@ -135,10 +135,10 @@ describe("global cache control", () => {
   });
 
   it("getAllCacheStats returns aggregated stats", () => {
-    // Call some cached functions to generate stats
+    // Exercise two functions that are intentionally memoized.
     gammaLn(5);
     gammaLn(5); // cache hit
-    erf(1);
+    betaFn(2, 3); // second cache miss
     const stats = getAllCacheStats();
     expect(stats.hits).toBeGreaterThanOrEqual(1);
     expect(stats.misses).toBeGreaterThanOrEqual(2);
@@ -154,7 +154,7 @@ describe("global cache control", () => {
   });
 });
 
-describe("cached special functions correctness", () => {
+describe("special functions correctness", () => {
   afterEach(() => {
     setCacheEnabled(true);
     clearAllCaches();
