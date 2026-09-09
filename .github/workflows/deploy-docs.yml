@@ -34,10 +34,12 @@ jobs:
           corepack enable
           corepack prepare yarn@${YARN_VERSION} --activate
       - run: yarn install --immutable
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
       - name: Build VitePress site
         run: yarn docs:site:build
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: docs-site/.vitepress/dist
 
