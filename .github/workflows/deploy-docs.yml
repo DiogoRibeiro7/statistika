@@ -13,6 +13,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  YARN_VERSION: 4.13.0
+
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -26,8 +29,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - run: yarn install --immutable
       - name: Build VitePress site
         run: yarn docs:site:build
       - name: Upload artifact
