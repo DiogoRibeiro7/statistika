@@ -7,6 +7,9 @@ on:
 permissions:
   contents: read
 
+env:
+  YARN_VERSION: 4.13.0
+
 jobs:
   lint:
     name: Lint
@@ -16,8 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - run: yarn install --immutable
       - run: yarn lint
 
   test:
@@ -31,8 +37,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - run: yarn install --immutable
       - run: yarn test
 
   coverage:
@@ -44,8 +53,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - run: yarn install --immutable
       - run: yarn test:coverage --coverageReporters=text --coverageReporters=lcov
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -62,8 +74,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - run: yarn install --immutable
       - run: yarn build:ts
 
   build-native:
@@ -74,10 +89,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
       - name: Install gfortran
         run: sudo apt-get update && sudo apt-get install -y gfortran
-      - run: yarn install --frozen-lockfile
+      - run: yarn install --immutable
       - run: yarn build
 
   docs:
@@ -88,8 +106,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - run: yarn install --immutable
       - name: Build TypeDoc API docs
         run: yarn docs
       - name: Build VitePress documentation site
