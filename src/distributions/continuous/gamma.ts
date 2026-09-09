@@ -1,6 +1,7 @@
 import { BaseContinuous } from "../base";
 import { gammaLn, regularizedGammaP, quantileBisect } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { hasNativeSampling, gammaSampleBatch } from "../../utils/native-sampling";
 
 /**
  * Gamma distribution parameterized by `shape` (alpha) and `rate` (beta).
@@ -81,6 +82,57 @@ export class GammaDistribution extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = shape * log(rate) + (shape - 1) * log(x) - rate * x - gammaLn(shape)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x < 0.
+   */
+  logPdf(x: number): number {
+    if (x < 0) return -Infinity;
+    if (x === 0) {
+      if (this.shape === 1) return Math.log(this.rate);
+      if (this.shape < 1) return Infinity;
+      return -Infinity;
+    }
+    return (
+      this.shape * Math.log(this.rate) +
+      (this.shape - 1) * Math.log(x) -
+      this.rate * x -
+      gammaLn(this.shape)
+    );
+  }
+
+  /**
+   * Returns the skewness of the Gamma distribution.
+   *
+   * Formula: 2 / sqrt(shape)
+   */
+  get skewness(): number {
+    return 2 / Math.sqrt(this.shape);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Gamma distribution.
+   *
+   * Formula: 6 / shape
+   */
+  get kurtosis(): number {
+    return 6 / this.shape;
+  }
+
+  /**
+   * Returns the mode of the Gamma distribution.
+   *
+   * Formula: (shape - 1) / rate for shape >= 1, 0 for shape < 1.
+   */
+  get mode(): number {
+    if (this.shape < 1) return 0;
+    return (this.shape - 1) / this.rate;
+  }
+
+  /**
    * Evaluates the CDF at `x` using the regularized lower incomplete gamma function.
    *
    * F(x) = P(shape, rate * x) = gammaP(shape, rate * x)
@@ -138,6 +190,20 @@ export class GammaDistribution extends BaseContinuous {
         return (d * v) / this.rate;
       }
     }
+  }
+
+  sampleN(n: number): number[] {
+    if (!Number.isInteger(n) || n < 0) {
+      throw new Error(`Invalid parameter 'n': expected a non-negative integer, received ${n}`);
+    }
+    if (n === 0) return [];
+
+    if (hasNativeSampling) {
+      const seed = Math.max(1, Math.min(2147483646, Math.floor(this.rng() * 2147483647)));
+      return gammaSampleBatch(n, this.shape, this.rate, seed);
+    }
+
+    return super.sampleN(n);
   }
 }
 

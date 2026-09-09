@@ -1,8 +1,8 @@
-# node_stats — Feature Plan
+# statistika — Feature Plan
 
 ## Current State (v2.0.0 → v3.0 in progress)
 
-**node_stats** is a comprehensive statistical library for Node.js written in TypeScript with optional native Fortran/LAPACK acceleration and WASM support. All originally planned v1.0 and v2.0 features have been implemented. v3.0 work is underway.
+**statistika** is a comprehensive statistical library for Node.js written in TypeScript with optional native Fortran/LAPACK acceleration and WASM support. All originally planned v1.0 and v2.0 features have been implemented. v3.0 work is underway.
 
 ### What's Shipped
 
@@ -61,7 +61,7 @@
 
 ### Ecosystem
 
-- [x] **Sub-path exports**: 50+ sub-path exports (`node_stats/distributions`, `node_stats/bayesian`, etc.)
+- [x] **Sub-path exports**: 50+ sub-path exports (`statistika/distributions`, `statistika/bayesian`, etc.)
 - [ ] **Standalone packages**: Consider publishing distributions, time-series, and bayesian as standalone npm packages
 - [x] **Observable/RxJS integration**: Streaming stats adapter for Observable streams
 - [x] **JSON schema**: JSON schemas for result types published

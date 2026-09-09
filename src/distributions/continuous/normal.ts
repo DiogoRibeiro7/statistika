@@ -1,6 +1,7 @@
 import { BaseContinuous } from "../base";
 import { erf, quantileBisect } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { hasNativeSampling, normalSampleBatch } from "../../utils/native-sampling";
 
 /**
  * Normal (Gaussian) distribution with mean `mu` and standard deviation `sigma`.
@@ -96,6 +97,46 @@ export class Normal extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = -0.5 * ((x - mu) / sigma)^2 - log(sigma) - 0.5 * log(2 * pi)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density log f(x).
+   */
+  logPdf(x: number): number {
+    const z = (x - this.mu) / this.sigma;
+    return -0.5 * z * z - Math.log(this.sigma) - 0.5 * Math.log(2 * Math.PI);
+  }
+
+  /**
+   * Returns the skewness of the Normal distribution.
+   *
+   * The Normal distribution is symmetric, so skewness is always 0.
+   */
+  get skewness(): number {
+    return 0;
+  }
+
+  /**
+   * Returns the excess kurtosis of the Normal distribution.
+   *
+   * The Normal distribution has an excess kurtosis of 0.
+   */
+  get kurtosis(): number {
+    return 0;
+  }
+
+  /**
+   * Returns the mode of the Normal distribution.
+   *
+   * The mode equals the mean `mu`.
+   */
+  get mode(): number {
+    return this.mu;
+  }
+
+  /**
    * Draws a random sample using the Box-Muller transform.
    * @returns A random variate from this Normal distribution.
    */
@@ -105,6 +146,20 @@ export class Normal extends BaseContinuous {
     const u2 = this.rng();
     const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     return this.mu + this.sigma * z;
+  }
+
+  sampleN(n: number): number[] {
+    if (!Number.isInteger(n) || n < 0) {
+      throw new Error(`Invalid parameter 'n': expected a non-negative integer, received ${n}`);
+    }
+    if (n === 0) return [];
+
+    if (hasNativeSampling) {
+      const seed = Math.max(1, Math.min(2147483646, Math.floor(this.rng() * 2147483647)));
+      return normalSampleBatch(n, this.mu, this.sigma, seed);
+    }
+
+    return super.sampleN(n);
   }
 }
 

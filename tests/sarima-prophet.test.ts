@@ -74,13 +74,13 @@ describe("SARIMA", () => {
   });
 
   it("throws for series too short", () => {
-    expect(() => sarima([1, 2, 3], 1, 0, 0, 1, 0, 0, 12)).toThrow("too short");
+    expect(() => sarima([1, 2, 3], 1, 0, 0, 1, 0, 0, 12)).toThrow("at least 15");
   });
 
   it("throws for NaN in series", () => {
     const bad = [...series];
     bad[5] = NaN;
-    expect(() => sarima(bad, 1, 0, 0, 1, 0, 0, 12)).toThrow("not finite");
+    expect(() => sarima(bad, 1, 0, 0, 1, 0, 0, 12)).toThrow("finite");
   });
 
   it("handles purely seasonal model (0,0,0)(1,0,0)[4]", () => {
@@ -169,7 +169,7 @@ describe("prophetDecompose", () => {
   it("throws for NaN in series", () => {
     const bad = [...series];
     bad[10] = NaN;
-    expect(() => prophetDecompose(bad, 12)).toThrow("not finite");
+    expect(() => prophetDecompose(bad, 12)).toThrow("finite");
   });
 
   it("works with weekly data (period=7)", () => {

@@ -1,5 +1,7 @@
 import { Dataset } from "../types";
 import { mean } from "../utils/descriptive";
+import { solveLinearSystem } from "../utils/linalg";
+import { weightedCrossProducts } from "../utils/native-stats";
 
 /**
  * Result of a multiple quantile regression fit.
@@ -118,14 +120,14 @@ export function multipleQuantileRegression(
   tolerance = 1e-6,
 ): QuantileRegressionResult {
   if (X.length !== y.length) {
-    throw new Error("X and y must have the same length");
+    throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${X.length}, y.length=${y.length}`);
   }
-  if (X.length < 2) throw new Error("Need at least 2 observations");
-  if (tau <= 0 || tau >= 1) throw new Error("tau must be in (0, 1)");
+  if (X.length < 2) throw new Error(`Invalid parameter 'X': expected at least 2 observations, received ${X.length}`);
+  if (tau <= 0 || tau >= 1) throw new Error(`Invalid parameter 'tau': expected a value in (0, 1), received ${tau}`);
 
   const p = X[0].length;
   for (const row of X) {
-    if (row.length !== p) throw new Error("All rows must have the same length");
+    if (row.length !== p) throw new Error(`Invalid parameter 'X': expected all rows to have ${p} columns, received ${row.length}`);
   }
 
   // Add intercept column
@@ -138,7 +140,7 @@ export function multipleQuantileRegression(
     coefficients: beta.slice(1),
     predict: (xNew: number[]) => {
       if (xNew.length !== p) {
-        throw new Error(`Expected ${p} features, got ${xNew.length}`);
+        throw new Error(`Invalid parameter 'xNew': expected ${p} features, received ${xNew.length}`);
       }
       let result = beta[0];
       for (let j = 0; j < p; j++) {
@@ -200,22 +202,8 @@ function irlsQuantile(
     }
 
     // Solve weighted least squares: (X'WX)beta = X'Wy
-    const XtWX: number[][] = Array.from({ length: p }, () =>
-      new Array(p).fill(0),
-    );
-    const XtWy = new Array(p).fill(0);
-
-    for (let i = 0; i < n; i++) {
-      const w = weights[i];
-      for (let j = 0; j < p; j++) {
-        XtWy[j] += w * X[i][j] * y[i];
-        for (let k = 0; k < p; k++) {
-          XtWX[j][k] += w * X[i][j] * X[i][k];
-        }
-      }
-    }
-
-    const newBeta = solveSystem(XtWX, XtWy);
+    const { XtWX, XtWz } = weightedCrossProducts(X, weights, y);
+    const newBeta = solveLinearSystem(XtWX, XtWz);
 
     // Check convergence
     let maxChange = 0;
@@ -241,67 +229,9 @@ function irlsQuantile(
  */
 function olsInitialize(X: number[][], y: Dataset): number[] {
   const n = X.length;
-  const p = X[0].length;
-
-  const XtX: number[][] = Array.from({ length: p }, () =>
-    new Array(p).fill(0),
-  );
-  const Xty = new Array(p).fill(0);
-
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < p; j++) {
-      Xty[j] += X[i][j] * y[i];
-      for (let k = 0; k < p; k++) {
-        XtX[j][k] += X[i][j] * X[i][k];
-      }
-    }
-  }
-
-  return solveSystem(XtX, Xty);
-}
-
-/**
- * Solves the linear system A*x = b using Gaussian elimination with partial pivoting.
- *
- * @param A - Square coefficient matrix of shape (n x n).
- * @param b - Right-hand side vector of length n.
- * @returns The solution vector x of length n.
- * @throws {Error} If the matrix is singular (pivot element below 1e-12).
- */
-function solveSystem(A: number[][], b: number[]): number[] {
-  const n = A.length;
-  const aug = A.map((row, i) => [...row, b[i]]);
-
-  for (let col = 0; col < n; col++) {
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) {
-        maxRow = row;
-      }
-    }
-    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-
-    if (Math.abs(aug[col][col]) < 1e-12) {
-      throw new Error("Singular matrix in quantile regression");
-    }
-
-    for (let row = col + 1; row < n; row++) {
-      const factor = aug[row][col] / aug[col][col];
-      for (let j = col; j <= n; j++) {
-        aug[row][j] -= factor * aug[col][j];
-      }
-    }
-  }
-
-  const x = new Array(n).fill(0);
-  for (let row = n - 1; row >= 0; row--) {
-    x[row] = aug[row][n];
-    for (let col = row + 1; col < n; col++) {
-      x[row] -= aug[row][col] * x[col];
-    }
-    x[row] /= aug[row][row];
-  }
-  return x;
+  const ones = new Array(n).fill(1);
+  const { XtWX, XtWz } = weightedCrossProducts(X, ones, y);
+  return solveLinearSystem(XtWX, XtWz);
 }
 
 /**
@@ -314,8 +244,8 @@ function solveSystem(A: number[][], b: number[]): number[] {
  */
 function validateInputs(x: Dataset, y: Dataset, tau: number): void {
   if (x.length !== y.length) {
-    throw new Error("x and y must have the same length");
+    throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${x.length}, y.length=${y.length}`);
   }
-  if (x.length < 2) throw new Error("Need at least 2 observations");
-  if (tau <= 0 || tau >= 1) throw new Error("tau must be in (0, 1)");
+  if (x.length < 2) throw new Error(`Invalid parameter 'x': expected at least 2 observations, received ${x.length}`);
+  if (tau <= 0 || tau >= 1) throw new Error(`Invalid parameter 'tau': expected a value in (0, 1), received ${tau}`);
 }

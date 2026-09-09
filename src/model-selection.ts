@@ -53,10 +53,10 @@ export function informationCriteria(
   k: number,
   n: number,
 ): InformationCriteria {
-  if (k < 1) throw new Error("k must be at least 1");
-  if (n < 1) throw new Error("n must be at least 1");
+  if (k < 1) throw new Error(`Invalid parameter 'k': k must be at least 1, received ${k}`);
+  if (n < 1) throw new Error(`Invalid parameter 'n': n must be at least 1, received ${n}`);
   if (!Number.isFinite(logLikelihood)) {
-    throw new Error("logLikelihood must be finite");
+    throw new Error(`Invalid parameter 'logLikelihood': expected a finite number, received ${logLikelihood}`);
   }
 
   const aic = -2 * logLikelihood + 2 * k;
@@ -118,11 +118,11 @@ export function likelihoodRatioTest(
   alpha = 0.05,
 ): LRTResult {
   if (!Number.isFinite(logLikRestricted) || !Number.isFinite(logLikFull)) {
-    throw new Error("Log-likelihood values must be finite");
+    throw new Error(`Invalid parameters 'logLikRestricted', 'logLikFull': expected finite numbers, received logLikRestricted=${logLikRestricted}, logLikFull=${logLikFull}`);
   }
   if (dfFull <= dfRestricted) {
     throw new Error(
-      "Full model must have more parameters than restricted model",
+      `Invalid parameters 'dfRestricted', 'dfFull': full model must have more parameters than restricted model, received dfRestricted=${dfRestricted}, dfFull=${dfFull}`,
     );
   }
 
@@ -206,11 +206,11 @@ export function vuongTest(
 
   if (n !== logLik2.length) {
     throw new Error(
-      "logLik1 and logLik2 must have the same length",
+      `Invalid parameters 'logLik1', 'logLik2': expected same length, received logLik1.length=${n}, logLik2.length=${logLik2.length}`,
     );
   }
   if (n < 2) {
-    throw new Error("Need at least 2 observations");
+    throw new Error(`Invalid parameter 'logLik1': expected at least 2 observations, received ${n}`);
   }
 
   // Pointwise differences
@@ -322,8 +322,8 @@ export function compareModels(
   models: Array<{ name: string; logLikelihood: number; k: number }>,
   n: number,
 ): ModelComparisonEntry[] {
-  if (models.length === 0) throw new Error("Must provide at least one model");
-  if (n < 1) throw new Error("n must be at least 1");
+  if (models.length === 0) throw new Error(`Invalid parameter 'models': expected at least one model, received length 0`);
+  if (n < 1) throw new Error(`Invalid parameter 'n': expected at least 1, received ${n}`);
 
   const entries: ModelComparisonEntry[] = models.map((m) => {
     const ic = informationCriteria(m.logLikelihood, m.k, n);

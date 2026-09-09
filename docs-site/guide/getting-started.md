@@ -1,6 +1,6 @@
 # Getting Started
 
-node_stats is a comprehensive statistical modeling and probability distribution library for Node.js, written in TypeScript with optional native Fortran acceleration.
+statistika is a comprehensive statistical modeling and probability distribution library for Node.js, written in TypeScript with optional native Fortran acceleration.
 
 ## Prerequisites
 
@@ -10,13 +10,13 @@ node_stats is a comprehensive statistical modeling and probability distribution 
 ## Install
 
 ```bash
-yarn add @diogoribeiro7/node_stats
+yarn add @diogoribeiro7/statistika
 ```
 
 Or with npm:
 
 ```bash
-npm install @diogoribeiro7/node_stats
+npm install @diogoribeiro7/statistika
 ```
 
 ## Basic Usage
@@ -24,7 +24,7 @@ npm install @diogoribeiro7/node_stats
 Import what you need from the top-level package:
 
 ```typescript
-import { Normal, mean, stdDev, oneSampleTTest } from 'node_stats';
+import { Normal, mean, stdDev, oneSampleTTest } from 'statistika';
 
 // Create a normal distribution
 const dist = new Normal(0, 1);
@@ -46,58 +46,58 @@ console.log(result.rejected); // true/false at alpha = 0.05
 
 ## Sub-path Exports
 
-node_stats uses sub-path exports so you can import from specific modules. This enables better tree-shaking and makes it clear which part of the library you depend on.
+statistika uses sub-path exports so you can import from specific modules. This enables better tree-shaking and makes it clear which part of the library you depend on.
 
 ```typescript
 // Import everything from the top level
-import { Normal, linearRegression } from 'node_stats';
+import { Normal, linearRegression } from 'statistika';
 
 // Or import from specific sub-paths
-import { Normal, BetaDistribution } from 'node_stats/distributions';
-import { linearRegression, multipleRegression } from 'node_stats/models';
-import { oneSampleTTest, chiSquaredIndependence } from 'node_stats/tests';
-import { mean, variance, describe } from 'node_stats/utils';
+import { Normal, BetaDistribution } from 'statistika/distributions';
+import { linearRegression, multipleRegression } from 'statistika/models';
+import { oneSampleTTest, chiSquaredIndependence } from 'statistika/tests';
+import { mean, variance, describe } from 'statistika/utils';
 
 // Specialized modules
-import { betaBinomial, normalNormal } from 'node_stats/bayesian';
-import { metropolisHastings, gelmanRubin } from 'node_stats/mcmc';
-import { arima, autoArima, seasonalDecompose } from 'node_stats/time-series';
-import { garchFit, egarchFit } from 'node_stats/garch';
-import { varFit, grangerCausality } from 'node_stats/var';
-import { glm, poisson, binomial } from 'node_stats/glm';
-import { kaplanMeier, logRankTest } from 'node_stats/survival';
-import { propensityScore, differenceInDifferences, rdd } from 'node_stats/causal-inference';
+import { betaBinomial, normalNormal } from 'statistika/bayesian';
+import { metropolisHastings, gelmanRubin } from 'statistika/mcmc';
+import { arima, autoArima, seasonalDecompose } from 'statistika/time-series';
+import { garchFit, egarchFit } from 'statistika/garch';
+import { varFit, grangerCausality } from 'statistika/var';
+import { glm, poisson, binomial } from 'statistika/glm';
+import { kaplanMeier, logRankTest } from 'statistika/survival';
+import { propensityScore, differenceInDifferences, rdd } from 'statistika/causal-inference';
 ```
 
 Available sub-paths:
 
 | Sub-path | Contents |
 |---|---|
-| `node_stats/distributions` | All 23 probability distributions |
-| `node_stats/models` | Regression models (linear, multiple, polynomial, logistic, robust) |
-| `node_stats/tests` | Hypothesis tests (t-test, chi-squared, ANOVA, KS, etc.) |
-| `node_stats/utils` | Descriptive statistics, linear algebra, special functions |
-| `node_stats/bayesian` | Conjugate models and Bayes factors |
-| `node_stats/mcmc` | Metropolis-Hastings, Gelman-Rubin, ESS |
-| `node_stats/time-series` | ARIMA, auto-ARIMA, ACF/PACF, seasonal decompose, ADF |
-| `node_stats/garch` | ARCH, GARCH, EGARCH, GJR-GARCH |
-| `node_stats/var` | VAR models, Granger causality, impulse response |
-| `node_stats/glm` | Generalized linear models |
-| `node_stats/gam` | Generalized additive models |
-| `node_stats/survival` | Kaplan-Meier, Nelson-Aalen, log-rank test |
-| `node_stats/causal-inference` | Propensity scores, matching, DiD, RDD, 2SLS |
-| `node_stats/resampling` | Cross-validation, bootstrap, jackknife |
-| `node_stats/diagnostics` | Regression diagnostics, VIF, residual analysis |
+| `statistika/distributions` | All 37 probability distributions |
+| `statistika/models` | Regression models (linear, multiple, polynomial, logistic, robust) |
+| `statistika/tests` | Hypothesis tests (t-test, chi-squared, ANOVA, KS, etc.) |
+| `statistika/utils` | Descriptive statistics, linear algebra, special functions |
+| `statistika/bayesian` | Conjugate models and Bayes factors |
+| `statistika/mcmc` | Metropolis-Hastings, Gelman-Rubin, ESS |
+| `statistika/time-series` | ARIMA, auto-ARIMA, ACF/PACF, seasonal decompose, ADF |
+| `statistika/garch` | ARCH, GARCH, EGARCH, GJR-GARCH |
+| `statistika/var` | VAR models, Granger causality, impulse response |
+| `statistika/glm` | Generalized linear models |
+| `statistika/gam` | Generalized additive models |
+| `statistika/survival` | Kaplan-Meier, Nelson-Aalen, log-rank test |
+| `statistika/causal-inference` | Propensity scores, matching, DiD, RDD, 2SLS |
+| `statistika/resampling` | Cross-validation, bootstrap, jackknife |
+| `statistika/diagnostics` | Regression diagnostics, VIF, residual analysis |
 
 ## TypeScript Support
 
-node_stats is written in TypeScript with strict typing. All public interfaces and result types are exported:
+statistika is written in TypeScript with strict typing. All public interfaces and result types are exported:
 
 ```typescript
-import type { TestResult, AnovaResult } from 'node_stats';
-import type { KaplanMeierResult } from 'node_stats/survival';
-import type { GARCHResult } from 'node_stats/garch';
-import type { VARResult, GrangerCausalityResult } from 'node_stats/var';
+import type { TestResult, AnovaResult } from 'statistika';
+import type { KaplanMeierResult } from 'statistika/survival';
+import type { GARCHResult } from 'statistika/garch';
+import type { VARResult, GrangerCausalityResult } from 'statistika/var';
 ```
 
 ## What's Next?

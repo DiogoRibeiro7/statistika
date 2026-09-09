@@ -20,6 +20,7 @@
 
 import { gammaLn } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { resolveRng } from "../../random";
 
 /**
  * Computes the Cholesky decomposition of a symmetric positive-definite matrix.
@@ -40,7 +41,7 @@ function cholesky(A: number[][]): number[][] {
       for (let k = 0; k < j; k++) sum += L[i][k] * L[j][k];
       if (i === j) {
         const diag = A[i][i] - sum;
-        if (diag <= 0) throw new Error("Matrix is not positive definite");
+        if (diag <= 0) throw new Error(`Invalid parameter 'scale': expected positive definite matrix, received non-positive diagonal at index ${i}`);
         L[i][j] = Math.sqrt(diag);
       } else {
         L[i][j] = (A[i][j] - sum) / L[j][j];
@@ -102,13 +103,13 @@ export class Wishart {
     public readonly scale: number[][],
     rng?: RandomFn,
   ) {
-    this.rng = rng ?? Math.random;
+    this.rng = resolveRng(rng);
     const p = scale.length;
     if (p < 1) throw new Error(`Invalid parameter 'scale': expected at least 1 dimension, received ${p}`);
     if (scale.some((r) => r.length !== p)) {
       throw new Error(`Invalid parameter 'scale': expected a square matrix, received non-square matrix`);
     }
-    if (df < p) throw new Error(`Invalid parameter 'df': expected >= dimension (${p}), received ${df}`);
+    if (df < p) throw new Error(`Invalid parameter 'df': Degrees of freedom must be at least dimension (${p}), received ${df}`);
     this.dim = p;
     this.name = `Wishart(df=${df}, dim=${p})`;
     this.L = cholesky(scale);
@@ -171,7 +172,7 @@ export class Wishart {
   logPdf(X: number[][]): number {
     const p = this.dim;
     if (X.length !== p || X.some((r) => r.length !== p)) {
-      throw new Error(`X must be a ${p}x${p} matrix`);
+      throw new Error(`Invalid parameter 'X': expected a ${p}x${p} matrix, received ${X.length}x${X[0]?.length ?? 0}`);
     }
 
     // Log determinant of X via Cholesky

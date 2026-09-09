@@ -45,7 +45,7 @@ export function entropy(probabilities: Dataset, base = 2): number {
  * ```
  */
 export function entropyFromData(data: Dataset, base = 2): number {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': expected a non-empty array, received length 0`);
   validateBase(base);
   const probs = empiricalDistribution(data);
   return entropy(probs, base);
@@ -70,9 +70,9 @@ export function entropyFromData(data: Dataset, base = 2): number {
  */
 export function jointEntropy(dataX: Dataset, dataY: Dataset, base = 2): number {
   if (dataX.length !== dataY.length) {
-    throw new Error("Both datasets must have the same length");
+    throw new Error(`Invalid parameters 'dataX', 'dataY': expected same length, received dataX.length=${dataX.length}, dataY.length=${dataY.length}`);
   }
-  if (dataX.length === 0) throw new Error("Datasets must not be empty");
+  if (dataX.length === 0) throw new Error(`Invalid parameter 'dataX': expected a non-empty array, received length 0`);
   validateBase(base);
 
   const jointCounts = new Map<string, number>();
@@ -185,7 +185,7 @@ export function normalizedMutualInformation(dataX: Dataset, dataY: Dataset, base
  * ```
  */
 export function klDivergence(p: Dataset, q: Dataset, base = 2): number {
-  if (p.length !== q.length) throw new Error("Distributions must have the same length");
+  if (p.length !== q.length) throw new Error(`Invalid parameters 'p', 'q': expected same length, received p.length=${p.length}, q.length=${q.length}`);
   validateBase(base);
   validateDistribution(p);
   validateDistribution(q);
@@ -193,7 +193,7 @@ export function klDivergence(p: Dataset, q: Dataset, base = 2): number {
   let kl = 0;
   for (let i = 0; i < p.length; i++) {
     if (p[i] > 0) {
-      if (q[i] === 0) throw new Error("KL divergence undefined when q(x)=0 for any x where p(x)>0");
+      if (q[i] === 0) throw new Error(`Invalid parameter 'q[${i}]': KL divergence undefined when q(x)=0 for any x where p(x)>0, received q[${i}]=${q[i]} with p[${i}]=${p[i]}`);
       kl += p[i] * Math.log(p[i] / q[i]);
     }
   }
@@ -223,7 +223,7 @@ export function klDivergence(p: Dataset, q: Dataset, base = 2): number {
  * ```
  */
 export function jsDivergence(p: Dataset, q: Dataset, base = 2): number {
-  if (p.length !== q.length) throw new Error("Distributions must have the same length");
+  if (p.length !== q.length) throw new Error(`Invalid parameters 'p', 'q': expected same length, received p.length=${p.length}, q.length=${q.length}`);
   validateBase(base);
   validateDistribution(p);
   validateDistribution(q);
@@ -255,7 +255,7 @@ export function jsDivergence(p: Dataset, q: Dataset, base = 2): number {
  * ```
  */
 export function crossEntropy(p: Dataset, q: Dataset, base = 2): number {
-  if (p.length !== q.length) throw new Error("Distributions must have the same length");
+  if (p.length !== q.length) throw new Error(`Invalid parameters 'p', 'q': expected same length, received p.length=${p.length}, q.length=${q.length}`);
   validateBase(base);
   validateDistribution(p);
   validateDistribution(q);
@@ -263,7 +263,7 @@ export function crossEntropy(p: Dataset, q: Dataset, base = 2): number {
   let h = 0;
   for (let i = 0; i < p.length; i++) {
     if (p[i] > 0) {
-      if (q[i] === 0) throw new Error("Cross entropy undefined when q(x)=0 for any x where p(x)>0");
+      if (q[i] === 0) throw new Error(`Invalid parameter 'q[${i}]': cross entropy undefined when q(x)=0 for any x where p(x)>0, received q[${i}]=${q[i]} with p[${i}]=${p[i]}`);
       h -= p[i] * Math.log(q[i]);
     }
   }
@@ -282,18 +282,18 @@ function empiricalDistribution(data: Dataset): number[] {
 }
 
 function validateDistribution(probs: number[]): void {
-  if (probs.length === 0) throw new Error("Distribution must not be empty");
+  if (probs.length === 0) throw new Error(`Invalid parameter 'probs': expected a non-empty array, received length 0`);
   for (const p of probs) {
-    if (p < 0) throw new Error("Probabilities must be non-negative");
+    if (p < 0) throw new Error(`Invalid parameter 'probs': expected non-negative values, received ${p}`);
   }
   const sum = probs.reduce((a, b) => a + b, 0);
   if (Math.abs(sum - 1) > 1e-6) {
-    throw new Error(`Probabilities must sum to 1, got ${sum}`);
+    throw new Error(`Invalid parameter 'probs': expected values to sum to 1, received sum=${sum}`);
   }
 }
 
 function validateBase(base: number): void {
   if (base <= 0 || base === 1 || Number.isNaN(base)) {
-    throw new Error(`Logarithm base must be > 0 and != 1, got ${base}`);
+    throw new Error(`Invalid parameter 'base': expected > 0 and != 1, received ${base}`);
   }
 }

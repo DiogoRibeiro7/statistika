@@ -62,13 +62,13 @@ export function gaussianMixture(
   } = {},
 ): GMMResult {
   const n = data.length;
-  if (n < k) throw new Error("Need at least k observations");
-  if (k < 1) throw new Error("k must be at least 1");
+  if (n < k) throw new Error(`Invalid parameter 'data': expected at least k (${k}) observations, received ${n}`);
+  if (k < 1) throw new Error(`Invalid parameter 'k': expected at least 1, received ${k}`);
 
   // NaN / Infinity guard
   for (let i = 0; i < n; i++) {
     if (!Number.isFinite(data[i])) {
-      throw new Error(`Data contains non-finite value at index ${i}`);
+      throw new Error(`Invalid parameter 'data[${i}]': expected a finite number, received ${data[i]}`);
     }
   }
 
@@ -208,7 +208,7 @@ export function selectComponents(
   maxK: number,
   options: { maxIterations?: number; tol?: number; seed?: number } = {},
 ): { bestK: number; results: GMMResult[]; bicValues: number[] } {
-  if (maxK < 1) throw new Error("maxK must be at least 1");
+  if (maxK < 1) throw new Error(`Invalid parameter 'maxK': expected at least 1, received ${maxK}`);
 
   const results: GMMResult[] = [];
   const bicValues: number[] = [];

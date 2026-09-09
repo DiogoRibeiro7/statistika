@@ -176,10 +176,10 @@ export function kendallCorrelation(
  */
 function validateInputs(x: Dataset, y: Dataset): void {
   if (x.length !== y.length) {
-    throw new Error("Datasets must have the same length");
+    throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${x.length}, y.length=${y.length}`);
   }
   if (x.length < 3) {
-    throw new Error("Datasets must have at least 3 elements");
+    throw new Error(`Invalid parameter 'x': expected at least 3 elements, received ${x.length}`);
   }
 }
 

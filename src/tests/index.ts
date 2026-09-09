@@ -2,7 +2,14 @@ export { oneSampleTTest, twoSampleTTest, welchTTest, pairedTTest } from "./t-tes
 export { chiSquaredGoodnessOfFit, chiSquaredIndependence } from "./chi-squared-test";
 export { oneWayAnova } from "./anova";
 export { ksTest, ksTwoSampleTest } from "./ks-test";
-export { mannWhitneyU, wilcoxonSignedRank } from "./nonparametric";
+export { mannWhitneyU, wilcoxonSignedRank, kruskalWallisTest } from "./nonparametric";
+export type { KruskalWallisResult } from "./nonparametric";
 export { fisherExactTest } from "./fisher-exact-test";
 export { twoWayAnova } from "./two-way-anova";
 export type { TwoWayAnovaResult } from "./two-way-anova";
+export { shapiroWilkTest } from "./shapiro-wilk";
+export type { ShapiroWilkResult } from "./shapiro-wilk";
+export { andersonDarlingTest as andersonDarlingNormalityTest } from "./anderson-darling";
+export type { AndersonDarlingResult as AndersonDarlingNormalityResult } from "./anderson-darling";
+export { leveneTest } from "./levene";
+export type { LeveneTestResult } from "./levene";

@@ -1,13 +1,13 @@
 # Tutorial: Regression Modeling
 
-This tutorial covers regression modeling in node_stats, from simple linear regression to generalized linear models, including diagnostics and model selection.
+This tutorial covers regression modeling in statistika, from simple linear regression to generalized linear models, including diagnostics and model selection.
 
 ## Simple Linear Regression
 
 Fit a straight line through bivariate data:
 
 ```typescript
-import { linearRegression } from 'node_stats';
+import { linearRegression } from 'statistika';
 
 const height = [150, 160, 165, 170, 175, 180, 185, 190];
 const weight = [50, 60, 62, 68, 72, 78, 82, 90];
@@ -26,7 +26,7 @@ The result object contains `slope`, `intercept`, `rSquared`, and a `predict(x)` 
 When you have multiple predictors, use `multipleRegression`:
 
 ```typescript
-import { multipleRegression } from 'node_stats';
+import { multipleRegression } from 'statistika';
 
 // Predict salary (in $k) from years of experience and education level
 const features = [
@@ -49,7 +49,7 @@ console.log(fit.predict([5, 16]));
 Fit higher-degree polynomials with `polynomialRegression`:
 
 ```typescript
-import { polynomialRegression } from 'node_stats';
+import { polynomialRegression } from 'statistika';
 
 // Free-fall distance: d = 0.5 * g * t^2 (g ~ 9.8)
 const time = [0, 1, 2, 3, 4, 5, 6, 7, 8];
@@ -67,7 +67,7 @@ console.log(fit.predict(10)); // distance at t=10
 For binary outcomes, use `logisticRegression`:
 
 ```typescript
-import { logisticRegression } from 'node_stats';
+import { logisticRegression } from 'statistika';
 
 // Predict exam pass/fail from study hours
 const hours = [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]];
@@ -90,7 +90,7 @@ The `glm` function supports multiple distribution families: `gaussian`, `binomia
 ### Poisson Regression for Count Data
 
 ```typescript
-import { glm, poisson } from 'node_stats';
+import { glm, poisson } from 'statistika';
 
 // Number of insurance claims by driver age group
 const X = [[1], [2], [3], [4], [5], [6], [7], [8]];
@@ -105,7 +105,7 @@ console.log(fit.aic);          // Akaike Information Criterion
 ### Binomial GLM
 
 ```typescript
-import { glm, binomial } from 'node_stats';
+import { glm, binomial } from 'statistika';
 
 const X = [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]];
 const y = [0, 0, 0, 0, 1, 0, 1, 1, 1, 1];
@@ -120,7 +120,7 @@ console.log(fit.deviance);
 The Gaussian family with identity link is equivalent to ordinary linear regression:
 
 ```typescript
-import { glm, gaussian } from 'node_stats';
+import { glm, gaussian } from 'statistika';
 
 const X = [[1], [2], [3], [4], [5]];
 const y = [2.1, 3.9, 6.2, 7.8, 10.1];
@@ -135,7 +135,7 @@ console.log(fit.deviance);
 When your data contains outliers, robust methods resist their influence:
 
 ```typescript
-import { huberRegression, ransacRegression } from 'node_stats';
+import { huberRegression, ransacRegression } from 'statistika';
 
 // True relationship: y = 2x + 1, with outliers
 const x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -162,7 +162,7 @@ console.log(ransac.nInliers);   // number of inlier points
 Evaluate the quality of a regression fit:
 
 ```typescript
-import { regressionSummary, residualDiagnostics, vif } from 'node_stats';
+import { regressionSummary, residualDiagnostics, vif } from 'statistika';
 
 // Full regression summary (similar to R's summary(lm()))
 const X = [
@@ -196,8 +196,8 @@ console.log(vifs);
 Use cross-validation to compare models:
 
 ```typescript
-import { kFoldCV, mse } from 'node_stats';
-import { linearRegression, polynomialRegression } from 'node_stats';
+import { kFoldCV, mse } from 'statistika';
+import { linearRegression, polynomialRegression } from 'statistika';
 
 const x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const y = [2.1, 3.9, 6.2, 7.8, 10.1, 12.0, 14.2, 15.8, 18.1, 20.0];

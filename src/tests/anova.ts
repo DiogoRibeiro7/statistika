@@ -40,13 +40,13 @@ export function oneWayAnova(
   alpha: number = 0.05,
 ): AnovaResult {
   const k = groups.length;
-  if (k < 2) throw new Error("Need at least 2 groups");
-  for (const g of groups) {
-    if (g.length < 1) throw new Error("Each group must have at least 1 observation");
+  if (k < 2) throw new Error(`Invalid parameter 'groups': expected at least 2 groups, received ${k}`);
+  for (let gi = 0; gi < groups.length; gi++) {
+    if (groups[gi].length < 1) throw new Error(`Invalid parameter 'groups': expected at least 1 observation in group ${gi}, received ${groups[gi].length}`);
   }
 
   const totalN = groups.reduce((sum, g) => sum + g.length, 0);
-  if (totalN <= k) throw new Error("Total observations must exceed number of groups");
+  if (totalN <= k) throw new Error(`Invalid parameter 'groups': expected total observations > number of groups, received totalN=${totalN}, k=${k}`);
 
   // Grand mean
   const grandMean = groups.reduce((sum, g) => sum + g.reduce((a, b) => a + b, 0), 0) / totalN;

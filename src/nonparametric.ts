@@ -85,16 +85,16 @@ export function kernelDensity(
     to?: number;
   } = {},
 ): KDEResult {
-  if (data.length < 2) throw new Error("Dataset must have at least 2 elements");
+  if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 elements, received ${data.length}`);
 
   const kernelName = options.kernel ?? "gaussian";
   const K = kernels[kernelName];
   if (!K) {
-    throw new Error(`Unknown kernel "${kernelName}". Available: ${Object.keys(kernels).join(", ")}`);
+    throw new Error(`Unknown kernel: ${kernelName}`);
   }
 
   const h = options.bandwidth ?? silvermanBandwidth(data);
-  if (h <= 0) throw new Error("Bandwidth must be positive");
+  if (h <= 0) throw new Error(`Invalid parameter 'bandwidth': expected a positive number, received ${h}`);
 
   const n = data.length;
   const nPoints = options.nPoints ?? 512;
@@ -181,7 +181,7 @@ export function bootstrapCI(
     seed?: number;
   } = {},
 ): BootstrapCIResult {
-  if (data.length < 2) throw new Error("Dataset must have at least 2 elements");
+  if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 elements, received ${data.length}`);
 
   const confidence = options.confidence ?? 0.95;
   const nReplicates = options.nReplicates ?? 10000;
@@ -322,7 +322,7 @@ export function permutationTest(
   } = {},
 ): PermutationTestResult {
   if (data1.length < 1 || data2.length < 1) {
-    throw new Error("Both samples must have at least 1 observation");
+    throw new Error(`Invalid parameters 'data1', 'data2': expected at least 1 observation each, received data1.length=${data1.length}, data2.length=${data2.length}`);
   }
 
   const stat = options.statistic ?? ((a, b) => mean(a) - mean(b));
@@ -404,7 +404,7 @@ export function oneSamplePermutationTest(
     seed?: number;
   } = {},
 ): PermutationTestResult {
-  if (data.length < 1) throw new Error("Dataset must have at least 1 element");
+  if (data.length < 1) throw new Error(`Invalid parameter 'data': expected at least 1 element, received ${data.length}`);
 
   const stat = options.statistic ?? mean;
   const nPermutations = options.nPermutations ?? 10000;

@@ -119,13 +119,13 @@ function resolveBounds(
   if (bounds) {
     if (bounds.length !== dimensions) {
       throw new Error(
-        `bounds length (${bounds.length}) must match dimensions (${dimensions})`,
+        `Invalid parameter 'bounds': expected length ${dimensions} to match dimensions, received ${bounds.length}`,
       );
     }
     for (let i = 0; i < bounds.length; i++) {
       if (bounds[i][0] >= bounds[i][1]) {
         throw new Error(
-          `bounds[${i}] min must be less than max`,
+          `Invalid parameter 'bounds': expected min < max at index ${i}, received [${bounds[i][0]}, ${bounds[i][1]}]`,
         );
       }
     }
@@ -233,11 +233,11 @@ export function sobolIndices(
   options: SobolOptions = {},
 ): SobolResult {
   if (dimensions < 1) {
-    throw new Error("dimensions must be at least 1");
+    throw new Error(`Invalid parameter 'dimensions': expected at least 1, received ${dimensions}`);
   }
   const N = options.nSamples ?? 1000;
   if (N < 2) {
-    throw new Error("nSamples must be at least 2");
+    throw new Error(`Invalid parameter 'nSamples': expected at least 2, received ${N}`);
   }
   const bounds = resolveBounds(dimensions, options.bounds);
   const rng = new SeededRng(options.seed ?? 42);
@@ -353,15 +353,15 @@ export function morrisMethod(
   options: MorrisOptions = {},
 ): MorrisResult {
   if (dimensions < 1) {
-    throw new Error("dimensions must be at least 1");
+    throw new Error(`Invalid parameter 'dimensions': expected at least 1, received ${dimensions}`);
   }
   const r = options.nTrajectories ?? 10;
   if (r < 1) {
-    throw new Error("nTrajectories must be at least 1");
+    throw new Error(`Invalid parameter 'nTrajectories': expected at least 1, received ${r}`);
   }
   const p = options.levels ?? 4;
   if (p < 2) {
-    throw new Error("levels must be at least 2");
+    throw new Error(`Invalid parameter 'levels': expected at least 2, received ${p}`);
   }
   const bounds = resolveBounds(dimensions, options.bounds);
   const rng = new SeededRng(options.seed ?? 42);
@@ -493,7 +493,7 @@ export function fastMethod(
   options: FASTOptions = {},
 ): FASTResult {
   if (dimensions < 1) {
-    throw new Error("dimensions must be at least 1");
+    throw new Error(`Invalid parameter 'dimensions': expected at least 1, received ${dimensions}`);
   }
   const bounds = resolveBounds(dimensions, options.bounds);
   const d = dimensions;
@@ -507,7 +507,7 @@ export function fastMethod(
   const N = options.nSamples ?? Math.max(1000, minN);
   if (N < minN) {
     throw new Error(
-      `nSamples must be at least ${minN} for ${d} dimensions (4 * maxFrequency + 1)`,
+      `Invalid parameter 'nSamples': expected at least ${minN} for ${d} dimensions, received ${N}`,
     );
   }
 
@@ -624,18 +624,18 @@ export function correlationScreening(
   y: number[],
 ): CorrelationScreeningResult {
   if (X.length === 0) {
-    throw new Error("X must not be empty");
+    throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
   }
   if (X.length !== y.length) {
-    throw new Error("X and y must have the same number of rows");
+    throw new Error(`Invalid parameter 'y': expected length ${X.length} to match X rows, received length ${y.length}`);
   }
   if (X.length < 3) {
-    throw new Error("X must have at least 3 rows");
+    throw new Error(`Invalid parameter 'X': expected at least 3 rows, received ${X.length}`);
   }
   const n = X.length;
   const d = X[0].length;
   if (d === 0) {
-    throw new Error("X must have at least one column");
+    throw new Error("Invalid parameter 'X': expected at least one column, received 0");
   }
 
   // Extract columns
@@ -864,19 +864,19 @@ export function scatterPlotData(
   variableNames?: string[],
 ): ScatterPlotDataResult {
   if (X.length === 0) {
-    throw new Error("X must not be empty");
+    throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
   }
   if (X.length !== y.length) {
-    throw new Error("X and y must have the same number of rows");
+    throw new Error(`Invalid parameter 'y': expected length ${X.length} to match X rows, received length ${y.length}`);
   }
   const n = X.length;
   const d = X[0].length;
   if (d === 0) {
-    throw new Error("X must have at least one column");
+    throw new Error("Invalid parameter 'X': expected at least one column, received 0");
   }
   if (variableNames !== undefined && variableNames.length !== d) {
     throw new Error(
-      `variableNames length (${variableNames.length}) must match number of columns (${d})`,
+      `Invalid parameter 'variableNames': expected length ${d} to match columns, received ${variableNames.length}`,
     );
   }
 

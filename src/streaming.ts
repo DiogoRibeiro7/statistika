@@ -38,7 +38,7 @@ export class OnlineStats {
    * @throws {Error} If no observations have been added
    */
   get mean(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._mean;
   }
 
@@ -48,7 +48,7 @@ export class OnlineStats {
    * @throws {Error} If fewer than 2 observations have been added
    */
   get variance(): number {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     return this._m2 / (this._count - 1);
   }
 
@@ -58,7 +58,7 @@ export class OnlineStats {
    * @throws {Error} If no observations have been added
    */
   get populationVariance(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._m2 / this._count;
   }
 
@@ -77,7 +77,7 @@ export class OnlineStats {
    * @throws {Error} If no observations have been added
    */
   get min(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._min;
   }
 
@@ -87,7 +87,7 @@ export class OnlineStats {
    * @throws {Error} If no observations have been added
    */
   get max(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._max;
   }
 
@@ -99,7 +99,7 @@ export class OnlineStats {
    */
   push(value: number): void {
     if (Number.isNaN(value)) {
-      throw new Error("Cannot push NaN value into OnlineStats");
+      throw new Error(`Invalid parameter 'value': expected a non-NaN number, received NaN`);
     }
     this._count++;
     const delta = value - this._mean;
@@ -119,7 +119,7 @@ export class OnlineStats {
    */
   pushAll(values: number[]): void {
     for (const v of values) {
-      if (Number.isNaN(v)) throw new Error("Cannot push NaN value into OnlineStats");
+      if (Number.isNaN(v)) throw new Error(`Invalid parameter 'values': expected non-NaN numbers, received NaN`);
     }
     const result = welfordBatch(values, {
       count: this._count,
@@ -212,7 +212,7 @@ export class OnlineCovariance {
    * @throws {Error} If fewer than 2 observation pairs have been added
    */
   get covariance(): number {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     return this._c / (this._count - 1);
   }
 
@@ -222,7 +222,7 @@ export class OnlineCovariance {
    * @throws {Error} If fewer than 2 observation pairs have been added
    */
   get correlation(): number {
-    if (this._count < 2) throw new Error("Need at least 2 observations");
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
     const denom = Math.sqrt(this._m2x * this._m2y);
     if (denom === 0) return 0;
     return this._c / denom;
@@ -234,7 +234,7 @@ export class OnlineCovariance {
    * @throws {Error} If no observations have been added
    */
   get meanX(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._meanX;
   }
 
@@ -244,7 +244,7 @@ export class OnlineCovariance {
    * @throws {Error} If no observations have been added
    */
   get meanY(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     return this._meanY;
   }
 
@@ -257,7 +257,7 @@ export class OnlineCovariance {
    */
   push(x: number, y: number): void {
     if (Number.isNaN(x) || Number.isNaN(y)) {
-      throw new Error("Cannot push NaN values into OnlineCovariance");
+      throw new Error(`Invalid parameters 'x', 'y': expected non-NaN numbers, received x=${x}, y=${y}`);
     }
     this._count++;
     const dx = x - this._meanX;
@@ -280,7 +280,7 @@ export class OnlineCovariance {
    * @throws {Error} If any value is NaN
    */
   pushAll(xs: number[], ys: number[]): void {
-    if (xs.length !== ys.length) throw new Error("Arrays must have same length");
+    if (xs.length !== ys.length) throw new Error(`Invalid parameters 'xs', 'ys': expected same length, received xs.length=${xs.length}, ys.length=${ys.length}`);
     for (let i = 0; i < xs.length; i++) this.push(xs[i], ys[i]);
   }
 
@@ -329,7 +329,7 @@ export class OnlineQuantile {
    */
   constructor(quantile = 0.5) {
     if (quantile <= 0 || quantile >= 1) {
-      throw new Error("Quantile must be between 0 and 1 (exclusive)");
+      throw new Error(`Invalid parameter 'quantile': expected a value in (0, 1), received ${quantile}`);
     }
     this.p = quantile;
     this.np = [0, 2 * quantile, 4 * quantile, 2 + 2 * quantile, 4];
@@ -354,7 +354,7 @@ export class OnlineQuantile {
    * @throws {Error} If no observations have been added
    */
   get estimate(): number {
-    if (this._count === 0) throw new Error("No observations");
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
     if (this._count < 5) {
       // Not enough for P², use simple sort-based fallback
       const sorted = this.q.slice(0, this._count).sort((a, b) => a - b);
@@ -372,7 +372,7 @@ export class OnlineQuantile {
    */
   push(value: number): void {
     if (Number.isNaN(value)) {
-      throw new Error("Cannot push NaN value into OnlineQuantile");
+      throw new Error(`Invalid parameter 'value': expected a non-NaN number, received NaN`);
     }
     this._count++;
 
@@ -463,5 +463,432 @@ export class OnlineQuantile {
   private linear(i: number, d: number): number {
     const j = i + d;
     return this.q[i] + (d * (this.q[j] - this.q[i])) / (this.n[j] - this.n[i]);
+  }
+}
+
+/**
+ * Online skewness and kurtosis using Welford's method extended to 3rd/4th moments.
+ *
+ * Computes running mean, variance, skewness (adjusted Fisher-Pearson),
+ * and excess kurtosis in a single pass without storing observations.
+ * Numerically stable via central-moment update formulas.
+ *
+ * @example
+ * ```ts
+ * const sk = new OnlineSkewnessKurtosis();
+ * for (let i = 0; i < 1000; i++) sk.push(Math.random());
+ * sk.mean;     // ~0.5
+ * sk.skewness; // ~0
+ * sk.kurtosis; // ~-1.2 (excess kurtosis of uniform)
+ * ```
+ */
+export class OnlineSkewnessKurtosis {
+  private _count = 0;
+  private _mean = 0;
+  private _m2 = 0;
+  private _m3 = 0;
+  private _m4 = 0;
+
+  /**
+   * Number of observations seen so far.
+   * @returns The current count
+   */
+  get count(): number {
+    return this._count;
+  }
+
+  /**
+   * Running mean.
+   * @returns The current mean of all observations
+   * @throws {Error} If no observations have been added
+   */
+  get mean(): number {
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
+    return this._mean;
+  }
+
+  /**
+   * Running sample variance.
+   * @returns The current sample variance (using Bessel's correction)
+   * @throws {Error} If fewer than 2 observations have been added
+   */
+  get variance(): number {
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
+    return this._m2 / (this._count - 1);
+  }
+
+  /**
+   * Running sample skewness (adjusted Fisher-Pearson standardized moment).
+   *
+   * Uses the formula: g1 = (n * sqrt(n-1) / (n-2)) * (M3 / M2^(3/2))
+   * where M2, M3 are the 2nd and 3rd central moment sums.
+   *
+   * @returns The current sample skewness
+   * @throws {Error} If fewer than 3 observations have been added
+   */
+  get skewness(): number {
+    if (this._count < 3) throw new Error(`Invalid state 'count': expected at least 3 observations, received ${this._count}`);
+    if (this._m2 === 0) return 0;
+    const n = this._count;
+    return (
+      (Math.sqrt(n * (n - 1)) / (n - 2)) *
+      (this._m3 / Math.pow(this._m2, 1.5)) *
+      Math.sqrt(n)
+    );
+  }
+
+  /**
+   * Running excess kurtosis.
+   *
+   * Uses the formula for sample excess kurtosis:
+   * G2 = ((n-1)/((n-2)(n-3))) * ((n+1) * (n * M4 / M2²) - 3*(n-1))
+   *
+   * @returns The current excess kurtosis
+   * @throws {Error} If fewer than 4 observations have been added
+   */
+  get kurtosis(): number {
+    if (this._count < 4) throw new Error(`Invalid state 'count': expected at least 4 observations, received ${this._count}`);
+    if (this._m2 === 0) return 0;
+    const n = this._count;
+    const kurtPop = (n * this._m4) / (this._m2 * this._m2);
+    return (
+      ((n - 1) / ((n - 2) * (n - 3))) *
+      ((n + 1) * kurtPop - 3 * (n - 1))
+    );
+  }
+
+  /**
+   * Add a single observation.
+   * @param value - The numeric value to add (must not be NaN)
+   * @returns void
+   * @throws {Error} If value is NaN
+   */
+  push(value: number): void {
+    if (Number.isNaN(value)) {
+      throw new Error(`Invalid parameter 'value': expected a non-NaN number, received NaN`);
+    }
+    const n1 = this._count;
+    this._count++;
+    const n = this._count;
+    const delta = value - this._mean;
+    const deltaN = delta / n;
+    const deltaN2 = deltaN * deltaN;
+    const term1 = delta * deltaN * n1;
+
+    this._mean += deltaN;
+    this._m4 +=
+      term1 * deltaN2 * (n * n - 3 * n + 3) +
+      6 * deltaN2 * this._m2 -
+      4 * deltaN * this._m3;
+    this._m3 += term1 * deltaN * (n - 2) - 3 * deltaN * this._m2;
+    this._m2 += term1;
+  }
+
+  /**
+   * Add multiple observations.
+   * @param values - Array of numeric values to add
+   * @returns void
+   * @throws {Error} If any value is NaN
+   */
+  pushAll(values: number[]): void {
+    for (const v of values) this.push(v);
+  }
+
+  /**
+   * Reset all state.
+   * @returns void
+   */
+  reset(): void {
+    this._count = 0;
+    this._mean = 0;
+    this._m2 = 0;
+    this._m3 = 0;
+    this._m4 = 0;
+  }
+}
+
+/**
+ * Online Pearson correlation for two variables.
+ *
+ * A convenience wrapper around the streaming covariance algorithm
+ * that provides a correlation-focused API. Uses a numerically stable
+ * one-pass algorithm based on Welford's method extended to two variables.
+ *
+ * @example
+ * ```ts
+ * const corr = new OnlineCorrelation();
+ * for (let i = 0; i < 100; i++) corr.push(i, 2 * i + 1);
+ * corr.correlation; // 1.0
+ * ```
+ */
+export class OnlineCorrelation {
+  private _count = 0;
+  private _meanX = 0;
+  private _meanY = 0;
+  private _c = 0;
+  private _m2x = 0;
+  private _m2y = 0;
+
+  /**
+   * Number of observation pairs seen so far.
+   * @returns The current count
+   */
+  get count(): number {
+    return this._count;
+  }
+
+  /**
+   * Running Pearson correlation coefficient.
+   * @returns The current Pearson correlation coefficient, or 0 if variance is zero
+   * @throws {Error} If fewer than 2 observation pairs have been added
+   */
+  get correlation(): number {
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
+    const denom = Math.sqrt(this._m2x * this._m2y);
+    if (denom === 0) return 0;
+    return this._c / denom;
+  }
+
+  /**
+   * Running mean of the X stream.
+   * @returns The current mean of X values
+   * @throws {Error} If no observations have been added
+   */
+  get meanX(): number {
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
+    return this._meanX;
+  }
+
+  /**
+   * Running mean of the Y stream.
+   * @returns The current mean of Y values
+   * @throws {Error} If no observations have been added
+   */
+  get meanY(): number {
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
+    return this._meanY;
+  }
+
+  /**
+   * Running sample covariance.
+   * @returns The current sample covariance
+   * @throws {Error} If fewer than 2 observation pairs have been added
+   */
+  get covariance(): number {
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
+    return this._c / (this._count - 1);
+  }
+
+  /**
+   * Add a pair of observations.
+   * @param x - The X value (must not be NaN)
+   * @param y - The Y value (must not be NaN)
+   * @returns void
+   * @throws {Error} If x or y is NaN
+   */
+  push(x: number, y: number): void {
+    if (Number.isNaN(x) || Number.isNaN(y)) {
+      throw new Error(`Invalid parameters 'x', 'y': expected non-NaN numbers, received x=${x}, y=${y}`);
+    }
+    this._count++;
+    const dx = x - this._meanX;
+    const dy = y - this._meanY;
+    this._meanX += dx / this._count;
+    this._meanY += dy / this._count;
+    const dx2 = x - this._meanX;
+    const dy2 = y - this._meanY;
+    this._c += dx * dy2;
+    this._m2x += dx * dx2;
+    this._m2y += dy * dy2;
+  }
+
+  /**
+   * Add multiple pairs.
+   * @param xs - Array of X values
+   * @param ys - Array of Y values
+   * @returns void
+   * @throws {Error} If arrays have different lengths
+   * @throws {Error} If any value is NaN
+   */
+  pushAll(xs: number[], ys: number[]): void {
+    if (xs.length !== ys.length) throw new Error(`Invalid parameters 'xs', 'ys': expected same length, received xs.length=${xs.length}, ys.length=${ys.length}`);
+    for (let i = 0; i < xs.length; i++) this.push(xs[i], ys[i]);
+  }
+
+  /**
+   * Reset all state.
+   * @returns void
+   */
+  reset(): void {
+    this._count = 0;
+    this._meanX = 0;
+    this._meanY = 0;
+    this._c = 0;
+    this._m2x = 0;
+    this._m2y = 0;
+  }
+}
+
+/**
+ * Online covariance and correlation matrix for p variables.
+ *
+ * Uses a numerically stable one-pass algorithm extending Welford's method
+ * to multiple dimensions. Computes the full p x p covariance matrix
+ * and correlation matrix without storing individual observations.
+ *
+ * @example
+ * ```ts
+ * const mat = new OnlineCovarianceMatrix(3);
+ * mat.push([1, 2, 3]);
+ * mat.push([4, 5, 6]);
+ * mat.push([7, 8, 9]);
+ * mat.covarianceMatrix; // 3x3 sample covariance matrix
+ * mat.correlationMatrix; // 3x3 correlation matrix
+ * ```
+ */
+export class OnlineCovarianceMatrix {
+  private readonly _dim: number;
+  private _count = 0;
+  private _mean: number[];
+  private _c: number[][]; // upper triangle co-moment sums
+
+  /**
+   * @param dim - The number of variables (dimensions), must be >= 1
+   * @throws {Error} If dim < 1 or is not an integer
+   */
+  constructor(dim: number) {
+    if (!Number.isInteger(dim) || dim < 1) {
+      throw new Error(`Invalid parameter 'dim': expected a positive integer, received ${dim}`);
+    }
+    this._dim = dim;
+    this._mean = new Array<number>(dim).fill(0);
+    this._c = Array.from({ length: dim }, () => new Array<number>(dim).fill(0));
+  }
+
+  /**
+   * Number of observation vectors seen so far.
+   * @returns The current count
+   */
+  get count(): number {
+    return this._count;
+  }
+
+  /**
+   * The dimension (number of variables).
+   * @returns The dimension
+   */
+  get dim(): number {
+    return this._dim;
+  }
+
+  /**
+   * Running mean vector.
+   * @returns A copy of the current mean vector
+   * @throws {Error} If no observations have been added
+   */
+  get means(): number[] {
+    if (this._count === 0) throw new Error(`Invalid state 'count': expected at least 1 observation, received ${this._count}`);
+    return this._mean.slice();
+  }
+
+  /**
+   * Running sample covariance matrix.
+   * @returns A p x p sample covariance matrix (using Bessel's correction)
+   * @throws {Error} If fewer than 2 observations have been added
+   */
+  get covarianceMatrix(): number[][] {
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
+    const p = this._dim;
+    const cov: number[][] = Array.from({ length: p }, () => new Array<number>(p));
+    for (let i = 0; i < p; i++) {
+      for (let j = 0; j < p; j++) {
+        cov[i][j] = this._c[i][j] / (this._count - 1);
+      }
+    }
+    return cov;
+  }
+
+  /**
+   * Running correlation matrix.
+   * @returns A p x p Pearson correlation matrix
+   * @throws {Error} If fewer than 2 observations have been added
+   */
+  get correlationMatrix(): number[][] {
+    if (this._count < 2) throw new Error(`Invalid state 'count': expected at least 2 observations, received ${this._count}`);
+    const p = this._dim;
+    const corr: number[][] = Array.from({ length: p }, () => new Array<number>(p));
+    for (let i = 0; i < p; i++) {
+      for (let j = 0; j < p; j++) {
+        if (i === j) {
+          corr[i][j] = 1;
+        } else {
+          const denom = Math.sqrt(this._c[i][i] * this._c[j][j]);
+          corr[i][j] = denom === 0 ? 0 : this._c[i][j] / denom;
+        }
+      }
+    }
+    return corr;
+  }
+
+  /**
+   * Add a single observation vector.
+   * @param values - Array of p numeric values (must not contain NaN)
+   * @returns void
+   * @throws {Error} If values length does not match dimension
+   * @throws {Error} If any value is NaN
+   */
+  push(values: number[]): void {
+    if (values.length !== this._dim) {
+      throw new Error(`Invalid parameter 'values': Expected ${this._dim} values, got ${values.length}`);
+    }
+    for (const v of values) {
+      if (Number.isNaN(v)) {
+        throw new Error(`Invalid parameter 'values': expected non-NaN numbers, received NaN`);
+      }
+    }
+    this._count++;
+    const n = this._count;
+    const p = this._dim;
+    const dx = new Array<number>(p);
+
+    for (let i = 0; i < p; i++) {
+      dx[i] = values[i] - this._mean[i];
+    }
+
+    for (let i = 0; i < p; i++) {
+      this._mean[i] += dx[i] / n;
+    }
+
+    for (let i = 0; i < p; i++) {
+      // dx2[j] = values[j] - updated mean[j]
+      for (let j = i; j < p; j++) {
+        const dx2j = values[j] - this._mean[j];
+        this._c[i][j] += dx[i] * dx2j;
+        if (i !== j) {
+          this._c[j][i] = this._c[i][j];
+        }
+      }
+    }
+  }
+
+  /**
+   * Add multiple observation vectors.
+   * @param rows - Array of observation vectors
+   * @returns void
+   * @throws {Error} If any vector length does not match dimension
+   * @throws {Error} If any value is NaN
+   */
+  pushAll(rows: number[][]): void {
+    for (const row of rows) this.push(row);
+  }
+
+  /**
+   * Reset all state.
+   * @returns void
+   */
+  reset(): void {
+    this._count = 0;
+    this._mean.fill(0);
+    for (const row of this._c) row.fill(0);
   }
 }

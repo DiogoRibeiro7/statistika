@@ -41,7 +41,7 @@ describe("weightedStats", () => {
   });
 
   it("throws for mismatched lengths", () => {
-    expect(() => weightedStats([1, 2], [1])).toThrow("same length");
+    expect(() => weightedStats([1, 2], [1])).toThrow("Invalid parameters");
   });
 
   it("throws for negative weights", () => {
@@ -74,7 +74,7 @@ describe("weightedQuantile", () => {
   });
 
   it("throws for invalid p", () => {
-    expect(() => weightedQuantile([1], [1], -0.1)).toThrow("p must be");
+    expect(() => weightedQuantile([1], [1], -0.1)).toThrow("Invalid parameter 'p'");
   });
 });
 
@@ -171,7 +171,7 @@ describe("ratioEstimator", () => {
   });
 
   it("throws for mismatched lengths", () => {
-    expect(() => ratioEstimator([1], [1, 2], [1], 100)).toThrow("same length");
+    expect(() => ratioEstimator([1], [1, 2], [1], 100)).toThrow("Invalid parameter");
   });
 });
 
@@ -205,6 +205,6 @@ describe("postStratify", () => {
   it("throws for unknown stratum", () => {
     expect(() =>
       postStratify([1, 1], [0, 1], { 0: 100 }),
-    ).toThrow("No population count for stratum 1");
+    ).toThrow("expected entry for stratum 1");
   });
 });

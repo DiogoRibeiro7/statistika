@@ -43,7 +43,7 @@ body:
       description: Describe your ideal API or approach.
       render: typescript
       placeholder: |
-        import { newFunction } from 'node_stats';
+        import { newFunction } from 'statistika';
         const result = newFunction(data, { option: true });
     validations:
       required: true

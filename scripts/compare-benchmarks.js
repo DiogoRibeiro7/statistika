@@ -7,21 +7,15 @@
  *
  * - Reads the benchmark JSON output produced by `BENCH_JSON=1 yarn bench:all`
  * - Parses baselines from benchmark/BASELINES.md (or a custom path)
+ * - Fails if any benchmark suite itself failed
  * - Prints warnings for any benchmark that regressed >10%
- * - Exits with code 1 if any regression is detected
- *
- * BASELINES.md format:
- *   Each baseline entry is a markdown table row:
- *   | suite-name | benchmark-name | tsTimeMs |
- *
- *   Example:
- *   | special-functions | gammaLn(5.5) | 12.34 |
+ * - Exits with code 1 if a suite failure or regression is detected
  */
 
 const fs = require("fs");
 const path = require("path");
 
-const REGRESSION_THRESHOLD = 0.10; // 10%
+const REGRESSION_THRESHOLD = 0.10;
 
 function parseBaselines(baselinePath) {
   const baselines = new Map();
@@ -35,22 +29,19 @@ function parseBaselines(baselinePath) {
   const lines = content.split("\n");
 
   for (const line of lines) {
-    // Match markdown table rows: | suite | name | time |
     const match = line.match(
       /^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([\d.]+)\s*\|/,
     );
-    if (match) {
-      const suite = match[1].trim();
-      const name = match[2].trim();
-      const time = parseFloat(match[3]);
+    if (!match) continue;
 
-      // Skip header rows
-      if (suite === "Suite" || suite.startsWith("-")) continue;
-      if (isNaN(time)) continue;
+    const suite = match[1].trim();
+    const name = match[2].trim();
+    const time = parseFloat(match[3]);
 
-      const key = `${suite}::${name}`;
-      baselines.set(key, { suite, name, tsTimeMs: time });
-    }
+    if (suite === "Suite" || suite.startsWith("-")) continue;
+    if (isNaN(time)) continue;
+
+    baselines.set(`${suite}::${name}`, { suite, name, tsTimeMs: time });
   }
 
   return baselines;
@@ -78,8 +69,18 @@ function main() {
   const results = JSON.parse(fs.readFileSync(resultsPath, "utf-8"));
   const baselines = parseBaselines(baselinePath);
 
+  const failedSuites = results.suites.filter((suite) => suite.error);
+  if (failedSuites.length > 0) {
+    console.log("Benchmark suite failures detected:\n");
+    for (const suite of failedSuites) {
+      console.log(`  FAIL ${suite.name}: ${suite.error}`);
+    }
+    console.log(`\nSuite failures: ${failedSuites.length}`);
+    process.exit(1);
+  }
+
   if (baselines.size === 0) {
-    console.log("No baselines to compare against. All benchmarks pass by default.");
+    console.log("No baselines to compare against. All benchmark suites completed successfully.");
     console.log("\nBenchmark results summary:");
     for (const suite of results.suites) {
       console.log(`  ${suite.name}: ${suite.benchmarks.length} benchmarks`);
@@ -97,11 +98,6 @@ function main() {
   console.log("Comparing benchmark results against baselines...\n");
 
   for (const suite of results.suites) {
-    if (suite.error) {
-      console.log(`  SKIP ${suite.name}: ${suite.error}`);
-      continue;
-    }
-
     for (const bench of suite.benchmarks) {
       const key = `${suite.name}::${bench.name}`;
       const baseline = baselines.get(key);
@@ -136,7 +132,7 @@ function main() {
     }
   }
 
-  console.log(`\n--- Summary ---`);
+  console.log("\n--- Summary ---");
   console.log(`Compared: ${comparedCount} benchmarks`);
   console.log(`Regressions (>${REGRESSION_THRESHOLD * 100}%): ${regressionCount}`);
 

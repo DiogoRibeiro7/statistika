@@ -3,6 +3,7 @@ import {
   DiscreteDistribution,
   RandomFn,
 } from "../types";
+import { resolveRng } from "../random";
 
 /**
  * Abstract base class for all continuous probability distributions.
@@ -29,10 +30,10 @@ export abstract class BaseContinuous implements ContinuousDistribution {
 
   /**
    * @param rng - Optional random number generator returning values in [0, 1).
-   *              Defaults to `Math.random`.
+   *              Falls back to the global seeded RNG (if set) or `Math.random`.
    */
   constructor(rng?: RandomFn) {
-    this.rng = rng ?? Math.random;
+    this.rng = resolveRng(rng);
   }
 
   /** Returns the theoretical mean (expected value) of the distribution. */
@@ -116,10 +117,10 @@ export abstract class BaseDiscrete implements DiscreteDistribution {
 
   /**
    * @param rng - Optional random number generator returning values in [0, 1).
-   *              Defaults to `Math.random`.
+   *              Falls back to the global seeded RNG (if set) or `Math.random`.
    */
   constructor(rng?: RandomFn) {
-    this.rng = rng ?? Math.random;
+    this.rng = resolveRng(rng);
   }
 
   /** Returns the theoretical mean (expected value) of the distribution. */

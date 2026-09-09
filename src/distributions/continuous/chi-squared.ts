@@ -1,4 +1,5 @@
 import { BaseContinuous } from "../base";
+import { gammaLn } from "../../utils/math";
 import { GammaDistribution } from "./gamma";
 import { RandomFn } from "../../types";
 
@@ -72,6 +73,51 @@ export class ChiSquared extends BaseContinuous {
    */
   variance(): number {
     return 2 * this.k;
+  }
+
+  /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = (k/2 - 1) * log(x) - x/2 - (k/2) * log(2) - gammaLn(k/2)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x <= 0.
+   */
+  logPdf(x: number): number {
+    if (x <= 0) {
+      if (x === 0 && this.k === 2) return Math.log(0.5);
+      if (x === 0 && this.k === 1) return Infinity;
+      return -Infinity;
+    }
+    const halfK = this.k / 2;
+    return (halfK - 1) * Math.log(x) - x / 2 - halfK * Math.log(2) - gammaLn(halfK);
+  }
+
+  /**
+   * Returns the skewness of the Chi-squared distribution.
+   *
+   * Formula: sqrt(8 / k)
+   */
+  get skewness(): number {
+    return Math.sqrt(8 / this.k);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Chi-squared distribution.
+   *
+   * Formula: 12 / k
+   */
+  get kurtosis(): number {
+    return 12 / this.k;
+  }
+
+  /**
+   * Returns the mode of the Chi-squared distribution.
+   *
+   * Formula: max(k - 2, 0)
+   */
+  get mode(): number {
+    return Math.max(this.k - 2, 0);
   }
 
   /**

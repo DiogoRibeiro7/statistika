@@ -19,6 +19,7 @@
 
 import { gammaLn, logFactorial } from "../../utils/math";
 import { RandomFn } from "../../types";
+import { resolveRng } from "../../random";
 
 /**
  * Represents a Multinomial distribution over count vectors.
@@ -53,7 +54,7 @@ export class Multinomial {
     public readonly probs: number[],
     rng?: RandomFn,
   ) {
-    this.rng = rng ?? Math.random;
+    this.rng = resolveRng(rng);
     if (!Number.isInteger(n) || n < 1) {
       throw new Error(`Invalid parameter 'n': expected a positive integer, received ${n}`);
     }
@@ -66,7 +67,7 @@ export class Multinomial {
       sum += probs[i];
     }
     if (Math.abs(sum - 1) > 1e-8) {
-      throw new Error(`Invalid parameter 'probs': expected values summing to 1, received sum=${sum}`);
+      throw new Error(`Invalid parameter 'probs': expected values that sum to 1, received sum=${sum}`);
     }
 
     this.k = k;
@@ -144,7 +145,7 @@ export class Multinomial {
    */
   logPmf(x: number[]): number {
     if (x.length !== this.k) {
-      throw new Error(`x must have length ${this.k}`);
+      throw new Error(`Invalid parameter 'x': expected length ${this.k}, received ${x.length}`);
     }
 
     let sum = 0;

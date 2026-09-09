@@ -1,4 +1,6 @@
 import { LogisticRegressionResult } from "../types";
+import { solveLinearSystem } from "../utils/linalg";
+import { weightedCrossProducts } from "../utils/native-stats";
 
 /**
  * Computes the logistic (sigmoid) function: sigma(z) = 1 / (1 + exp(-z)).
@@ -56,27 +58,29 @@ export function logisticRegression(
 
   const n = X.length;
   if (n !== y.length) {
-    throw new Error("X and y must have the same number of observations");
+    throw new Error(`Invalid parameters 'X', 'y': expected same number of observations, received X.length=${n}, y.length=${y.length}`);
   }
   if (n < 2) {
-    throw new Error("Must have at least 2 observations");
+    throw new Error(`Invalid parameter 'X': expected at least 2 observations, received ${n}`);
   }
 
   const p = X[0].length;
   for (let i = 0; i < n; i++) {
     if (X[i].length !== p) {
-      throw new Error("All feature vectors must have the same length");
+      throw new Error(`Invalid parameter 'X[${i}]': expected ${p} features, received ${X[i].length}`);
     }
   }
   for (let i = 0; i < n; i++) {
     if (y[i] !== 0 && y[i] !== 1) {
-      throw new Error("Response variable must be binary (0 or 1)");
+      throw new Error(`Invalid parameter 'y[${i}]': expected binary (0 or 1), received ${y[i]}`);
     }
   }
 
   // beta = [intercept, coeff1, ..., coeffp]
   const cols = p + 1;
   const beta = new Array(cols).fill(0);
+  const augmentedX = X.map((row) => [1, ...row]);
+  const zeroResponse = new Array(n).fill(0);
 
   let iterations = 0;
 
@@ -106,23 +110,11 @@ export function logisticRegression(
       }
     }
 
-    // Compute Hessian: -X^T W X
-    const H: number[][] = Array.from({ length: cols }, () =>
-      new Array(cols).fill(0),
-    );
-    for (let i = 0; i < n; i++) {
-      const row = [1, ...X[i]];
-      for (let j = 0; j < cols; j++) {
-        for (let k = j; k < cols; k++) {
-          H[j][k] += row[j] * row[k] * w[i];
-          if (k !== j) H[k][j] = H[j][k];
-        }
-      }
-    }
+    // Compute Hessian: X^T W X using native acceleration when available.
+    const { XtWX: H } = weightedCrossProducts(augmentedX, w, zeroResponse);
 
     // Solve H * delta = gradient (Newton step)
-    const aug = H.map((row, i) => [...row, gradient[i]]);
-    const delta = solveAugmented(aug, cols);
+    const delta = solveLinearSystem(H, gradient);
 
     // Update beta
     let maxDelta = 0;
@@ -143,7 +135,7 @@ export function logisticRegression(
     iterations,
     predict: (x: number[]) => {
       if (x.length !== p) {
-        throw new Error(`Expected ${p} features, got ${x.length}`);
+        throw new Error(`Invalid parameter 'x': Expected ${p} features, received ${x.length}`);
       }
       let z = intercept;
       for (let j = 0; j < p; j++) {
@@ -154,44 +146,3 @@ export function logisticRegression(
   };
 }
 
-/**
- * Solves the linear system A*x = b via Gaussian elimination with partial pivoting,
- * given the augmented matrix [A|b].
- *
- * @param aug - Augmented matrix of shape (n x (n+1)), modified in place.
- * @param n - Number of unknowns (rows/columns of A).
- * @returns The solution vector x of length n.
- * @throws {Error} If the matrix is singular (pivot element near zero).
- */
-function solveAugmented(aug: number[][], n: number): number[] {
-  for (let col = 0; col < n; col++) {
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) {
-        maxRow = row;
-      }
-    }
-    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
-
-    if (Math.abs(aug[col][col]) < 1e-12) {
-      throw new Error("Singular matrix in logistic regression");
-    }
-
-    for (let row = col + 1; row < n; row++) {
-      const factor = aug[row][col] / aug[col][col];
-      for (let j = col; j <= n; j++) {
-        aug[row][j] -= factor * aug[col][j];
-      }
-    }
-  }
-
-  const x = new Array(n).fill(0);
-  for (let row = n - 1; row >= 0; row--) {
-    x[row] = aug[row][n];
-    for (let col = row + 1; col < n; col++) {
-      x[row] -= aug[row][col] * x[col];
-    }
-    x[row] /= aug[row][row];
-  }
-  return x;
-}

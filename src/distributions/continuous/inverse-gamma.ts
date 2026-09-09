@@ -87,6 +87,48 @@ export class InverseGamma extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = alpha*log(beta) + (-alpha - 1)*log(x) - beta/x - gammaLn(alpha)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x <= 0.
+   */
+  logPdf(x: number): number {
+    if (x <= 0) return -Infinity;
+    return this.logNormConst + (-this.alpha - 1) * Math.log(x) - this.beta / x;
+  }
+
+  /**
+   * Returns the skewness of the Inverse Gamma distribution.
+   *
+   * Formula: 4 * sqrt(alpha - 2) / (alpha - 3), defined only for alpha > 3.
+   */
+  get skewness(): number {
+    if (this.alpha <= 3) return NaN;
+    return (4 * Math.sqrt(this.alpha - 2)) / (this.alpha - 3);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Inverse Gamma distribution.
+   *
+   * Formula: (30 * alpha - 66) / ((alpha - 3) * (alpha - 4)), defined only for alpha > 4.
+   */
+  get kurtosis(): number {
+    if (this.alpha <= 4) return NaN;
+    return (30 * this.alpha - 66) / ((this.alpha - 3) * (this.alpha - 4));
+  }
+
+  /**
+   * Returns the mode of the Inverse Gamma distribution.
+   *
+   * Formula: beta / (alpha + 1)
+   */
+  get mode(): number {
+    return this.beta / (this.alpha + 1);
+  }
+
+  /**
    * Evaluates the cumulative distribution function at `x`.
    *
    * Uses the identity: if X ~ InvGamma(alpha, beta), then

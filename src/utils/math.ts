@@ -1,5 +1,6 @@
 import { nativeAddon } from "./native-addon";
 import { getAccelerated, hasWasm } from "../wasm";
+import { cachedUnary, cachedBinary } from "./lru-cache";
 
 // Try to load the native Fortran addon; fall back to pure-TS implementations.
 interface NativeSpecial {
@@ -53,14 +54,14 @@ function tsGamma(x: number): number {
 
 function tsLogFactorial(n: number): number {
   if (n < 0 || !Number.isInteger(n)) {
-    throw new Error("logFactorial requires a non-negative integer");
+    throw new Error(`Invalid parameter 'n': expected non-negative integer, received ${n}`);
   }
   return tsGammaLn(n + 1);
 }
 
 function tsFactorial(n: number): number {
   if (n < 0 || !Number.isInteger(n)) {
-    throw new Error("factorial requires a non-negative integer");
+    throw new Error(`Invalid parameter 'n': expected non-negative integer, received ${n}`);
   }
   if (n > 170) return Infinity;
   return Math.exp(tsLogFactorial(n));
@@ -124,7 +125,7 @@ function gammaPContinuedFraction(s: number, x: number): number {
 }
 
 function tsRegularizedGammaP(s: number, x: number): number {
-  if (x < 0) throw new Error("x must be non-negative");
+  if (x < 0) throw new Error(`Invalid parameter 'x': expected non-negative value, received ${x}`);
   if (x === 0) return 0;
   if (x < s + 1) {
     return gammaPSeries(s, x);
@@ -161,7 +162,7 @@ function betaCF(x: number, a: number, b: number): number {
 }
 
 function tsRegularizedBeta(x: number, a: number, b: number): number {
-  if (x < 0 || x > 1) throw new Error("x must be in [0, 1]");
+  if (x < 0 || x > 1) throw new Error(`Invalid parameter 'x': expected value in [0, 1], received ${x}`);
   if (x === 0) return 0;
   if (x === 1) return 1;
   if (x > (a + 1) / (a + b + 2)) {
@@ -188,11 +189,9 @@ function tsRegularizedBeta(x: number, a: number, b: number): number {
  * @example
  * gammaLn(5); // ln(24) ≈ 3.178
  */
-export function gammaLn(x: number): number {
-  if (native) return native.gammaLn(x);
-  if (hasWasm) return getAccelerated().gammaLn(x);
+export const gammaLn: (x: number) => number = cachedUnary((x: number): number => {
   return tsGammaLn(x);
-}
+});
 
 /**
  * Computes the gamma function Γ(x) = exp(gammaLn(x)).
@@ -204,8 +203,6 @@ export function gammaLn(x: number): number {
  * gamma(5); // 24 (i.e., 4!)
  */
 export function gamma(x: number): number {
-  if (native) return native.gamma(x);
-  if (hasWasm) return getAccelerated().gamma(x);
   return tsGamma(x);
 }
 
@@ -218,7 +215,6 @@ export function gamma(x: number): number {
  * @throws {Error} If n is negative or not an integer.
  */
 export function logFactorial(n: number): number {
-  if (native) return native.logFactorial(n);
   return tsLogFactorial(n);
 }
 
@@ -232,7 +228,6 @@ export function logFactorial(n: number): number {
  * factorial(5); // 120
  */
 export function factorial(n: number): number {
-  if (native) return native.factorial(n);
   return tsFactorial(n);
 }
 
@@ -258,36 +253,43 @@ export function binomialCoeff(n: number, k: number): number {
  * @param b - Second shape parameter (positive).
  * @returns B(a, b).
  */
-export function betaFn(a: number, b: number): number {
+export const betaFn: (a: number, b: number) => number = cachedBinary((a: number, b: number): number => {
   if (native) return native.betaFn(a, b);
   if (hasWasm) return getAccelerated().betaFn(a, b);
   return tsBetaFn(a, b);
-}
+});
 
 /**
  * Computes the error function erf(x) = (2/√π) ∫₀ˣ e^(-t²) dt.
  * Uses the Abramowitz & Stegun rational approximation as fallback.
  *
+ * This function is intentionally not memoized: the approximation is cheaper
+ * than the generic LRU bookkeeping for typical scalar calls. The backend is
+ * selected once at module initialization to keep the scalar hot path small.
+ *
  * @param x - Input value.
  * @returns erf(x), in the range [-1, 1].
  */
-export function erf(x: number): number {
-  if (native) return native.erf(x);
-  if (hasWasm) return getAccelerated().erf(x);
-  return tsErf(x);
-}
+export const erf: (x: number) => number = native
+  ? (x: number): number => native.erf(x)
+  : hasWasm
+    ? (x: number): number => getAccelerated().erf(x)
+    : tsErf;
 
 /**
  * Computes the complementary error function erfc(x) = 1 - erf(x).
  *
+ * This function is intentionally not memoized for the same reason as erf().
+ * The backend is selected once at module initialization.
+ *
  * @param x - Input value.
  * @returns erfc(x), in the range [0, 2].
  */
-export function erfc(x: number): number {
-  if (native) return native.erfc(x);
-  if (hasWasm) return getAccelerated().erfc(x);
-  return tsErfc(x);
-}
+export const erfc: (x: number) => number = native
+  ? (x: number): number => native.erfc(x)
+  : hasWasm
+    ? (x: number): number => getAccelerated().erfc(x)
+    : tsErfc;
 
 /**
  * Computes the lower regularized incomplete gamma function P(s, x) = γ(s,x) / Γ(s).
@@ -299,7 +301,6 @@ export function erfc(x: number): number {
  * @throws {Error} If x is negative.
  */
 export function regularizedGammaP(s: number, x: number): number {
-  if (native) return native.regularizedGammaP(s, x);
   return tsRegularizedGammaP(s, x);
 }
 
@@ -314,7 +315,6 @@ export function regularizedGammaP(s: number, x: number): number {
  * @throws {Error} If x is not in [0, 1].
  */
 export function regularizedBeta(x: number, a: number, b: number): number {
-  if (native) return native.regularizedBeta(x, a, b);
   return tsRegularizedBeta(x, a, b);
 }
 
@@ -341,7 +341,7 @@ export function quantileBisect(
   upper: number,
   tolerance = 1e-12,
 ): number {
-  if (p < 0 || p > 1) throw new Error("p must be in [0, 1]");
+  if (p < 0 || p > 1) throw new Error(`Invalid parameter 'p': expected value in [0, 1], received ${p}`);
   if (p === 0) return lower;
   if (p === 1) return upper;
 

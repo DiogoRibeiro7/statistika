@@ -62,7 +62,7 @@ export function regressionSummary(
   featureNames?: string[],
 ): RegressionSummary {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
   const p = X[0].length;
   const cols = p + 1;
 
@@ -70,29 +70,29 @@ export function regressionSummary(
   for (let i = 0; i < n; i++) {
     if (X[i].length !== p) {
       throw new Error(
-        `Inconsistent row length at row ${i}: expected ${p} columns but got ${X[i].length}`,
+        `Invalid parameter 'X': expected ${p} columns at row ${i}, received ${X[i].length}`,
       );
     }
   }
 
   if (n <= cols) {
     throw new Error(
-      `Need more observations than parameters: n=${n} must be > cols=${cols}`,
+      `Invalid parameter 'X'/'y': expected more observations than parameters, received n=${n}, cols=${cols}`,
     );
   }
 
   if (n !== y.length) {
-    throw new Error("X and y must have the same number of rows");
+    throw new Error(`Invalid parameter 'y': expected length ${n} to match X rows, received length ${y.length}`);
   }
 
   // NaN / Infinity guards
   for (let i = 0; i < n; i++) {
     if (!Number.isFinite(y[i])) {
-      throw new Error(`y[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'y': expected finite number at index ${i}, received ${y[i]}`);
     }
     for (let j = 0; j < p; j++) {
       if (!Number.isFinite(X[i][j])) {
-        throw new Error(`X[${i}][${j}] is not finite`);
+        throw new Error(`Invalid parameter 'X': expected finite number at [${i}][${j}], received ${X[i][j]}`);
       }
     }
   }
@@ -139,7 +139,7 @@ export function regressionSummary(
   // Invert X^T X for standard errors (uses LAPACK when available)
   const XtXInv = invertMatrix(XtX);
   if (XtXInv === null) {
-    throw new Error("X'X matrix is singular — features may be linearly dependent");
+    throw new Error("Invalid parameter 'X': expected non-singular X'X matrix, received singular matrix (features may be linearly dependent)");
   }
 
   const se = new Array<number>(cols);
@@ -234,18 +234,18 @@ export function residualDiagnostics(
   predicted: Dataset,
 ): ResidualDiagnostics {
   if (observed.length !== predicted.length) {
-    throw new Error("Observed and predicted must have the same length");
+    throw new Error(`Invalid parameter 'predicted': expected length ${observed.length} to match observed, received length ${predicted.length}`);
   }
   const n = observed.length;
-  if (n < 3) throw new Error("Need at least 3 observations");
+  if (n < 3) throw new Error(`Invalid parameter 'observed': expected at least 3 observations, received ${n}`);
 
   // NaN / Infinity guards
   for (let i = 0; i < n; i++) {
     if (!Number.isFinite(observed[i])) {
-      throw new Error(`observed[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'observed': expected finite number at index ${i}, received ${observed[i]}`);
     }
     if (!Number.isFinite(predicted[i])) {
-      throw new Error(`predicted[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'predicted': expected finite number at index ${i}, received ${predicted[i]}`);
     }
   }
 
@@ -315,16 +315,16 @@ export function residualDiagnostics(
  */
 export function vif(X: number[][]): number[] {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
   const p = X[0].length;
-  if (p < 2) throw new Error("Need at least 2 features for VIF");
-  if (n <= p) throw new Error("Need more observations than features");
+  if (p < 2) throw new Error(`Invalid parameter 'X': expected at least 2 features (columns), received ${p}`);
+  if (n <= p) throw new Error(`Invalid parameter 'X': expected more observations than features, received n=${n}, p=${p}`);
 
   // NaN / Infinity guards
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < p; j++) {
       if (!Number.isFinite(X[i][j])) {
-        throw new Error(`X[${i}][${j}] is not finite`);
+        throw new Error(`Invalid parameter 'X': expected finite number at [${i}][${j}], received ${X[i][j]}`);
       }
     }
   }
@@ -495,9 +495,9 @@ export function breuschPaganTest(
   residuals: number[],
 ): HeteroscedasticityTestResult {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
   if (n !== residuals.length) {
-    throw new Error("X and residuals must have the same length");
+    throw new Error(`Invalid parameter 'residuals': expected length ${n} to match X rows, received length ${residuals.length}`);
   }
   const p = X[0].length;
 
@@ -543,9 +543,9 @@ export function whitesTest(
   residuals: number[],
 ): HeteroscedasticityTestResult {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
   if (n !== residuals.length) {
-    throw new Error("X and residuals must have the same length");
+    throw new Error(`Invalid parameter 'residuals': expected length ${n} to match X rows, received length ${residuals.length}`);
   }
   const p = X[0].length;
 
@@ -610,9 +610,9 @@ export function ramseyReset(
   powers: number[] = [2, 3],
 ): RESETTestResult {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
   if (n !== y.length || n !== fitted.length) {
-    throw new Error("X, y, and fitted must have the same length");
+    throw new Error(`Invalid parameter 'y'/'fitted': expected length ${n} to match X rows, received y.length=${y.length}, fitted.length=${fitted.length}`);
   }
   const p = X[0].length;
   const cols = p + 1; // original model with intercept
@@ -668,7 +668,7 @@ export function ramseyReset(
  */
 export function leverageValues(X: number[][]): number[] {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
   const p = X[0].length;
   const cols = p + 1;
 
@@ -687,7 +687,7 @@ export function leverageValues(X: number[][]): number[] {
 
   const XtXInv = invertMatrix(XtX);
   if (XtXInv === null) {
-    throw new Error("X'X matrix is singular");
+    throw new Error("Invalid parameter 'X': expected non-singular X'X matrix, received singular matrix");
   }
 
   // h_ii = D[i] * (X'X)^{-1} * D[i]'
@@ -730,8 +730,8 @@ export function leverageValues(X: number[][]): number[] {
  */
 export function cooksDistance(X: number[][], y: Dataset): number[] {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
-  if (n !== y.length) throw new Error("X and y must have the same length");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
+  if (n !== y.length) throw new Error(`Invalid parameter 'y': expected length ${n} to match X rows, received length ${y.length}`);
   const p = X[0].length;
   const cols = p + 1;
 
@@ -775,8 +775,8 @@ export function cooksDistance(X: number[][], y: Dataset): number[] {
  */
 export function dfbetas(X: number[][], y: Dataset): number[][] {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
-  if (n !== y.length) throw new Error("X and y must have the same length");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
+  if (n !== y.length) throw new Error(`Invalid parameter 'y': expected length ${n} to match X rows, received length ${y.length}`);
   const p = X[0].length;
   const cols = p + 1;
 
@@ -795,7 +795,7 @@ export function dfbetas(X: number[][], y: Dataset): number[][] {
   }
   const XtXInv = invertMatrix(XtX);
   if (XtXInv === null) {
-    throw new Error("X'X matrix is singular");
+    throw new Error("Invalid parameter 'X': expected non-singular X'X matrix, received singular matrix");
   }
 
   const result: number[][] = [];
@@ -848,8 +848,8 @@ export function dfbetas(X: number[][], y: Dataset): number[][] {
  */
 export function dffits(X: number[][], y: Dataset): number[] {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
-  if (n !== y.length) throw new Error("X and y must have the same length");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
+  if (n !== y.length) throw new Error(`Invalid parameter 'y': expected length ${n} to match X rows, received length ${y.length}`);
   const p = X[0].length;
   const cols = p + 1;
 
@@ -899,7 +899,7 @@ export function dffits(X: number[][], y: Dataset): number[] {
  */
 export function conditionNumber(X: number[][]): number {
   const n = X.length;
-  if (n === 0) throw new Error("X must not be empty");
+  if (n === 0) throw new Error("Invalid parameter 'X': expected non-empty array, received length 0");
   const p = X[0].length;
   const cols = p + 1;
 
@@ -994,4 +994,107 @@ function jacobiEigenvalues(A: number[][]): number[] {
   }
 
   return Array.from({ length: n }, (_, i) => M[i][i]);
+}
+
+// ---------------------------------------------------------------------------
+// Durbin-Watson test for autocorrelation
+// ---------------------------------------------------------------------------
+
+/**
+ * Result of a Durbin-Watson test for autocorrelation.
+ */
+export interface DurbinWatsonResult {
+  /** The Durbin-Watson d statistic, in [0, 4]. */
+  statistic: number;
+  /**
+   * Interpretation of the statistic:
+   * - "positive": evidence of positive autocorrelation (d < dL)
+   * - "negative": evidence of negative autocorrelation (d > 4 - dL)
+   * - "none": no significant autocorrelation detected (d near 2)
+   */
+  interpretation: "positive" | "negative" | "none";
+}
+
+/**
+ * Performs the Durbin-Watson test for autocorrelation in residuals.
+ *
+ * The Durbin-Watson statistic d tests for first-order autocorrelation
+ * in the residuals of a regression model. The statistic ranges from 0 to 4:
+ *   - d ~ 2: no autocorrelation
+ *   - d < 2: positive autocorrelation
+ *   - d > 2: negative autocorrelation
+ *
+ * The interpretation uses approximate critical bounds:
+ *   - d < dL: positive autocorrelation
+ *   - d > 4 - dL: negative autocorrelation
+ *   - otherwise: no significant autocorrelation
+ *
+ * where dL is approximated as 2 - 2*sqrt(1 - 1.645/sqrt(n)) for large n,
+ * with a fallback heuristic for smaller samples.
+ *
+ * @param residuals - Array of residuals from a regression model (at least 3 required)
+ * @returns A {@link DurbinWatsonResult} containing the d statistic and its interpretation
+ * @throws {Error} If `residuals` has fewer than 3 observations
+ *
+ * @example
+ * ```ts
+ * const result = durbinWatsonTest([0.1, -0.2, 0.15, -0.05, 0.08, -0.12]);
+ * console.log(result.statistic);       // ~2.0 if no autocorrelation
+ * console.log(result.interpretation);  // "none"
+ * ```
+ */
+export function durbinWatsonTest(residuals: Dataset): DurbinWatsonResult {
+  if (residuals.length < 3) {
+    throw new Error(`Invalid parameter 'residuals': expected at least 3 elements, received ${residuals.length}`);
+  }
+
+  const n = residuals.length;
+
+  // Compute DW statistic: d = sum((e_t - e_{t-1})^2) / sum(e_t^2)
+  let numerator = 0;
+  let denominator = 0;
+  for (let i = 0; i < n; i++) {
+    denominator += residuals[i] * residuals[i];
+    if (i > 0) {
+      const diff = residuals[i] - residuals[i - 1];
+      numerator += diff * diff;
+    }
+  }
+
+  if (denominator === 0) {
+    // All residuals are zero: no autocorrelation by definition
+    return { statistic: 2, interpretation: "none" };
+  }
+
+  const d = numerator / denominator;
+
+  // Approximate critical value using a heuristic bound.
+  // For practical purposes, use a simple rule:
+  // At alpha=0.05, approximate lower bound dL based on sample size.
+  // For n >= 15: dL ~ 2 - 2*sqrt(1 - 1.645/sqrt(n))
+  // For small n: use conservative fixed bounds.
+  let dL: number;
+  if (n >= 15) {
+    dL = 2 - 2 * Math.sqrt(1 - 1.645 / Math.sqrt(n));
+  } else {
+    // Conservative bounds for small samples
+    // These are rough approximations for k=1
+    const smallDL: Record<number, number> = {
+      3: 0.61, 4: 0.73, 5: 0.82, 6: 0.90, 7: 0.95,
+      8: 1.00, 9: 1.04, 10: 1.08, 11: 1.12, 12: 1.15,
+      13: 1.18, 14: 1.20,
+    };
+    dL = smallDL[n] ?? 0.6;
+  }
+
+  let interpretation: "positive" | "negative" | "none";
+  if (d < dL) {
+    interpretation = "positive";
+  } else if (d > 4 - dL) {
+    interpretation = "negative";
+  } else {
+    interpretation = "none";
+  }
+
+  return { statistic: d, interpretation };
 }

@@ -81,6 +81,49 @@ export class Rayleigh extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = log(x) - 2*log(sigma) - x^2 / (2 * sigma^2)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x < 0.
+   */
+  logPdf(x: number): number {
+    if (x < 0) return -Infinity;
+    if (x === 0) return -Infinity;
+    const s2 = this.sigma ** 2;
+    return Math.log(x) - 2 * Math.log(this.sigma) - (x * x) / (2 * s2);
+  }
+
+  /**
+   * Returns the skewness of the Rayleigh distribution.
+   *
+   * Formula: 2 * sqrt(pi) * (pi - 3) / (4 - pi)^(3/2)
+   */
+  get skewness(): number {
+    return (2 * Math.sqrt(Math.PI) * (Math.PI - 3)) / Math.pow(4 - Math.PI, 1.5);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Rayleigh distribution.
+   *
+   * Formula: -(6*pi^2 - 24*pi + 16) / (4 - pi)^2
+   */
+  get kurtosis(): number {
+    const pi = Math.PI;
+    return -(6 * pi * pi - 24 * pi + 16) / ((4 - pi) * (4 - pi));
+  }
+
+  /**
+   * Returns the mode of the Rayleigh distribution.
+   *
+   * The mode equals `sigma`.
+   */
+  get mode(): number {
+    return this.sigma;
+  }
+
+  /**
    * Evaluates the cumulative distribution function at `x`.
    *
    * CDF: F(x) = 1 - exp(-x^2 / (2 * sigma^2))

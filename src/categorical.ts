@@ -47,23 +47,23 @@ export interface ContingencyTableSummary {
  */
 export function contingencyTable(observed: number[][]): ContingencyTableSummary {
   const nRows = observed.length;
-  if (nRows === 0) throw new Error("Table must not be empty");
+  if (nRows === 0) throw new Error(`Invalid parameter 'observed': expected a non-empty table, received 0 rows`);
   const nCols = observed[0].length;
-  if (nCols === 0) throw new Error("Table must have at least 1 column");
+  if (nCols === 0) throw new Error(`Invalid parameter 'observed': expected at least 1 column, received 0 columns`);
 
   for (let i = 0; i < nRows; i++) {
     if (observed[i].length !== nCols) {
       throw new Error(
-        `All rows must have the same number of columns: row 0 has ${nCols}, but row ${i} has ${observed[i].length}`,
+        `Invalid parameter 'observed': expected ${nCols} columns at row ${i}, received ${observed[i].length}`,
       );
     }
     for (let j = 0; j < nCols; j++) {
       const v = observed[i][j];
       if (Number.isNaN(v)) {
-        throw new Error(`Cell count must not be NaN (at row ${i}, col ${j})`);
+        throw new Error(`Invalid parameter 'observed': expected finite number at [${i}][${j}], received NaN`);
       }
       if (v < 0) {
-        throw new Error(`Cell count must not be negative, got ${v} (at row ${i}, col ${j})`);
+        throw new Error(`Invalid parameter 'observed': expected non-negative count at [${i}][${j}], received ${v}`);
       }
     }
   }
@@ -106,7 +106,7 @@ export function mcnemarsTest(
   alpha = 0.05,
 ): { statistic: number; pValue: number; rejected: boolean } {
   if (table.length !== 2 || table[0].length !== 2 || table[1].length !== 2) {
-    throw new Error("McNemar's test requires a 2×2 table");
+    throw new Error(`Invalid parameter 'table': expected a 2x2 table, received ${table.length}x${table[0]?.length ?? 0}`);
   }
 
   const b = table[0][1]; // discordant pair 1
@@ -145,11 +145,11 @@ export function cochranMantelHaenszel(
   tables: number[][][],
   alpha = 0.05,
 ): { statistic: number; pValue: number; commonOddsRatio: number; rejected: boolean } {
-  if (tables.length === 0) throw new Error("Must provide at least one table");
+  if (tables.length === 0) throw new Error(`Invalid parameter 'tables': expected at least one table, received length 0`);
 
   for (const table of tables) {
     if (table.length !== 2 || table[0].length !== 2 || table[1].length !== 2) {
-      throw new Error("All tables must be 2×2");
+      throw new Error(`Invalid parameter 'tables': expected all tables to be 2x2, received ${table.length}×${table[0]?.length} table`);
     }
   }
 

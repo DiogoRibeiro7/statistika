@@ -121,7 +121,7 @@ export function pathAnalysis(
   const varNames = Object.keys(data);
   const n = data[varNames[0]].length;
   for (const v of varNames) {
-    if (data[v].length !== n) throw new Error(`Variable "${v}" length mismatch`);
+    if (data[v].length !== n) throw new Error(`Invalid parameter 'data': expected variable "${v}" to have length ${n}, received ${data[v].length}`);
   }
 
   // Identify endogenous variables (those that appear as "to")

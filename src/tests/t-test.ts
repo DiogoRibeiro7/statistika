@@ -35,7 +35,7 @@ export function oneSampleTTest(
   mu0: number = 0,
   alpha: number = 0.05,
 ): HypothesisTestResult {
-  if (data.length < 2) throw new Error("Need at least 2 observations");
+  if (data.length < 2) throw new Error(`Invalid parameter 'data': expected at least 2 observations, received ${data.length}`);
   const n = data.length;
   const m = mean(data);
   const s = Math.sqrt(variance(data, true));
@@ -70,7 +70,7 @@ export function twoSampleTTest(
   data2: Dataset,
   alpha: number = 0.05,
 ): HypothesisTestResult {
-  if (data1.length < 2 || data2.length < 2) throw new Error("Need at least 2 observations per group");
+  if (data1.length < 2 || data2.length < 2) throw new Error(`Invalid parameter 'data1'/'data2': expected at least 2 observations per group, received data1.length=${data1.length}, data2.length=${data2.length}`);
   const n1 = data1.length;
   const n2 = data2.length;
   const m1 = mean(data1);
@@ -111,7 +111,7 @@ export function welchTTest(
   data2: Dataset,
   alpha: number = 0.05,
 ): HypothesisTestResult {
-  if (data1.length < 2 || data2.length < 2) throw new Error("Need at least 2 observations per group");
+  if (data1.length < 2 || data2.length < 2) throw new Error(`Invalid parameter 'data1'/'data2': expected at least 2 observations per group, received data1.length=${data1.length}, data2.length=${data2.length}`);
   const n1 = data1.length;
   const n2 = data2.length;
   const m1 = mean(data1);
@@ -159,7 +159,7 @@ export function pairedTTest(
   data2: Dataset,
   alpha: number = 0.05,
 ): HypothesisTestResult {
-  if (data1.length !== data2.length) throw new Error("Paired samples must have equal length");
+  if (data1.length !== data2.length) throw new Error(`Invalid parameter 'data1'/'data2': expected equal length for paired samples, received data1.length=${data1.length}, data2.length=${data2.length}`);
   const diffs = data1.map((v, i) => v - data2[i]);
   return oneSampleTTest(diffs, 0, alpha);
 }

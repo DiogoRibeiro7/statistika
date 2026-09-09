@@ -135,6 +135,27 @@ export class VonMises extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = kappa * cos(x - mu) - log(2 * pi * I0(kappa))
+   *
+   * @param x - The angle at which to evaluate the log-density.
+   * @returns The log-density.
+   */
+  logPdf(x: number): number {
+    return this.kappa * Math.cos(x - this.mu) - Math.log(2 * Math.PI * this.i0Kappa);
+  }
+
+  /**
+   * Returns the mode of the Von Mises distribution.
+   *
+   * The mode equals the mean direction `mu`.
+   */
+  get mode(): number {
+    return this.mu;
+  }
+
+  /**
    * Evaluates the cumulative distribution function at `x` via numerical integration.
    *
    * Computes F(x) = integral from -pi to x of the PDF using Simpson's rule.

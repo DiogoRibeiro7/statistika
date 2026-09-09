@@ -109,6 +109,54 @@ export class NegativeBinomial extends BaseDiscrete {
   }
 
   /**
+   * Computes the log of the probability mass function at `k`.
+   *
+   * log P(X = k) = log(C(k+r-1, k)) + r*log(p) + k*log(1-p)
+   *
+   * @param k - The number of failures (non-negative integer).
+   * @returns The log-probability. Returns -Infinity for non-integer or negative k.
+   */
+  logPmf(k: number): number {
+    if (!Number.isInteger(k) || k < 0) return -Infinity;
+    const { r, p } = this;
+    return (
+      logFactorial(k + r - 1) -
+      logFactorial(k) -
+      logFactorial(r - 1) +
+      r * Math.log(p) +
+      k * Math.log(1 - p)
+    );
+  }
+
+  /**
+   * Returns the skewness of the Negative Binomial distribution.
+   *
+   * Formula: (2 - p) / sqrt(r * (1 - p))
+   */
+  get skewness(): number {
+    return (2 - this.p) / Math.sqrt(this.r * (1 - this.p));
+  }
+
+  /**
+   * Returns the excess kurtosis of the Negative Binomial distribution.
+   *
+   * Formula: 6 / r + p^2 / (r * (1 - p))
+   */
+  get kurtosis(): number {
+    return 6 / this.r + (this.p * this.p) / (this.r * (1 - this.p));
+  }
+
+  /**
+   * Returns the mode of the Negative Binomial distribution.
+   *
+   * Formula: floor((r - 1) * (1 - p) / p) for r > 1, 0 for r <= 1.
+   */
+  get mode(): number {
+    if (this.r <= 1) return 0;
+    return Math.floor((this.r - 1) * (1 - this.p) / this.p);
+  }
+
+  /**
    * Computes the cumulative distribution function P(X <= k).
    *
    * Uses the regularized incomplete beta function:

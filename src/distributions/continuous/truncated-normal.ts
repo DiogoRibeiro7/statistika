@@ -134,6 +134,33 @@ export class TruncatedNormal extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = -0.5 * z^2 - 0.5 * log(2*pi) - log(sigma * Z)
+   *
+   * where z = (x - mu) / sigma and Z = Phi(betaStd) - Phi(alphaStd).
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x outside [a, b].
+   */
+  logPdf(x: number): number {
+    if (x < this.a || x > this.b) return -Infinity;
+    const z = (x - this.mu) / this.sigma;
+    return -0.5 * z * z - 0.5 * Math.log(2 * Math.PI) - Math.log(this.sigma * this.Z);
+  }
+
+  /**
+   * Returns the mode of the Truncated Normal distribution.
+   *
+   * The mode is mu clamped to [a, b].
+   */
+  get mode(): number {
+    if (this.mu < this.a) return this.a;
+    if (this.mu > this.b) return this.b;
+    return this.mu;
+  }
+
+  /**
    * Evaluates the cumulative distribution function at `x`.
    *
    * @param x - The point at which to evaluate the CDF.

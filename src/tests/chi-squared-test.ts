@@ -38,13 +38,13 @@ export function chiSquaredGoodnessOfFit(
   alpha: number = 0.05,
 ): HypothesisTestResult {
   if (observed.length !== expected.length) {
-    throw new Error("observed and expected must have the same length");
+    throw new Error(`Invalid parameter 'expected': expected length ${observed.length} to match observed, received length ${expected.length}`);
   }
-  if (observed.length < 2) throw new Error("Need at least 2 categories");
+  if (observed.length < 2) throw new Error(`Invalid parameter 'observed': expected at least 2 categories, received ${observed.length}`);
 
   let stat = 0;
   for (let i = 0; i < observed.length; i++) {
-    if (expected[i] <= 0) throw new Error("Expected frequencies must be positive");
+    if (expected[i] <= 0) throw new Error(`Invalid parameter 'expected': expected positive frequency at index ${i}, received ${expected[i]}`);
     stat += (observed[i] - expected[i]) ** 2 / expected[i];
   }
 
@@ -81,9 +81,9 @@ export function chiSquaredIndependence(
   alpha: number = 0.05,
 ): HypothesisTestResult {
   const nRows = table.length;
-  if (nRows < 2) throw new Error("Table must have at least 2 rows");
+  if (nRows < 2) throw new Error(`Invalid parameter 'table': expected at least 2 rows, received ${nRows}`);
   const nCols = table[0].length;
-  if (nCols < 2) throw new Error("Table must have at least 2 columns");
+  if (nCols < 2) throw new Error(`Invalid parameter 'table': expected at least 2 columns, received ${nCols}`);
 
   // Row totals, column totals, grand total
   const rowTotals = table.map((row) => row.reduce((a, b) => a + b, 0));
@@ -94,7 +94,7 @@ export function chiSquaredIndependence(
     }
   }
   const grandTotal = rowTotals.reduce((a, b) => a + b, 0);
-  if (grandTotal === 0) throw new Error("Table total must be positive");
+  if (grandTotal === 0) throw new Error(`Invalid parameter 'table': expected positive total, received ${grandTotal}`);
 
   let stat = 0;
   for (let i = 0; i < nRows; i++) {

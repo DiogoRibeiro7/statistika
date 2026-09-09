@@ -93,7 +93,7 @@ export function twoWayAnova(
   alpha = 0.05,
 ): TwoWayAnovaResult {
   if (data.length < 4) {
-    throw new Error("Need at least 4 observations");
+    throw new Error(`Invalid parameter 'data': expected at least 4 observations, received ${data.length}`);
   }
 
   // Identify factor levels
@@ -102,8 +102,8 @@ export function twoWayAnova(
   const a = aLevels.length;
   const b = bLevels.length;
 
-  if (a < 2) throw new Error("Factor A must have at least 2 levels");
-  if (b < 2) throw new Error("Factor B must have at least 2 levels");
+  if (a < 2) throw new Error(`Invalid parameter 'data': expected at least 2 levels for factor A, received ${a}`);
+  if (b < 2) throw new Error(`Invalid parameter 'data': expected at least 2 levels for factor B, received ${b}`);
 
   // Build cell structure
   const aIndex = new Map(aLevels.map((v, i) => [v, i]));
@@ -124,7 +124,7 @@ export function twoWayAnova(
     for (let j = 0; j < b; j++) {
       if (cells[i][j].length === 0) {
         throw new Error(
-          `Empty cell at factor A level ${aLevels[i]}, factor B level ${bLevels[j]}`,
+          `Invalid parameter 'data': expected at least 1 observation in cell (A=${aLevels[i]}, B=${bLevels[j]}), received 0`,
         );
       }
     }
@@ -220,7 +220,7 @@ export function twoWayAnova(
 
   if (dfWithin <= 0) {
     throw new Error(
-      "Insufficient degrees of freedom for error term. Need replication within cells.",
+      `Invalid parameter 'data': expected sufficient replication within cells, received dfWithin=${dfWithin}`,
     );
   }
 

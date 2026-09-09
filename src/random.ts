@@ -1,3 +1,74 @@
+// ── Global Seed Management ──────────────────────────────────────────────
+
+/**
+ * Global random number generator, used as the default RNG when no explicit
+ * RNG is passed to distribution constructors.
+ *
+ * When `null`, distributions fall back to `Math.random`.
+ */
+let globalRng: (() => number) | null = null;
+
+/**
+ * Set a global seed for reproducible results across all distributions.
+ *
+ * After calling this function, any distribution created **without** an explicit
+ * `rng` parameter will use the seeded global RNG, producing deterministic output.
+ *
+ * @param seed - A finite number used to initialise the global RNG.
+ * @throws {Error} If seed is NaN or Infinity.
+ *
+ * @example
+ * ```ts
+ * setGlobalSeed(42);
+ * const d = new Normal(0, 1); // will use the global seeded RNG
+ * console.log(d.sample());    // deterministic
+ * ```
+ */
+export function setGlobalSeed(seed: number): void {
+  const rng = new SeededRng(seed);
+  globalRng = () => rng.next();
+}
+
+/**
+ * Return the current global RNG function, or `null` if no global seed is set.
+ *
+ * Useful for inspecting whether a global seed is active, or for passing the
+ * global RNG explicitly to functions that accept an `rng` parameter.
+ */
+export function getGlobalRng(): (() => number) | null {
+  return globalRng;
+}
+
+/**
+ * Reset the global seed, returning distributions to non-deterministic
+ * (`Math.random`-based) behaviour.
+ *
+ * @example
+ * ```ts
+ * setGlobalSeed(42);
+ * // ... deterministic sampling ...
+ * resetGlobalSeed();
+ * // ... back to Math.random ...
+ * ```
+ */
+export function resetGlobalSeed(): void {
+  globalRng = null;
+}
+
+/**
+ * Resolve the RNG to use: explicit parameter > global seed > Math.random.
+ *
+ * This is the single point that base distribution classes call so that
+ * the global-seed feature propagates automatically.
+ *
+ * @internal
+ */
+export function resolveRng(rng?: (() => number)): () => number {
+  if (rng) return rng;
+  if (globalRng) return globalRng;
+  return Math.random;
+}
+
 /**
  * Seeded pseudo-random number generator (xorshift128+).
  *
@@ -26,7 +97,7 @@ export class SeededRng {
    * @throws {Error} If seed is NaN or Infinity
    */
   constructor(seed: number) {
-    if (!Number.isFinite(seed)) throw new Error("Seed must be a finite number");
+    if (!Number.isFinite(seed)) throw new Error(`Invalid parameter 'seed': expected a finite number, received ${seed}`);
     this.s0 = seed | 0 || 1;
     this.s1 = (seed * 2654435761) | 0 || 2;
   }
@@ -58,7 +129,7 @@ export class SeededRng {
    */
   nextInt(min: number, max: number): number {
     if (!Number.isFinite(min) || !Number.isFinite(max)) {
-      throw new Error("min and max must be finite numbers");
+      throw new Error(`Invalid parameters 'min', 'max': expected finite numbers, received min=${min}, max=${max}`);
     }
     return Math.floor(this.next() * (max - min + 1)) + min;
   }
@@ -73,7 +144,7 @@ export class SeededRng {
    */
   nextNormal(mu = 0, sigma = 1): number {
     if (!Number.isFinite(mu) || !Number.isFinite(sigma)) {
-      throw new Error("mu and sigma must be finite numbers");
+      throw new Error(`Invalid parameters 'mu', 'sigma': expected finite numbers, received mu=${mu}, sigma=${sigma}`);
     }
     const u1 = this.next();
     const u2 = this.next();
@@ -89,7 +160,7 @@ export class SeededRng {
    * @throws {Error} If n is not a positive integer
    */
   sample(n: number): number[] {
-    if (!Number.isInteger(n) || n < 1) throw new Error("n must be a positive integer");
+    if (!Number.isInteger(n) || n < 1) throw new Error(`Invalid parameter 'n': expected a positive integer, received ${n}`);
     const result = new Array<number>(n);
     for (let i = 0; i < n; i++) result[i] = this.next();
     return result;
@@ -118,8 +189,8 @@ export class SeededRng {
    * @throws {Error} If k exceeds array length or is negative
    */
   choose<T>(arr: T[], k: number): T[] {
-    if (k > arr.length) throw new Error("k cannot exceed array length");
-    if (k < 0) throw new Error("k must be non-negative");
+    if (k > arr.length) throw new Error(`Invalid parameter 'k': cannot exceed array length ${arr.length}, received ${k}`);
+    if (k < 0) throw new Error(`Invalid parameter 'k': expected a non-negative number, received ${k}`);
     const copy = [...arr];
     this.shuffle(copy);
     return copy.slice(0, k);
@@ -141,12 +212,12 @@ export class SeededRng {
  */
 export function haltonSequence(base: number, n: number, skip = 0): number[] {
   if (base < 2 || !Number.isInteger(base)) {
-    throw new Error("Base must be an integer >= 2");
+    throw new Error(`Invalid parameter 'base': expected an integer >= 2, received ${base}`);
   }
   if (!isPrime(base)) {
-    throw new Error("Base must be a prime number");
+    throw new Error(`Invalid parameter 'base': expected a prime number, received ${base}`);
   }
-  if (n < 1) throw new Error("n must be at least 1");
+  if (n < 1) throw new Error(`Invalid parameter 'n': expected at least 1, received ${n}`);
 
   const result = new Array<number>(n);
   for (let i = 0; i < n; i++) {
@@ -168,8 +239,8 @@ export function haltonSequence(base: number, n: number, skip = 0): number[] {
  * @throws {Error} If n is less than 1
  */
 export function haltonSequenceND(dimensions: number, n: number, skip = 0): number[][] {
-  if (dimensions < 1) throw new Error("dimensions must be at least 1");
-  if (n < 1) throw new Error("n must be at least 1");
+  if (dimensions < 1) throw new Error(`Invalid parameter 'dimensions': expected at least 1, received ${dimensions}`);
+  if (n < 1) throw new Error(`Invalid parameter 'n': expected at least 1, received ${n}`);
   const primes = firstPrimes(dimensions);
   const result = new Array<number[]>(n);
   for (let i = 0; i < n; i++) {
@@ -201,8 +272,8 @@ export function haltonSequenceND(dimensions: number, n: number, skip = 0): numbe
  * ```
  */
 export function latinHypercube(dimensions: number, n: number, seed?: number): number[][] {
-  if (dimensions < 1) throw new Error("dimensions must be at least 1");
-  if (n < 1) throw new Error("n must be at least 1");
+  if (dimensions < 1) throw new Error(`Invalid parameter 'dimensions': expected at least 1, received ${dimensions}`);
+  if (n < 1) throw new Error(`Invalid parameter 'n': expected at least 1, received ${n}`);
 
   const rng = new SeededRng(seed ?? Math.floor(Math.random() * 2147483647));
   const result = Array.from({ length: n }, () => new Array<number>(dimensions));

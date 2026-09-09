@@ -62,9 +62,9 @@ export function propensityScore(
   const { maxIterations = 100, tolerance = 1e-8 } = options;
   const n = X.length;
   if (n !== treatment.length) {
-    throw new Error("X and treatment must have the same length");
+    throw new Error(`Invalid parameters 'X', 'treatment': expected same length, received X.length=${n}, treatment.length=${treatment.length}`);
   }
-  if (n < 2) throw new Error("Need at least 2 observations");
+  if (n < 2) throw new Error(`Invalid parameter 'X': expected at least 2 observations, received ${n}`);
 
   const p = X[0].length;
   const cols = p + 1;
@@ -171,7 +171,7 @@ export function ipw(
 ): IPWResult {
   const n = y.length;
   if (n !== treatment.length || n !== scores.length) {
-    throw new Error("y, treatment, and scores must have the same length");
+    throw new Error(`Invalid parameters 'y', 'treatment', 'scores': expected same length, received y.length=${n}, treatment.length=${treatment.length}, scores.length=${scores.length}`);
   }
 
   // Clip scores to avoid division by zero
@@ -254,7 +254,7 @@ export function propensityMatching(
 ): MatchingResult {
   const n = y.length;
   if (n !== treatment.length || n !== scores.length) {
-    throw new Error("y, treatment, and scores must have the same length");
+    throw new Error(`Invalid parameters 'y', 'treatment', 'scores': expected same length, received y.length=${n}, treatment.length=${treatment.length}, scores.length=${scores.length}`);
   }
 
   const treatedIdx: number[] = [];
@@ -265,7 +265,7 @@ export function propensityMatching(
   }
 
   if (treatedIdx.length === 0 || controlIdx.length === 0) {
-    throw new Error("Need both treated and control observations");
+    throw new Error(`Invalid parameter 'treatment': expected both treated and control observations, received ${treatedIdx.length} treated and ${controlIdx.length} control`);
   }
 
   const matches: [number, number][] = [];
@@ -356,7 +356,7 @@ export function differenceInDifferences(
 ): DiDResult {
   const n = y.length;
   if (n !== treatment.length || n !== post.length) {
-    throw new Error("y, treatment, and post must have the same length");
+    throw new Error(`Invalid parameters 'y', 'treatment', 'post': expected same length, received y.length=${n}, treatment.length=${treatment.length}, post.length=${post.length}`);
   }
 
   const groups = { tp: [] as number[], tc: [] as number[], cp: [] as number[], cc: [] as number[] };
@@ -369,7 +369,7 @@ export function differenceInDifferences(
 
   for (const [key, arr] of Object.entries(groups)) {
     if (arr.length === 0) {
-      throw new Error(`No observations in group: ${key === "tp" ? "treated+post" : key === "tc" ? "treated+pre" : key === "cp" ? "control+post" : "control+pre"}`);
+      throw new Error(`Invalid parameter 'y'/'treatment'/'post': expected at least 1 observation in group ${key === "tp" ? "treated+post" : key === "tc" ? "treated+pre" : key === "cp" ? "control+post" : "control+pre"}, received 0`);
     }
   }
 
@@ -457,12 +457,12 @@ export function twoSLS(
     : (X as number[][]);
 
   if (xMat.length !== n || Z.length !== n) {
-    throw new Error("y, X, and Z must have the same number of observations");
+    throw new Error(`Invalid parameters 'y', 'X', 'Z': expected same number of observations, received y.length=${n}, X.length=${xMat.length}, Z.length=${Z.length}`);
   }
 
   const p = xMat[0].length;
   const q = Z[0].length;
-  if (q < p) throw new Error("Need at least as many instruments as endogenous variables");
+  if (q < p) throw new Error(`Invalid parameter 'Z': expected at least as many instruments as endogenous variables (${p}), received ${q}`);
 
   // Stage 1: Regress each column of X on Z (with intercept)
   const zCols = q + 1;
@@ -572,7 +572,7 @@ export function rdd(
 ): RDDResult {
   const n = y.length;
   if (n !== running.length) {
-    throw new Error("y and running must have the same length");
+    throw new Error(`Invalid parameters 'y', 'running': expected same length, received y.length=${n}, running.length=${running.length}`);
   }
 
   const { bandwidth } = options;
@@ -591,7 +591,7 @@ export function rdd(
   }
 
   if (below.length < 2 || above.length < 2) {
-    throw new Error("Need at least 2 observations on each side of the cutoff");
+    throw new Error(`Invalid parameter 'running': expected at least 2 observations on each side of the cutoff, received ${below.length} below and ${above.length} above`);
   }
 
   // Simple linear regression on each side
@@ -665,7 +665,7 @@ export function fuzzyRDD(
 ): { estimate: number; firstStageF: number; nUsed: number } {
   const n = y.length;
   if (n !== treatment.length || n !== running.length) {
-    throw new Error("y, treatment, and running must have the same length");
+    throw new Error(`Invalid parameters 'y', 'treatment', 'running': expected same length, received y.length=${n}, treatment.length=${treatment.length}, running.length=${running.length}`);
   }
 
   const { bandwidth } = options;
@@ -685,7 +685,7 @@ export function fuzzyRDD(
   }
 
   if (yF.length < 4) {
-    throw new Error("Need at least 4 observations within bandwidth");
+    throw new Error(`Invalid parameter 'bandwidth': expected at least 4 observations within bandwidth, received ${yF.length}`);
   }
 
   const result = twoSLS(yF, tF, zF);

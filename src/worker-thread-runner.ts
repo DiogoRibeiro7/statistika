@@ -187,7 +187,7 @@ async function runGenericTask(task: GenericTaskData): Promise<unknown> {
     return mod.run(task.input);
   }
   throw new Error(
-    `Task file ${task.taskFile} must export a default function or a "run" function`,
+    `Task module must export a default function or a run() function: received ${task.taskFile}`,
   );
 }
 

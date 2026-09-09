@@ -98,6 +98,51 @@ export class Levy extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = 0.5*log(c/(2*pi)) - c/(2*(x-mu)) - 1.5*log(x-mu)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x <= mu.
+   */
+  logPdf(x: number): number {
+    if (x <= this.mu) return -Infinity;
+    const diff = x - this.mu;
+    return (
+      0.5 * Math.log(this.c / (2 * Math.PI)) -
+      this.c / (2 * diff) -
+      1.5 * Math.log(diff)
+    );
+  }
+
+  /**
+   * Returns the skewness of the Levy distribution.
+   *
+   * The skewness is undefined for the Levy distribution.
+   */
+  get skewness(): number {
+    return NaN;
+  }
+
+  /**
+   * Returns the excess kurtosis of the Levy distribution.
+   *
+   * The kurtosis is undefined for the Levy distribution.
+   */
+  get kurtosis(): number {
+    return NaN;
+  }
+
+  /**
+   * Returns the mode of the Levy distribution.
+   *
+   * Formula: mu + c / 3
+   */
+  get mode(): number {
+    return this.mu + this.c / 3;
+  }
+
+  /**
    * Evaluates the cumulative distribution function (CDF) at x.
    *
    * CDF: F(x) = erfc(sqrt(c / (2(x - μ))))

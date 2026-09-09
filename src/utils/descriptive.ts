@@ -10,7 +10,7 @@ import { Dataset, DescriptiveStats } from "../types";
  * mean([1, 2, 3, 4, 5]); // 3
  */
 export function mean(data: Dataset): number {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
+  if (data.length === 0) throw new Error("Invalid parameter 'data': expected non-empty array, received length 0");
   return data.reduce((sum, v) => sum + v, 0) / data.length;
 }
 
@@ -25,7 +25,7 @@ export function mean(data: Dataset): number {
  * median([3, 1, 2]); // 2
  */
 export function median(data: Dataset): number {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
+  if (data.length === 0) throw new Error("Invalid parameter 'data': expected non-empty array, received length 0");
   const sorted = [...data].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 !== 0
@@ -45,7 +45,7 @@ export function median(data: Dataset): number {
  * variance([2, 4, 4, 4, 5, 5, 7, 9]); // ~4.571 (sample)
  */
 export function variance(data: Dataset, sample = true): number {
-  if (data.length < 2) throw new Error("Dataset must have at least 2 elements");
+  if (data.length < 2) throw new Error("Invalid parameter 'data': expected at least 2 elements, received length " + data.length);
   const m = mean(data);
   const sumSq = data.reduce((acc, v) => acc + (v - m) ** 2, 0);
   return sumSq / (sample ? data.length - 1 : data.length);
@@ -64,6 +64,13 @@ export function stdDev(data: Dataset, sample = true): number {
 }
 
 /**
+ * Alias for {@link stdDev}. Computes the standard deviation of a dataset.
+ *
+ * @see stdDev
+ */
+export const standardDeviation = stdDev;
+
+/**
  * Computes the adjusted Fisher-Pearson sample skewness of a dataset.
  * Uses the bias-corrected formula: [n/((n-1)(n-2))] * Σ[((xᵢ - x̄)/s)³].
  *
@@ -75,7 +82,7 @@ export function stdDev(data: Dataset, sample = true): number {
  */
 export function skewness(data: Dataset): number {
   const n = data.length;
-  if (n < 3) throw new Error("Dataset must have at least 3 elements");
+  if (n < 3) throw new Error("Invalid parameter 'data': expected at least 3 elements, received length " + n);
   const m = mean(data);
   const s = stdDev(data, true);
   if (s === 0) return 0;
@@ -93,7 +100,7 @@ export function skewness(data: Dataset): number {
  */
 export function kurtosis(data: Dataset): number {
   const n = data.length;
-  if (n < 4) throw new Error("Dataset must have at least 4 elements");
+  if (n < 4) throw new Error("Invalid parameter 'data': expected at least 4 elements, received length " + n);
   const m = mean(data);
   const s = stdDev(data, true);
   if (s === 0) return 0;
@@ -117,8 +124,8 @@ export function kurtosis(data: Dataset): number {
  * percentile([15, 20, 35, 40, 50], 50); // 35 (median)
  */
 export function percentile(data: Dataset, p: number): number {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
-  if (p < 0 || p > 100) throw new Error("Percentile must be between 0 and 100");
+  if (data.length === 0) throw new Error("Invalid parameter 'data': expected non-empty array, received length 0");
+  if (p < 0 || p > 100) throw new Error(`Invalid parameter 'p': expected value in [0, 100], received ${p}`);
   const sorted = [...data].sort((a, b) => a - b);
   if (p === 0) return sorted[0];
   if (p === 100) return sorted[sorted.length - 1];

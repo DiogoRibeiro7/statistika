@@ -25,7 +25,7 @@ import { Normal } from "./distributions/continuous/normal";
  */
 export function cohensD(data1: Dataset, data2: Dataset): EffectSizeResult {
   if (data1.length < 2 || data2.length < 2) {
-    throw new Error("Both datasets must have at least 2 elements");
+    throw new Error(`Invalid parameters 'data1', 'data2': expected at least 2 elements each, received data1.length=${data1.length}, data2.length=${data2.length}`);
   }
 
   const n1 = data1.length;
@@ -69,7 +69,7 @@ export function glassDelta(
   control: Dataset,
 ): EffectSizeResult {
   if (treatment.length < 2 || control.length < 2) {
-    throw new Error("Both datasets must have at least 2 elements");
+    throw new Error(`Invalid parameters 'treatment', 'control': expected at least 2 elements each, received treatment.length=${treatment.length}, control.length=${control.length}`);
   }
 
   const mt = mean(treatment);
@@ -143,10 +143,10 @@ export function pairedCohensD(
   data2: Dataset,
 ): EffectSizeResult {
   if (data1.length !== data2.length) {
-    throw new Error("Paired datasets must have the same length");
+    throw new Error(`Invalid parameters 'data1', 'data2': expected same length, received data1.length=${data1.length}, data2.length=${data2.length}`);
   }
   if (data1.length < 2) {
-    throw new Error("Datasets must have at least 2 elements");
+    throw new Error(`Invalid parameter 'data1': expected at least 2 elements, received ${data1.length}`);
   }
 
   const diffs = data1.map((v, i) => v - data2[i]);
@@ -298,9 +298,9 @@ export function cohensF(anovaResult: AnovaResult): EffectSizeResult {
  */
 export function cramersV(table: number[][]): EffectSizeResult {
   const nRows = table.length;
-  if (nRows < 2) throw new Error("Table must have at least 2 rows");
+  if (nRows < 2) throw new Error(`Invalid parameter 'table': expected at least 2 rows, received ${nRows}`);
   const nCols = table[0].length;
-  if (nCols < 2) throw new Error("Table must have at least 2 columns");
+  if (nCols < 2) throw new Error(`Invalid parameter 'table': expected at least 2 columns, received ${nCols}`);
 
   const rowTotals = table.map((row) => row.reduce((a, b) => a + b, 0));
   const colTotals = new Array(nCols).fill(0);
@@ -310,7 +310,7 @@ export function cramersV(table: number[][]): EffectSizeResult {
     }
   }
   const n = rowTotals.reduce((a: number, b: number) => a + b, 0);
-  if (n === 0) throw new Error("Table total must be positive");
+  if (n === 0) throw new Error(`Invalid parameter 'table': expected positive total, received 0`);
 
   // Chi-squared statistic
   let chi2 = 0;
@@ -352,7 +352,7 @@ export function cramersV(table: number[][]): EffectSizeResult {
  */
 export function phiCoefficient(table: number[][]): EffectSizeResult {
   if (table.length !== 2 || table[0].length !== 2 || table[1].length !== 2) {
-    throw new Error("Phi coefficient requires a 2×2 table");
+    throw new Error(`Invalid parameter 'table': expected a 2×2 table, received ${table.length}×${table[0]?.length}`);
   }
 
   const a = table[0][0];
@@ -405,10 +405,10 @@ export function oddsRatio(
   confidence = 0.95,
 ): OddsRatioResult {
   if (table.length !== 2 || table[0].length !== 2 || table[1].length !== 2) {
-    throw new Error("Odds ratio requires a 2×2 table");
+    throw new Error(`Invalid parameter 'table': expected a 2×2 table, received ${table.length}×${table[0]?.length}`);
   }
   if (confidence <= 0 || confidence >= 1) {
-    throw new Error("Confidence level must be between 0 and 1 (exclusive)");
+    throw new Error(`Invalid parameter 'confidence': expected a value in (0, 1), received ${confidence}`);
   }
 
   const a = table[0][0];
@@ -417,7 +417,7 @@ export function oddsRatio(
   const d = table[1][1];
 
   if (a < 0 || b < 0 || c < 0 || d < 0) {
-    throw new Error("Cell counts must be non-negative");
+    throw new Error(`Invalid parameter 'table': expected non-negative cell counts, received [${a}, ${b}, ${c}, ${d}]`);
   }
 
   // Handle zero cells with Haldane-Anscombe correction (+0.5)
@@ -475,10 +475,10 @@ export function relativeRisk(
   confidence = 0.95,
 ): OddsRatioResult {
   if (table.length !== 2 || table[0].length !== 2 || table[1].length !== 2) {
-    throw new Error("Relative risk requires a 2×2 table");
+    throw new Error(`Invalid parameter 'table': expected a 2×2 table, received ${table.length}×${table[0]?.length}`);
   }
   if (confidence <= 0 || confidence >= 1) {
-    throw new Error("Confidence level must be between 0 and 1 (exclusive)");
+    throw new Error(`Invalid parameter 'confidence': expected a value in (0, 1), received ${confidence}`);
   }
 
   const a = table[0][0];
@@ -487,19 +487,19 @@ export function relativeRisk(
   const d = table[1][1];
 
   if (a < 0 || b < 0 || c < 0 || d < 0) {
-    throw new Error("Cell counts must be non-negative");
+    throw new Error(`Invalid parameter 'table': expected non-negative cell counts, received [${a}, ${b}, ${c}, ${d}]`);
   }
 
   const r1 = a + b; // exposed total
   const r2 = c + d; // unexposed total
   if (r1 === 0 || r2 === 0) {
-    throw new Error("Row totals must be positive");
+    throw new Error(`Invalid parameter 'table': expected positive row totals, received [${r1}, ${r2}]`);
   }
 
   const p1 = a / r1;
   const p2 = c / r2;
   if (p2 === 0) {
-    throw new Error("Cannot compute relative risk when baseline risk is zero");
+    throw new Error(`Invalid parameter 'table': cannot compute relative risk when baseline risk is zero (p2=${p2})`);
   }
 
   const rr = p1 / p2;
@@ -541,7 +541,7 @@ export function pointBiserialR(
   tStatistic: number,
   df: number,
 ): EffectSizeResult {
-  if (df <= 0) throw new Error("Degrees of freedom must be positive");
+  if (df <= 0) throw new Error(`Invalid parameter 'df': expected a positive number, received ${df}`);
 
   const r = Math.sqrt(tStatistic ** 2 / (tStatistic ** 2 + df));
   const signed = tStatistic >= 0 ? r : -r;

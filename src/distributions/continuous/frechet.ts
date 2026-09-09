@@ -111,6 +111,65 @@ export class Frechet extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = log(alpha/s) + (-1 - alpha)*log((x-m)/s) - ((x-m)/s)^(-alpha)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x <= m.
+   */
+  logPdf(x: number): number {
+    if (x <= this.m) return -Infinity;
+    const z = (x - this.m) / this.s;
+    return (
+      Math.log(this.alpha / this.s) +
+      (-1 - this.alpha) * Math.log(z) -
+      Math.pow(z, -this.alpha)
+    );
+  }
+
+  /**
+   * Returns the skewness of the Frechet distribution.
+   *
+   * Defined only for alpha > 3. Uses gamma function formula.
+   */
+  get skewness(): number {
+    if (this.alpha <= 3) return NaN;
+    const g1 = gamma(1 - 1 / this.alpha);
+    const g2 = gamma(1 - 2 / this.alpha);
+    const g3 = gamma(1 - 3 / this.alpha);
+    const sigma2 = g2 - g1 * g1;
+    const sigma = Math.sqrt(sigma2);
+    return (g3 - 3 * g1 * sigma2 - g1 * g1 * g1) / (sigma * sigma * sigma);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Frechet distribution.
+   *
+   * Defined only for alpha > 4. Uses gamma function formula.
+   */
+  get kurtosis(): number {
+    if (this.alpha <= 4) return NaN;
+    const g1 = gamma(1 - 1 / this.alpha);
+    const g2 = gamma(1 - 2 / this.alpha);
+    const g3 = gamma(1 - 3 / this.alpha);
+    const g4 = gamma(1 - 4 / this.alpha);
+    const mu = g1;
+    const sigma2 = g2 - g1 * g1;
+    const sigma4 = sigma2 * sigma2;
+    return (g4 - 4 * g3 * mu + 6 * g2 * mu * mu - 3 * mu * mu * mu * mu) / sigma4 - 3;
+  }
+
+  /**
+   * Returns the mode of the Frechet distribution.
+   *
+   * Formula: m + s * (alpha / (1 + alpha))^(1/alpha)
+   */
+  get mode(): number {
+    return this.m + this.s * Math.pow(this.alpha / (1 + this.alpha), 1 / this.alpha);
+  }
+
+  /**
    * Evaluates the cumulative distribution function (CDF) at x.
    *
    * CDF: F(x) = exp(-((x-m)/s)^(-alpha))

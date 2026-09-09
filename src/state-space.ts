@@ -213,7 +213,7 @@ function matInv(A: number[][]): number[][] {
       }
     }
     if (maxVal < 1e-14) {
-      throw new Error("Singular matrix cannot be inverted");
+      throw new Error("Invalid state: expected non-singular matrix for inversion, received singular matrix");
     }
     if (maxRow !== col) {
       const tmp = aug[col];
@@ -261,39 +261,39 @@ function validateModel(model: StateSpaceModel): { m: number; p: number } {
   const { F, H, Q, R, x0, P0 } = model;
 
   const m = F.length;
-  if (m === 0) throw new Error("State dimension must be at least 1");
+  if (m === 0) throw new Error("Invalid parameter 'F': expected at least 1 state dimension, received 0");
 
   // F: m x m
   for (let i = 0; i < m; i++) {
-    if (F[i].length !== m) throw new Error(`F must be a square ${m}x${m} matrix`);
+    if (F[i].length !== m) throw new Error(`Invalid parameter 'F': expected square ${m}x${m} matrix, received row ${i} with ${F[i].length} columns`);
   }
 
   // H: p x m
   const p = H.length;
-  if (p === 0) throw new Error("Observation dimension must be at least 1");
+  if (p === 0) throw new Error("Invalid parameter 'H': expected at least 1 observation dimension, received 0");
   for (let i = 0; i < p; i++) {
-    if (H[i].length !== m) throw new Error(`H row ${i} must have ${m} columns`);
+    if (H[i].length !== m) throw new Error(`Invalid parameter 'H': expected ${m} columns at row ${i}, received ${H[i].length}`);
   }
 
   // Q: m x m
-  if (Q.length !== m) throw new Error(`Q must be ${m}x${m}`);
+  if (Q.length !== m) throw new Error(`Invalid parameter 'Q': expected ${m}x${m} matrix, received ${Q.length} rows`);
   for (let i = 0; i < m; i++) {
-    if (Q[i].length !== m) throw new Error(`Q row ${i} must have ${m} columns`);
+    if (Q[i].length !== m) throw new Error(`Invalid parameter 'Q': expected ${m} columns at row ${i}, received ${Q[i].length}`);
   }
 
   // R: p x p
-  if (R.length !== p) throw new Error(`R must be ${p}x${p}`);
+  if (R.length !== p) throw new Error(`Invalid parameter 'R': expected ${p}x${p} matrix, received ${R.length} rows`);
   for (let i = 0; i < p; i++) {
-    if (R[i].length !== p) throw new Error(`R row ${i} must have ${p} columns`);
+    if (R[i].length !== p) throw new Error(`Invalid parameter 'R': expected ${p} columns at row ${i}, received ${R[i].length}`);
   }
 
   // x0: m
-  if (x0.length !== m) throw new Error(`x0 must have length ${m}`);
+  if (x0.length !== m) throw new Error(`Invalid parameter 'x0': expected length ${m}, received ${x0.length}`);
 
   // P0: m x m
-  if (P0.length !== m) throw new Error(`P0 must be ${m}x${m}`);
+  if (P0.length !== m) throw new Error(`Invalid parameter 'P0': expected ${m}x${m} matrix, received ${P0.length} rows`);
   for (let i = 0; i < m; i++) {
-    if (P0[i].length !== m) throw new Error(`P0 row ${i} must have ${m} columns`);
+    if (P0[i].length !== m) throw new Error(`Invalid parameter 'P0': expected ${m} columns at row ${i}, received ${P0[i].length}`);
   }
 
   // NaN guard on all matrices
@@ -310,14 +310,14 @@ function validateModel(model: StateSpaceModel): { m: number; p: number } {
       if (Array.isArray(row)) {
         for (let j = 0; j < row.length; j++) {
           if (!Number.isFinite(row[j])) {
-            throw new Error(`${name}[${i}][${j}] is not finite`);
+            throw new Error(`Invalid parameter '${name}': expected finite number at [${i}][${j}], received ${row[j]}`);
           }
         }
       }
     }
   }
   for (let i = 0; i < x0.length; i++) {
-    if (!Number.isFinite(x0[i])) throw new Error(`x0[${i}] is not finite`);
+    if (!Number.isFinite(x0[i])) throw new Error(`Invalid parameter 'x0': expected finite number at index ${i}, received ${x0[i]}`);
   }
 
   return { m, p };
@@ -368,32 +368,13 @@ export function kalmanFilter(
   const { F, H, Q, R, x0, P0 } = model;
   const T = observations.length;
 
-  if (T === 0) throw new Error("Observations array must not be empty");
+  if (T === 0) throw new Error("Invalid parameter 'observations': expected non-empty array, received length 0");
 
   for (let t = 0; t < T; t++) {
     if (observations[t].length !== p) {
       throw new Error(
-        `Observation at t=${t} has length ${observations[t].length}, expected ${p}`,
+        `Invalid parameter 'observations': expected ${p} dimensions at t=${t}, received ${observations[t].length}`,
       );
-    }
-  }
-
-  // Fast path: univariate observations with no missing data → Fortran kernel
-  if (hasNativeKalman && p === 1) {
-    const hasMissing = observations.some((obs) => isNaN(obs[0]));
-    if (!hasMissing) {
-      const y = observations.map((obs) => obs[0]);
-      const Hflat = H[0]; // 1 x m row vector
-      const Rscalar = R[0][0];
-      const result = nativeKalmanFilter(F, Hflat, Q, Rscalar, y, x0, P0);
-      return {
-        states: result.states,
-        covariances: [], // Not computed in fast path
-        predictions: [], // Not computed in fast path
-        logLikelihood: result.logLikelihood,
-        innovations: [], // Not computed in fast path
-        innovationCovariances: [],
-      };
     }
   }
 
@@ -617,7 +598,7 @@ export function stateSpaceEM(
   const tol = options?.tolerance ?? 1e-6;
   const stateDim = options?.stateDim ?? 1;
 
-  if (observations.length === 0) throw new Error("Observations array must not be empty");
+  if (observations.length === 0) throw new Error("Invalid parameter 'observations': expected non-empty array, received length 0");
 
   // Convert scalar observations to [t][1] format
   const obs: number[][] = observations.map((v) => [v]);
@@ -625,7 +606,7 @@ export function stateSpaceEM(
 
   // Count valid observations
   const validObs = observations.filter((v) => Number.isFinite(v));
-  if (validObs.length === 0) throw new Error("All observations are NaN");
+  if (validObs.length === 0) throw new Error("Invalid parameter 'observations': expected at least one finite value, received all NaN");
 
   const obsMean = validObs.reduce((a, b) => a + b, 0) / validObs.length;
   const obsVar = validObs.reduce((a, b) => a + (b - obsMean) ** 2, 0) / validObs.length;
@@ -775,7 +756,7 @@ export function localLevelModel(observations: number[]): {
   filterResult: KalmanFilterResult;
 } {
   if (observations.length === 0) {
-    throw new Error("Observations array must not be empty");
+    throw new Error("Invalid parameter 'observations': expected non-empty array, received length 0");
   }
 
   const { model, smootherResult } = stateSpaceEM(observations, { stateDim: 1 });
@@ -817,7 +798,7 @@ export function localLinearTrendModel(observations: number[]): {
   filterResult: KalmanFilterResult;
 } {
   if (observations.length === 0) {
-    throw new Error("Observations array must not be empty");
+    throw new Error("Invalid parameter 'observations': expected non-empty array, received length 0");
   }
 
   const { model, smootherResult } = stateSpaceEM(observations, { stateDim: 2 });
@@ -862,9 +843,9 @@ export function stateSpacePredict(
   filterResult: KalmanFilterResult,
   horizon: number,
 ): StateSpacePrediction {
-  if (horizon < 1) throw new Error("Horizon must be at least 1");
+  if (horizon < 1) throw new Error(`Invalid parameter 'horizon': expected at least 1, received ${horizon}`);
   if (filterResult.states.length === 0) {
-    throw new Error("Filter result must have at least one state");
+    throw new Error("Invalid parameter 'filterResult': expected at least one state, received 0");
   }
 
   validateModel(model);

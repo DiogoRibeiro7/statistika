@@ -62,7 +62,7 @@ export function kFoldCV(
     for (let i = 1; i < n; i++) {
       if (X[i].length !== p) {
         throw new Error(
-          `Inconsistent row lengths in X: row 0 has ${p} columns but row ${i} has ${X[i].length} columns`,
+          `Invalid parameter 'X': Inconsistent row lengths, expected ${p} columns at row ${i}, received ${X[i].length}`,
         );
       }
     }
@@ -70,7 +70,7 @@ export function kFoldCV(
 
   const k = options.k ?? 5;
   if (k < 2) throw new Error(`Invalid parameter 'k': expected at least 2, received ${k}`);
-  if (k > n) throw new Error(`Invalid parameter 'k': expected at most ${n} (number of observations), received ${k}`);
+  if (k > n) throw new Error(`Invalid parameter 'k': cannot exceed ${n} observations, received ${k}`);
 
   const scorer = options.scorer ?? mse;
   const rng = options.seed != null ? createRng(options.seed) : Math.random;

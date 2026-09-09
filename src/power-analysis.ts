@@ -301,8 +301,8 @@ export function tTestSampleSize(
   alpha = 0.05,
   tails: 1 | 2 = 2,
 ): SampleSizeResult {
-  if (effectSize === 0) throw new Error("Effect size must be non-zero");
-  if (power <= 0 || power >= 1) throw new Error("Power must be between 0 and 1");
+  if (effectSize === 0) throw new Error(`Invalid parameter 'effectSize': expected a non-zero number, received ${effectSize}`);
+  if (power <= 0 || power >= 1) throw new Error(`Invalid parameter 'power': expected a value in (0, 1), received ${power}`);
   validateAlpha(alpha);
 
   const n = solveSampleSize(
@@ -388,8 +388,8 @@ export function oneSampleTTestSampleSize(
   alpha = 0.05,
   tails: 1 | 2 = 2,
 ): SampleSizeResult {
-  if (effectSize === 0) throw new Error("Effect size must be non-zero");
-  if (power <= 0 || power >= 1) throw new Error("Power must be between 0 and 1");
+  if (effectSize === 0) throw new Error(`Invalid parameter 'effectSize': expected a non-zero number, received ${effectSize}`);
+  if (power <= 0 || power >= 1) throw new Error(`Invalid parameter 'power': expected a value in (0, 1), received ${power}`);
   validateAlpha(alpha);
 
   const n = solveSampleSize(
@@ -496,7 +496,7 @@ export function anovaPower(
   n: number,
   alpha = 0.05,
 ): PowerResult {
-  if (k < 2) throw new Error("Need at least 2 groups");
+  if (k < 2) throw new Error(`Invalid parameter 'k': expected at least 2 groups, received ${k}`);
   validateInputs(effectSize, n, alpha);
 
   const df1 = k - 1;
@@ -544,9 +544,9 @@ export function anovaSampleSize(
   power = 0.80,
   alpha = 0.05,
 ): SampleSizeResult {
-  if (effectSize === 0) throw new Error("Effect size must be non-zero");
-  if (k < 2) throw new Error("Need at least 2 groups");
-  if (power <= 0 || power >= 1) throw new Error("Power must be between 0 and 1");
+  if (effectSize === 0) throw new Error(`Invalid parameter 'effectSize': expected a non-zero number, received ${effectSize}`);
+  if (k < 2) throw new Error(`Invalid parameter 'k': expected at least 2 groups, received ${k}`);
+  if (power <= 0 || power >= 1) throw new Error(`Invalid parameter 'power': expected a value in (0, 1), received ${power}`);
   validateAlpha(alpha);
 
   const n = solveSampleSize(
@@ -595,7 +595,7 @@ export function chiSquaredPower(
   n: number,
   alpha = 0.05,
 ): PowerResult {
-  if (df < 1) throw new Error("Degrees of freedom must be >= 1");
+  if (df < 1) throw new Error(`Invalid parameter 'df': expected at least 1, received ${df}`);
   validateInputs(effectSize, n, alpha);
 
   const lambda = n * effectSize * effectSize; // non-centrality
@@ -638,9 +638,9 @@ export function chiSquaredSampleSize(
   power = 0.80,
   alpha = 0.05,
 ): SampleSizeResult {
-  if (effectSize === 0) throw new Error("Effect size must be non-zero");
-  if (df < 1) throw new Error("Degrees of freedom must be >= 1");
-  if (power <= 0 || power >= 1) throw new Error("Power must be between 0 and 1");
+  if (effectSize === 0) throw new Error(`Invalid parameter 'effectSize': expected a non-zero number, received ${effectSize}`);
+  if (df < 1) throw new Error(`Invalid parameter 'df': expected at least 1, received ${df}`);
+  if (power <= 0 || power >= 1) throw new Error(`Invalid parameter 'power': expected a value in (0, 1), received ${power}`);
   validateAlpha(alpha);
 
   const n = solveSampleSize(
@@ -691,9 +691,9 @@ export function proportionTestPower(
   tails: 1 | 2 = 2,
 ): PowerResult {
   if (p1 < 0 || p1 > 1 || p2 < 0 || p2 > 1) {
-    throw new Error("Proportions must be between 0 and 1");
+    throw new Error(`Invalid parameters 'p1', 'p2': expected values in [0, 1], received p1=${p1}, p2=${p2}`);
   }
-  if (n < 2) throw new Error("Sample size must be >= 2");
+  if (n < 2) throw new Error(`Invalid parameter 'n': expected at least 2, received ${n}`);
   validateAlpha(alpha);
 
   const pBar = (p1 + p2) / 2;
@@ -747,8 +747,8 @@ export function proportionTestSampleSize(
   alpha = 0.05,
   tails: 1 | 2 = 2,
 ): SampleSizeResult {
-  if (p1 === p2) throw new Error("Proportions must differ");
-  if (power <= 0 || power >= 1) throw new Error("Power must be between 0 and 1");
+  if (p1 === p2) throw new Error(`Invalid parameters 'p1', 'p2': expected different values, received p1=${p1}, p2=${p2}`);
+  if (power <= 0 || power >= 1) throw new Error(`Invalid parameter 'power': expected a value in (0, 1), received ${power}`);
 
   const n = solveSampleSize(
     (nn) => proportionTestPower(p1, p2, nn, alpha, tails).power,
@@ -795,8 +795,8 @@ export function correlationPower(
   alpha = 0.05,
   tails: 1 | 2 = 2,
 ): PowerResult {
-  if (Math.abs(r) >= 1) throw new Error("Correlation must be between -1 and 1");
-  if (n < 4) throw new Error("Sample size must be >= 4");
+  if (Math.abs(r) >= 1) throw new Error(`Invalid parameter 'r': expected a value in (-1, 1), received ${r}`);
+  if (n < 4) throw new Error(`Invalid parameter 'n': expected at least 4, received ${n}`);
   validateAlpha(alpha);
 
   // Fisher z-transform
@@ -847,8 +847,8 @@ export function correlationSampleSize(
   alpha = 0.05,
   tails: 1 | 2 = 2,
 ): SampleSizeResult {
-  if (r === 0) throw new Error("Correlation must be non-zero");
-  if (power <= 0 || power >= 1) throw new Error("Power must be between 0 and 1");
+  if (r === 0) throw new Error(`Invalid parameter 'r': expected a non-zero number, received ${r}`);
+  if (power <= 0 || power >= 1) throw new Error(`Invalid parameter 'power': expected a value in (0, 1), received ${power}`);
 
   const n = solveSampleSize(
     (nn) => correlationPower(r, nn, alpha, tails).power,
@@ -889,11 +889,11 @@ function criticalT(alphaOneSide: number, df: number): number {
 }
 
 function validateInputs(effectSize: number, n: number, alpha: number): void {
-  if (!isFinite(effectSize)) throw new Error("Effect size must be finite");
-  if (n < 2 || !Number.isInteger(n)) throw new Error("Sample size must be an integer >= 2");
+  if (!isFinite(effectSize)) throw new Error(`Invalid parameter 'effectSize': expected a finite number, received ${effectSize}`);
+  if (n < 2 || !Number.isInteger(n)) throw new Error(`Invalid parameter 'n': expected an integer >= 2, received ${n}`);
   validateAlpha(alpha);
 }
 
 function validateAlpha(alpha: number): void {
-  if (alpha <= 0 || alpha >= 1) throw new Error("Alpha must be between 0 and 1");
+  if (alpha <= 0 || alpha >= 1) throw new Error(`Invalid parameter 'alpha': expected a value in (0, 1), received ${alpha}`);
 }

@@ -119,11 +119,11 @@ describe("Generalized Linear Models", () => {
 
   describe("Error handling", () => {
     it("throws on empty X", () => {
-      expect(() => glm([], [], gaussian)).toThrow("must not be empty");
+      expect(() => glm([], [], gaussian)).toThrow("non-empty");
     });
 
     it("throws on mismatched X and y lengths", () => {
-      expect(() => glm([[1], [2]], [1], gaussian)).toThrow("same length");
+      expect(() => glm([[1], [2]], [1], gaussian)).toThrow("Invalid parameters");
     });
 
     it("throws on too few observations for parameters", () => {
@@ -137,13 +137,13 @@ describe("Generalized Linear Models", () => {
     it("throws on NaN in y", () => {
       const X = Array.from({ length: 10 }, (_, i) => [i]);
       const y = [1, 2, NaN, 4, 5, 6, 7, 8, 9, 10];
-      expect(() => glm(X, y, gaussian)).toThrow("not finite");
+      expect(() => glm(X, y, gaussian)).toThrow("finite");
     });
 
     it("throws on Infinity in X", () => {
       const X = [[1], [Infinity], [3], [4], [5], [6], [7], [8], [9], [10]];
       const y = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      expect(() => glm(X, y, gaussian)).toThrow("not finite");
+      expect(() => glm(X, y, gaussian)).toThrow("finite");
     });
   });
 
@@ -266,13 +266,13 @@ describe("Generalized Linear Models", () => {
     it("throws on NaN in y (Infinity case)", () => {
       const X = Array.from({ length: 10 }, (_, i) => [i]);
       const y = [1, 2, 3, 4, Infinity, 6, 7, 8, 9, 10];
-      expect(() => glm(X, y, gaussian)).toThrow("not finite");
+      expect(() => glm(X, y, gaussian)).toThrow("finite");
     });
 
     it("throws on NaN in X (NaN case)", () => {
       const X = [[1], [2], [NaN], [4], [5], [6], [7], [8], [9], [10]];
       const y = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      expect(() => glm(X, y, gaussian)).toThrow("not finite");
+      expect(() => glm(X, y, gaussian)).toThrow("finite");
     });
 
     it("poisson predict returns positive values", () => {

@@ -71,6 +71,54 @@ export class Binomial extends BaseDiscrete {
   }
 
   /**
+   * Computes the log of the probability mass function at `k`.
+   *
+   * log P(X = k) = log(C(n,k)) + k*log(p) + (n-k)*log(1-p)
+   *
+   * @param k - The number of successes (integer in [0, n]).
+   * @returns The log-probability. Returns -Infinity for values outside [0, n].
+   */
+  logPmf(k: number): number {
+    if (!Number.isInteger(k) || k < 0 || k > this.n) return -Infinity;
+    if (this.p === 0) return k === 0 ? 0 : -Infinity;
+    if (this.p === 1) return k === this.n ? 0 : -Infinity;
+    return (
+      logFactorial(this.n) -
+      logFactorial(k) -
+      logFactorial(this.n - k) +
+      k * Math.log(this.p) +
+      (this.n - k) * Math.log(1 - this.p)
+    );
+  }
+
+  /**
+   * Returns the skewness of the Binomial distribution.
+   *
+   * Formula: (1 - 2*p) / sqrt(n * p * (1 - p))
+   */
+  get skewness(): number {
+    return (1 - 2 * this.p) / Math.sqrt(this.n * this.p * (1 - this.p));
+  }
+
+  /**
+   * Returns the excess kurtosis of the Binomial distribution.
+   *
+   * Formula: (1 - 6*p*(1-p)) / (n * p * (1 - p))
+   */
+  get kurtosis(): number {
+    return (1 - 6 * this.p * (1 - this.p)) / (this.n * this.p * (1 - this.p));
+  }
+
+  /**
+   * Returns the mode of the Binomial distribution.
+   *
+   * Formula: floor((n + 1) * p)
+   */
+  get mode(): number {
+    return Math.floor((this.n + 1) * this.p);
+  }
+
+  /**
    * Cumulative distribution function.
    *
    * P(X <= k) = I_{1-p}(n - k, k + 1), where I is the regularized incomplete beta function.

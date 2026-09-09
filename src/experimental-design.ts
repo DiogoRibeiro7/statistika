@@ -202,7 +202,7 @@ export function analyzeFactorial(
   const { factors, runs, nRuns } = design;
   const nObs = nRuns * replicates;
   if (response.length !== nObs) {
-    throw new Error(`Expected ${nObs} observations, got ${response.length}`);
+    throw new Error(`Expected ${nObs} observations, received ${response.length}`);
   }
 
   const grandMean = mean(response);
@@ -339,7 +339,7 @@ export function analyzeFactorial(
  * ```
  */
 export function latinSquare(n: number): LatinSquare {
-  if (n < 2) throw new Error("Order must be at least 2");
+  if (n < 2) throw new Error(`Invalid parameter 'n': expected at least 2, received ${n}`);
   const square: number[][] = [];
   for (let i = 0; i < n; i++) {
     const row: number[] = [];
@@ -370,7 +370,7 @@ export function analyzeLatinSquare(
 ): LatinSquareAnalysisResult {
   const n = square.order;
   if (response.length !== n || response.some((r) => r.length !== n)) {
-    throw new Error(`Response must be ${n} × ${n}`);
+    throw new Error(`Expected a ${n} × ${n} matrix, received ${response.length} × ${response[0]?.length}`);
   }
 
   const N = n * n;
@@ -464,7 +464,7 @@ export function centralCompositeDesign(
   alpha?: number,
   nCenter = 3,
 ): ResponseSurfaceDesign {
-  if (k < 2 || k > 5) throw new Error("k must be between 2 and 5");
+  if (k < 2 || k > 5) throw new Error(`Invalid parameter 'k': expected a value between 2 and 5, received ${k}`);
   const a = alpha ?? Math.sqrt(k);
 
   const runs: number[][] = [];
@@ -528,7 +528,7 @@ export function fitResponseSurface(
   const n = runs.length;
   const k = runs[0].length;
   if (response.length !== n) {
-    throw new Error(`Expected ${n} responses, got ${response.length}`);
+    throw new Error(`Expected ${n} responses, received ${response.length}`);
   }
 
   const factors = "factors" in design
@@ -687,11 +687,11 @@ export interface RCBDResult {
  */
 export function analyzeRCBD(response: number[][]): RCBDResult {
   const nBlocks = response.length;
-  if (nBlocks < 2) throw new Error("Need at least 2 blocks");
+  if (nBlocks < 2) throw new Error(`Invalid parameter 'response': expected at least 2 blocks, received ${nBlocks}`);
   const nTreatments = response[0].length;
-  if (nTreatments < 2) throw new Error("Need at least 2 treatments");
+  if (nTreatments < 2) throw new Error(`Invalid parameter 'response': expected at least 2 treatments, received ${nTreatments}`);
   for (const row of response) {
-    if (row.length !== nTreatments) throw new Error("All blocks must have the same number of treatments");
+    if (row.length !== nTreatments) throw new Error(`Invalid parameter 'response': expected all blocks to have the same number of treatments (${nTreatments}), received ${row.length}`);
   }
 
   const N = nBlocks * nTreatments;

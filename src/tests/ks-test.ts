@@ -61,7 +61,7 @@ export function ksTest(
   cdf: (x: number) => number,
   alpha: number = 0.05,
 ): KSTestResult {
-  if (data.length < 1) throw new Error("Need at least 1 observation");
+  if (data.length < 1) throw new Error(`Invalid parameter 'data': expected at least 1 observation, received ${data.length}`);
   const n = data.length;
   const sorted = [...data].sort((a, b) => a - b);
 
@@ -107,7 +107,7 @@ export function ksTwoSampleTest(
   data2: Dataset,
   alpha: number = 0.05,
 ): KSTestResult {
-  if (data1.length < 1 || data2.length < 1) throw new Error("Need at least 1 observation per sample");
+  if (data1.length < 1 || data2.length < 1) throw new Error(`Invalid parameter 'data1'/'data2': expected at least 1 observation per sample, received data1.length=${data1.length}, data2.length=${data2.length}`);
   const n1 = data1.length;
   const n2 = data2.length;
   const sorted1 = [...data1].sort((a, b) => a - b);

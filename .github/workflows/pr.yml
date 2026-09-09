@@ -7,6 +7,9 @@ on:
 permissions:
   contents: read
 
+env:
+  YARN_VERSION: 4.13.0
+
 jobs:
   lint:
     name: Lint
@@ -16,8 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - run: yarn install --immutable
       - run: yarn lint
 
   test:
@@ -32,8 +38,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - run: yarn install --immutable
       - run: yarn test
 
   build:
@@ -44,6 +53,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn
-      - run: yarn install --frozen-lockfile
+      - name: Activate Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - run: yarn install --immutable
       - run: yarn build:ts

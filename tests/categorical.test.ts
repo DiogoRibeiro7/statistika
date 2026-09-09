@@ -69,7 +69,7 @@ describe("Categorical Data Analysis", () => {
     });
 
     it("throws on non-2x2 table", () => {
-      expect(() => mcnemarsTest([[1, 2, 3], [4, 5, 6]])).toThrow("2×2");
+      expect(() => mcnemarsTest([[1, 2, 3], [4, 5, 6]])).toThrow("2x2");
     });
   });
 
@@ -146,7 +146,7 @@ describe("Categorical Data Analysis", () => {
 
   describe("contingencyTable edge cases", () => {
     it("throws on empty table", () => {
-      expect(() => contingencyTable([])).toThrow("must not be empty");
+      expect(() => contingencyTable([])).toThrow("non-empty");
     });
 
     it("throws on table with no columns", () => {
@@ -154,15 +154,15 @@ describe("Categorical Data Analysis", () => {
     });
 
     it("throws on inconsistent row lengths", () => {
-      expect(() => contingencyTable([[1, 2], [3]])).toThrow("same number of columns");
+      expect(() => contingencyTable([[1, 2], [3]])).toThrow("expected 2 columns");
     });
 
     it("throws on negative cell count", () => {
-      expect(() => contingencyTable([[1, -2], [3, 4]])).toThrow("must not be negative");
+      expect(() => contingencyTable([[1, -2], [3, 4]])).toThrow("non-negative");
     });
 
     it("throws on NaN cell count", () => {
-      expect(() => contingencyTable([[1, NaN], [3, 4]])).toThrow("must not be NaN");
+      expect(() => contingencyTable([[1, NaN], [3, 4]])).toThrow("received NaN");
     });
 
     it("handles 1x1 table", () => {
@@ -181,7 +181,7 @@ describe("Categorical Data Analysis", () => {
 
   describe("mcnemarsTest edge cases", () => {
     it("throws on 1x2 table", () => {
-      expect(() => mcnemarsTest([[1, 2]])).toThrow("2×2");
+      expect(() => mcnemarsTest([[1, 2]])).toThrow("2x2");
     });
 
     it("custom alpha changes rejection decision", () => {
@@ -196,7 +196,7 @@ describe("Categorical Data Analysis", () => {
 
   describe("cochranMantelHaenszel edge cases", () => {
     it("throws on non-2x2 tables", () => {
-      expect(() => cochranMantelHaenszel([[[1, 2, 3], [4, 5, 6]]])).toThrow("2×2");
+      expect(() => cochranMantelHaenszel([[[1, 2, 3], [4, 5, 6]]])).toThrow("2x2");
     });
 
     it("commonOddsRatio is Infinity when denominator is zero", () => {

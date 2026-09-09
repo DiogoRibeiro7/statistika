@@ -10,6 +10,7 @@
 
 import { mean } from "../utils/descriptive";
 import { solveLinearSystem, randomSample } from "../utils/linalg";
+import { weightedCrossProducts } from "../utils/native-stats";
 
 // ---- Huber Regression ----
 
@@ -87,18 +88,18 @@ export function huberRegression(
   let designMatrix: number[][];
   if (isSimple) {
     const xArr = X as number[];
-    if (xArr.length !== n) throw new Error("X and y must have the same length");
+    if (xArr.length !== n) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${xArr.length}, y.length=${n}`);
     // Add intercept column
     designMatrix = xArr.map((x) => [1, x]);
   } else {
     const xMat = X as number[][];
-    if (xMat.length !== n) throw new Error("X and y must have the same length");
+    if (xMat.length !== n) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${xMat.length}, y.length=${n}`);
     // Add intercept column
     designMatrix = xMat.map((row) => [1, ...row]);
   }
 
-  if (n < 2) throw new Error("Need at least 2 observations");
-  if (delta <= 0) throw new Error("delta must be positive");
+  if (n < 2) throw new Error(`Invalid parameter 'y': expected at least 2 observations, received ${n}`);
+  if (delta <= 0) throw new Error(`Invalid parameter 'delta': expected a positive number, received ${delta}`);
 
   const p = designMatrix[0].length;
 
@@ -247,11 +248,11 @@ export function ransacRegression(
   let designMatrix: number[][];
   if (isSimple) {
     const xArr = X as number[];
-    if (xArr.length !== n) throw new Error("X and y must have the same length");
+    if (xArr.length !== n) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${xArr.length}, y.length=${n}`);
     designMatrix = xArr.map((x) => [1, x]);
   } else {
     const xMat = X as number[][];
-    if (xMat.length !== n) throw new Error("X and y must have the same length");
+    if (xMat.length !== n) throw new Error(`Invalid parameters 'X', 'y': expected same length, received X.length=${xMat.length}, y.length=${n}`);
     designMatrix = xMat.map((row) => [1, ...row]);
   }
 
@@ -259,7 +260,7 @@ export function ransacRegression(
   const samplesPerTrial = minSamples ?? p;
 
   if (n < samplesPerTrial) {
-    throw new Error("Not enough observations for RANSAC");
+    throw new Error(`Invalid parameter 'X': expected at least ${samplesPerTrial} observations for RANSAC, received ${n}`);
   }
 
   // Default threshold: MAD of OLS residuals * 3
@@ -354,29 +355,9 @@ export function ransacRegression(
  */
 function olsSolve(X: number[][], y: number[]): number[] {
   const n = X.length;
-  const p = X[0].length;
-
-  // X'X
-  const XtX: number[][] = [];
-  for (let j = 0; j < p; j++) {
-    XtX[j] = new Array(p).fill(0);
-    for (let k = 0; k < p; k++) {
-      for (let i = 0; i < n; i++) {
-        XtX[j][k] += X[i][j] * X[i][k];
-      }
-    }
-  }
-
-  // X'y
-  const Xty = new Array(p).fill(0);
-  for (let j = 0; j < p; j++) {
-    for (let i = 0; i < n; i++) {
-      Xty[j] += X[i][j] * y[i];
-    }
-  }
-
-  // Solve via Cholesky or direct inverse for small p
-  return solveLinearSystem(XtX, Xty);
+  const ones = new Array(n).fill(1);
+  const { XtWX, XtWz } = weightedCrossProducts(X, ones, y);
+  return solveLinearSystem(XtWX, XtWz);
 }
 
 /**
@@ -389,26 +370,7 @@ function olsSolve(X: number[][], y: number[]): number[] {
  * @returns The WLS coefficient vector of length p.
  */
 function wlsSolve(X: number[][], y: number[], w: number[]): number[] {
-  const n = X.length;
-  const p = X[0].length;
-
-  const XtWX: number[][] = [];
-  for (let j = 0; j < p; j++) {
-    XtWX[j] = new Array(p).fill(0);
-    for (let k = 0; k < p; k++) {
-      for (let i = 0; i < n; i++) {
-        XtWX[j][k] += X[i][j] * w[i] * X[i][k];
-      }
-    }
-  }
-
-  const XtWy = new Array(p).fill(0);
-  for (let j = 0; j < p; j++) {
-    for (let i = 0; i < n; i++) {
-      XtWy[j] += X[i][j] * w[i] * y[i];
-    }
-  }
-
-  return solveLinearSystem(XtWX, XtWy);
+  const { XtWX, XtWz } = weightedCrossProducts(X, w, y);
+  return solveLinearSystem(XtWX, XtWz);
 }
 

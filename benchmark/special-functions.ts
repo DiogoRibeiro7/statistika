@@ -6,10 +6,8 @@
  *
  * Compares wall-clock time for gammaLn, gamma, betaFn, erf, erfc,
  * regularizedGammaP, and regularizedBeta across both implementations.
+ * Each timing is the median of repeated samples to reduce hosted-runner noise.
  */
-
-// Force-load the pure-TS implementations by reaching into the internals.
-// The public API auto-dispatches, so we need both paths explicitly.
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const mathModule = require("../src/utils/math");
@@ -32,12 +30,8 @@ try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   nativeMod = require("../build/Release/fortran_special.node") as NativeSpecial;
 } catch {
-  // Native not available
+  // Native acceleration is optional.
 }
-
-// ---------------------------------------------------------------------------
-// Benchmark harness
-// ---------------------------------------------------------------------------
 
 interface BenchmarkResult {
   name: string;
@@ -47,32 +41,34 @@ interface BenchmarkResult {
   speedup: number | null;
 }
 
+const ITERATIONS = 100_000;
+const SAMPLES = 5;
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+function measure(fn: () => void, iterations: number): number {
+  for (let i = 0; i < Math.min(5_000, iterations); i++) fn();
+
+  const samples: number[] = [];
+  for (let sample = 0; sample < SAMPLES; sample++) {
+    const start = performance.now();
+    for (let i = 0; i < iterations; i++) fn();
+    samples.push(performance.now() - start);
+  }
+  return median(samples);
+}
+
 function bench(
   name: string,
   tsFn: () => void,
   nativeFn: (() => void) | null,
   iterations: number,
 ): BenchmarkResult {
-  // Warmup
-  for (let i = 0; i < Math.min(1000, iterations); i++) tsFn();
-  if (nativeFn) {
-    for (let i = 0; i < Math.min(1000, iterations); i++) nativeFn();
-  }
-
-  // TypeScript
-  const tsStart = performance.now();
-  for (let i = 0; i < iterations; i++) tsFn();
-  const tsEnd = performance.now();
-  const tsTimeMs = tsEnd - tsStart;
-
-  // Native Fortran
-  let nativeTimeMs: number | null = null;
-  if (nativeFn) {
-    const nStart = performance.now();
-    for (let i = 0; i < iterations; i++) nativeFn();
-    const nEnd = performance.now();
-    nativeTimeMs = nEnd - nStart;
-  }
+  const tsTimeMs = measure(tsFn, iterations);
+  const nativeTimeMs = nativeFn ? measure(nativeFn, iterations) : null;
 
   return {
     name,
@@ -83,167 +79,68 @@ function bench(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Test inputs
-// ---------------------------------------------------------------------------
+function nativeCall(fn: (mod: NativeSpecial) => void): (() => void) | null {
+  if (!nativeMod) return null;
+  const mod = nativeMod;
+  return () => fn(mod);
+}
 
-const ITERATIONS = 100_000;
-
-const benchmarks: BenchmarkResult[] = [];
-
-// gammaLn
-benchmarks.push(
-  bench(
-    "gammaLn(5.5)",
-    () => mathModule.gammaLn(5.5),
-    nativeMod ? () => nativeMod!.gammaLn(5.5) : null,
-    ITERATIONS,
-  ),
-);
-
-benchmarks.push(
-  bench(
-    "gammaLn(0.1)",
-    () => mathModule.gammaLn(0.1),
-    nativeMod ? () => nativeMod!.gammaLn(0.1) : null,
-    ITERATIONS,
-  ),
-);
-
-// gamma
-benchmarks.push(
-  bench(
-    "gamma(5.5)",
-    () => mathModule.gamma(5.5),
-    nativeMod ? () => nativeMod!.gamma(5.5) : null,
-    ITERATIONS,
-  ),
-);
-
-// betaFn
-benchmarks.push(
-  bench(
-    "betaFn(2, 5)",
-    () => mathModule.betaFn(2, 5),
-    nativeMod ? () => nativeMod!.betaFn(2, 5) : null,
-    ITERATIONS,
-  ),
-);
-
-benchmarks.push(
-  bench(
-    "betaFn(0.5, 0.5)",
-    () => mathModule.betaFn(0.5, 0.5),
-    nativeMod ? () => nativeMod!.betaFn(0.5, 0.5) : null,
-    ITERATIONS,
-  ),
-);
-
-// erf
-benchmarks.push(
-  bench(
-    "erf(1.0)",
-    () => mathModule.erf(1.0),
-    nativeMod ? () => nativeMod!.erf(1.0) : null,
-    ITERATIONS,
-  ),
-);
-
-benchmarks.push(
-  bench(
-    "erf(2.5)",
-    () => mathModule.erf(2.5),
-    nativeMod ? () => nativeMod!.erf(2.5) : null,
-    ITERATIONS,
-  ),
-);
-
-// erfc
-benchmarks.push(
-  bench(
-    "erfc(1.0)",
-    () => mathModule.erfc(1.0),
-    nativeMod ? () => nativeMod!.erfc(1.0) : null,
-    ITERATIONS,
-  ),
-);
-
-// regularizedGammaP
-benchmarks.push(
+const benchmarks: BenchmarkResult[] = [
+  bench("gammaLn(5.5)", () => mathModule.gammaLn(5.5), nativeCall((mod) => mod.gammaLn(5.5)), ITERATIONS),
+  bench("gammaLn(0.1)", () => mathModule.gammaLn(0.1), nativeCall((mod) => mod.gammaLn(0.1)), ITERATIONS),
+  bench("gamma(5.5)", () => mathModule.gamma(5.5), nativeCall((mod) => mod.gamma(5.5)), ITERATIONS),
+  bench("betaFn(2, 5)", () => mathModule.betaFn(2, 5), nativeCall((mod) => mod.betaFn(2, 5)), ITERATIONS),
+  bench("betaFn(0.5, 0.5)", () => mathModule.betaFn(0.5, 0.5), nativeCall((mod) => mod.betaFn(0.5, 0.5)), ITERATIONS),
+  bench("erf(1.0)", () => mathModule.erf(1.0), nativeCall((mod) => mod.erf(1.0)), ITERATIONS),
+  bench("erf(2.5)", () => mathModule.erf(2.5), nativeCall((mod) => mod.erf(2.5)), ITERATIONS),
+  bench("erfc(1.0)", () => mathModule.erfc(1.0), nativeCall((mod) => mod.erfc(1.0)), ITERATIONS),
   bench(
     "regularizedGammaP(2, 3)",
     () => mathModule.regularizedGammaP(2, 3),
-    nativeMod ? () => nativeMod!.regularizedGammaP(2, 3) : null,
+    nativeCall((mod) => mod.regularizedGammaP(2, 3)),
     ITERATIONS,
   ),
-);
-
-benchmarks.push(
   bench(
     "regularizedGammaP(10, 5)",
     () => mathModule.regularizedGammaP(10, 5),
-    nativeMod ? () => nativeMod!.regularizedGammaP(10, 5) : null,
+    nativeCall((mod) => mod.regularizedGammaP(10, 5)),
     ITERATIONS,
   ),
-);
-
-// regularizedBeta
-benchmarks.push(
   bench(
     "regularizedBeta(0.5, 2, 5)",
     () => mathModule.regularizedBeta(0.5, 2, 5),
-    nativeMod ? () => nativeMod!.regularizedBeta(0.5, 2, 5) : null,
+    nativeCall((mod) => mod.regularizedBeta(0.5, 2, 5)),
     ITERATIONS,
   ),
-);
-
-benchmarks.push(
   bench(
     "regularizedBeta(0.3, 0.5, 0.5)",
     () => mathModule.regularizedBeta(0.3, 0.5, 0.5),
-    nativeMod ? () => nativeMod!.regularizedBeta(0.3, 0.5, 0.5) : null,
+    nativeCall((mod) => mod.regularizedBeta(0.3, 0.5, 0.5)),
     ITERATIONS,
   ),
-);
-
-// logFactorial
-benchmarks.push(
   bench(
     "logFactorial(100)",
     () => mathModule.logFactorial(100),
-    nativeMod ? () => nativeMod!.logFactorial(100) : null,
+    nativeCall((mod) => mod.logFactorial(100)),
     ITERATIONS,
   ),
-);
-
-// binomialCoeff
-benchmarks.push(
   bench(
     "binomialCoeff(20, 10)",
     () => mathModule.binomialCoeff(20, 10),
-    nativeMod ? () => nativeMod!.binomialCoeff(20, 10) : null,
+    nativeCall((mod) => mod.binomialCoeff(20, 10)),
     ITERATIONS,
   ),
-);
-
-// ---------------------------------------------------------------------------
-// Output results
-// ---------------------------------------------------------------------------
+];
 
 console.log("\n=== Special Functions Benchmark ===");
-console.log(`Iterations per function: ${ITERATIONS.toLocaleString()}`);
+console.log(`Iterations per sample: ${ITERATIONS.toLocaleString()}`);
+console.log(`Samples per function: ${SAMPLES} (median reported)`);
 console.log(
   `Native Fortran addon: ${nativeMod ? "AVAILABLE" : "NOT AVAILABLE (showing TS-only results)"}`,
 );
 console.log("");
 
-const colWidths = {
-  name: 32,
-  ts: 12,
-  native: 12,
-  speedup: 10,
-};
-
+const colWidths = { name: 32, ts: 12, native: 12, speedup: 10 };
 const header =
   "Function".padEnd(colWidths.name) +
   "TS (ms)".padStart(colWidths.ts) +
@@ -253,33 +150,27 @@ const header =
 console.log(header);
 console.log("-".repeat(header.length));
 
-for (const r of benchmarks) {
-  const tsStr = r.tsTimeMs.toFixed(2);
-  const nativeStr = r.nativeTimeMs !== null ? r.nativeTimeMs.toFixed(2) : "N/A";
-  const speedupStr =
-    r.speedup !== null ? `${r.speedup.toFixed(2)}x` : "N/A";
+for (const result of benchmarks) {
+  const tsStr = result.tsTimeMs.toFixed(2);
+  const nativeStr = result.nativeTimeMs !== null ? result.nativeTimeMs.toFixed(2) : "N/A";
+  const speedupStr = result.speedup !== null ? `${result.speedup.toFixed(2)}x` : "N/A";
 
   console.log(
-    r.name.padEnd(colWidths.name) +
+    result.name.padEnd(colWidths.name) +
       tsStr.padStart(colWidths.ts) +
       nativeStr.padStart(colWidths.native) +
       speedupStr.padStart(colWidths.speedup),
   );
 }
 
-// Summary
 console.log("");
 if (nativeMod) {
   const speedups = benchmarks
-    .map((r) => r.speedup)
-    .filter((s): s is number => s !== null);
-  const avgSpeedup = speedups.reduce((a, b) => a + b, 0) / speedups.length;
-  const maxSpeedup = Math.max(...speedups);
-  const minSpeedup = Math.min(...speedups);
-  console.log(`Average speedup: ${avgSpeedup.toFixed(2)}x`);
-  console.log(
-    `Range: ${minSpeedup.toFixed(2)}x - ${maxSpeedup.toFixed(2)}x`,
-  );
+    .map((result) => result.speedup)
+    .filter((speedup): speedup is number => speedup !== null);
+  const average = speedups.reduce((sum, speedup) => sum + speedup, 0) / speedups.length;
+  console.log(`Average speedup: ${average.toFixed(2)}x`);
+  console.log(`Range: ${Math.min(...speedups).toFixed(2)}x - ${Math.max(...speedups).toFixed(2)}x`);
 } else {
   console.log("Install the native addon to compare: npm run build:native");
 }

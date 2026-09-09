@@ -1,4 +1,9 @@
 import { SeededRng } from "./random";
+import { normalSampleBatch } from "./utils/native-sampling";
+import {
+  hasNativeVariational,
+  normalLogDensityBatch,
+} from "./utils/native-variational";
 
 // ============================================================================
 // Interfaces
@@ -60,6 +65,35 @@ function standardNormal(rng: SeededRng): number {
   const u1 = rng.next();
   const u2 = rng.next();
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+function sampleStandardNormals(
+  numSamples: number,
+  dim: number,
+  rng: SeededRng,
+  means: number[],
+  stds: number[],
+): number[][] {
+  const samples: number[][] = Array.from({ length: numSamples }, () => new Array(dim));
+
+  if (hasNativeVariational) {
+    for (let i = 0; i < dim; i++) {
+      const seed = rng.nextInt(1, 2147483646);
+      const normals = normalSampleBatch(numSamples, 0, 1, seed);
+      for (let s = 0; s < numSamples; s++) {
+        samples[s][i] = means[i] + stds[i] * normals[s];
+      }
+    }
+    return samples;
+  }
+
+  for (let s = 0; s < numSamples; s++) {
+    for (let i = 0; i < dim; i++) {
+      const eps = standardNormal(rng);
+      samples[s][i] = means[i] + stds[i] * eps;
+    }
+  }
+  return samples;
 }
 
 function applyTransform(unconstrained: number, transform: TransformType): number {
@@ -134,30 +168,38 @@ export function computeELBO(
   const trans = transforms || new Array(dim).fill("identity");
   let elbo = 0;
 
-  for (let s = 0; s < numSamples; s++) {
-    // Sample from q using reparameterization: z = mu + sigma * epsilon
-    const epsilon: number[] = [];
-    const unconstrained: number[] = [];
-    for (let i = 0; i < dim; i++) {
-      const eps = standardNormal(rng);
-      epsilon.push(eps);
-      unconstrained.push(means[i] + stds[i] * eps);
-    }
+  const etaSamples = sampleStandardNormals(numSamples, dim, rng, means, stds);
+  const logQs: number[][] = Array.from({ length: numSamples }, () => new Array(dim));
 
-    // Transform to constrained space
+  if (hasNativeVariational) {
+    for (let i = 0; i < dim; i++) {
+      const column = etaSamples.map((row) => row[i]);
+      const logDensityColumn = normalLogDensityBatch(numSamples, means[i], stds[i], column);
+      for (let s = 0; s < numSamples; s++) {
+        logQs[s][i] = logDensityColumn[s];
+      }
+    }
+  }
+
+  for (let s = 0; s < numSamples; s++) {
+    const unconstrained = etaSamples[s];
     const constrained = unconstrained.map((z, i) => applyTransform(z, trans[i]));
 
-    // log p(constrained params) + log |det J|
     let logP = logDensity(constrained);
     for (let i = 0; i < dim; i++) {
       logP += logDetJacobian(unconstrained[i], trans[i]);
     }
 
-    // Entropy of q (diagonal normal): -log q(z) = 0.5 * dim * log(2*pi*e) + sum(log(sigma))
-    // We compute log q(z) for each sample
     let logQ = 0;
-    for (let i = 0; i < dim; i++) {
-      logQ += -0.5 * Math.log(2 * Math.PI) - Math.log(stds[i]) - 0.5 * epsilon[i] ** 2;
+    if (hasNativeVariational) {
+      for (let i = 0; i < dim; i++) {
+        logQ += logQs[s][i];
+      }
+    } else {
+      for (let i = 0; i < dim; i++) {
+        const eps = (unconstrained[i] - means[i]) / stds[i];
+        logQ += -0.5 * Math.log(2 * Math.PI) - Math.log(stds[i]) - 0.5 * eps ** 2;
+      }
     }
 
     elbo += logP - logQ;
@@ -364,15 +406,22 @@ export function advi(
     const gradOmega = new Array(dim).fill(0);
     let elboEstimate = 0;
 
-    for (let s = 0; s < numSamples; s++) {
-      // Reparameterization trick: z = mu + sigma * epsilon
-      const epsilon: number[] = [];
-      const eta: number[] = []; // unconstrained
+    const etaSamples = sampleStandardNormals(numSamples, dim, rng, mu, sigma);
+    const logQs: number[][] = Array.from({ length: numSamples }, () => new Array(dim));
+
+    if (hasNativeVariational) {
       for (let i = 0; i < dim; i++) {
-        const e = standardNormal(rng);
-        epsilon.push(e);
-        eta.push(mu[i] + sigma[i] * e);
+        const column = etaSamples.map((row) => row[i]);
+        const logDensityColumn = normalLogDensityBatch(numSamples, mu[i], sigma[i], column);
+        for (let s = 0; s < numSamples; s++) {
+          logQs[s][i] = logDensityColumn[s];
+        }
       }
+    }
+
+    for (let s = 0; s < numSamples; s++) {
+      const eta = etaSamples[s];
+      const epsilon = eta.map((value, i) => (value - mu[i]) / sigma[i]);
 
       // Transform to constrained space
       const theta = eta.map((z, i) => applyTransform(z, transforms[i]));
@@ -385,9 +434,15 @@ export function advi(
 
       // Entropy contribution: log q(eta) for this sample
       let logQ = 0;
-      for (let i = 0; i < dim; i++) {
-        logQ +=
-          -0.5 * Math.log(2 * Math.PI) - Math.log(sigma[i]) - 0.5 * epsilon[i] ** 2;
+      if (hasNativeVariational) {
+        for (let i = 0; i < dim; i++) {
+          logQ += logQs[s][i];
+        }
+      } else {
+        for (let i = 0; i < dim; i++) {
+          logQ +=
+            -0.5 * Math.log(2 * Math.PI) - Math.log(sigma[i]) - 0.5 * epsilon[i] ** 2;
+        }
       }
 
       elboEstimate += logJoint - logQ;
@@ -460,11 +515,18 @@ export function advi(
 
   // Generate posterior samples
   const samples: number[][] = [];
+  const posteriorEpsilons = sampleStandardNormals(
+    numPosteriorSamples,
+    dim,
+    rng,
+    new Array(dim).fill(0),
+    new Array(dim).fill(1),
+  );
+
   for (let s = 0; s < numPosteriorSamples; s++) {
     const sample: number[] = [];
     for (let i = 0; i < dim; i++) {
-      const eps_i = standardNormal(rng);
-      const eta_i = mu[i] + finalSigma[i] * eps_i;
+      const eta_i = mu[i] + finalSigma[i] * posteriorEpsilons[s][i];
       sample.push(applyTransform(eta_i, transforms[i]));
     }
     samples.push(sample);

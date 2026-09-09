@@ -20,11 +20,11 @@ import { Dataset } from "./types";
  * ```
  */
 export function sma(data: Dataset, window: number): number[] {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
-  if (window < 1 || window > data.length) throw new Error("Window must be between 1 and data length");
-  if (!Number.isInteger(window)) throw new Error("Window must be an integer");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': dataset must not be empty`);
+  if (window < 1 || window > data.length) throw new Error(`Invalid parameter 'window': expected a value between 1 and ${data.length}, received ${window}`);
+  if (!Number.isInteger(window)) throw new Error(`Invalid parameter 'window': must be an integer, received ${window}`);
   for (let i = 0; i < data.length; i++) {
-    if (!Number.isFinite(data[i])) throw new Error("Data must not contain NaN or Infinity");
+    if (!Number.isFinite(data[i])) throw new Error(`Invalid parameter 'data[${i}]': expected a finite number, no NaN or Infinity, received ${data[i]}`);
   }
 
   const result: number[] = [];
@@ -59,10 +59,10 @@ export function sma(data: Dataset, window: number): number[] {
  * ```
  */
 export function ema(data: Dataset, alpha: number): number[] {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
-  if (alpha <= 0 || alpha > 1) throw new Error("Alpha must be between 0 (exclusive) and 1 (inclusive)");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': dataset must not be empty`);
+  if (alpha <= 0 || alpha > 1) throw new Error(`Invalid parameter 'alpha': expected a value between 0 and 1, received ${alpha}`);
   for (let i = 0; i < data.length; i++) {
-    if (!Number.isFinite(data[i])) throw new Error("Data must not contain NaN or Infinity");
+    if (!Number.isFinite(data[i])) throw new Error(`Invalid parameter 'data[${i}]': expected a finite number (no NaN or Infinity), received ${data[i]}`);
   }
 
   const result = new Array<number>(data.length);
@@ -96,10 +96,10 @@ export function ema(data: Dataset, alpha: number): number[] {
  * ```
  */
 export function wma(data: Dataset, window: number): number[] {
-  if (data.length === 0) throw new Error("Dataset must not be empty");
-  if (window < 1 || window > data.length) throw new Error("Window must be between 1 and data length");
+  if (data.length === 0) throw new Error(`Invalid parameter 'data': dataset must not be empty`);
+  if (window < 1 || window > data.length) throw new Error(`Invalid parameter 'window': expected a value between 1 and ${data.length}, received ${window}`);
   for (let i = 0; i < data.length; i++) {
-    if (!Number.isFinite(data[i])) throw new Error("Data must not contain NaN or Infinity");
+    if (!Number.isFinite(data[i])) throw new Error(`Invalid parameter 'data[${i}]': expected a finite number, no NaN or Infinity, received ${data[i]}`);
   }
 
   const weightSum = (window * (window + 1)) / 2;
@@ -140,20 +140,20 @@ export function wma(data: Dataset, window: number): number[] {
  * ```
  */
 export function loess(x: Dataset, y: Dataset, span = 0.3): Dataset {
-  if (x.length !== y.length) throw new Error("x and y must have the same length");
+  if (x.length !== y.length) throw new Error(`Invalid parameters 'x', 'y': expected same length, received x.length=${x.length}, y.length=${y.length}`);
   const n = x.length;
-  if (n < 3) throw new Error("Need at least 3 observations");
-  if (span <= 0 || span > 1) throw new Error("Span must be between 0 (exclusive) and 1 (inclusive)");
+  if (n < 3) throw new Error(`Invalid parameter 'x': expected at least 3 observations, received ${n}`);
+  if (span <= 0 || span > 1) throw new Error(`Invalid parameter 'span': expected a value between 0 and 1, received ${span}`);
 
   for (let i = 0; i < n; i++) {
-    if (!Number.isFinite(x[i])) throw new Error("x must not contain NaN or Infinity");
-    if (!Number.isFinite(y[i])) throw new Error("y must not contain NaN or Infinity");
+    if (!Number.isFinite(x[i])) throw new Error(`Invalid parameter 'x[${i}]': expected a finite number, no NaN or Infinity, received ${x[i]}`);
+    if (!Number.isFinite(y[i])) throw new Error(`Invalid parameter 'y[${i}]': expected a finite number, no NaN or Infinity, received ${y[i]}`);
   }
 
   // Check that x values are not all identical
   const xMin = Math.min(...x);
   const xMax = Math.max(...x);
-  if (xMin === xMax) throw new Error("All x values are identical; cannot fit LOESS");
+  if (xMin === xMax) throw new Error(`Invalid parameter 'x': all values are identical (${xMin}), cannot fit LOESS`);
 
   const k = Math.max(2, Math.floor(span * n));
   const result = new Array<number>(n);
@@ -223,18 +223,18 @@ export function cubicSpline(
   xs: Dataset,
   ys: Dataset,
 ): (x: number) => number {
-  if (xs.length !== ys.length) throw new Error("xs and ys must have the same length");
+  if (xs.length !== ys.length) throw new Error(`Invalid parameters 'xs', 'ys': expected same length, received xs.length=${xs.length}, ys.length=${ys.length}`);
   const n = xs.length;
-  if (n < 3) throw new Error("Need at least 3 knots");
+  if (n < 3) throw new Error(`Invalid parameter 'xs': expected at least 3 knots, received ${n}`);
 
   for (let i = 0; i < n; i++) {
-    if (!Number.isFinite(xs[i])) throw new Error("xs must not contain NaN or Infinity");
-    if (!Number.isFinite(ys[i])) throw new Error("ys must not contain NaN or Infinity");
+    if (!Number.isFinite(xs[i])) throw new Error(`Invalid parameter 'xs[${i}]': expected a finite number, no NaN or Infinity, received ${xs[i]}`);
+    if (!Number.isFinite(ys[i])) throw new Error(`Invalid parameter 'ys[${i}]': expected a finite number, no NaN or Infinity, received ${ys[i]}`);
   }
 
   // Check sorted
   for (let i = 1; i < n; i++) {
-    if (xs[i] <= xs[i - 1]) throw new Error("xs must be strictly increasing");
+    if (xs[i] <= xs[i - 1]) throw new Error(`Invalid parameter 'xs[${i}]': expected strictly increasing values, received xs[${i - 1}]=${xs[i - 1]}, xs[${i}]=${xs[i]}`);
   }
 
   // Compute spline coefficients using tridiagonal solver

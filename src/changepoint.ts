@@ -124,7 +124,7 @@ export interface BOCPDOptions {
  */
 export function costMean(data: number[], start: number, end: number): number {
   const n = end - start;
-  if (n < 1) throw new Error("Segment must have at least 1 element");
+  if (n < 1) throw new Error(`Invalid parameter 'data': expected segment with at least 1 element, received ${n}`);
   if (n === 1) return 0;
 
   const segment = data.slice(start, end);
@@ -163,7 +163,7 @@ export function costVariance(
   overallMean?: number,
 ): number {
   const n = end - start;
-  if (n < 1) throw new Error("Segment must have at least 1 element");
+  if (n < 1) throw new Error(`Invalid parameter 'data': expected segment with at least 1 element, received ${n}`);
   if (n === 1) return 0;
 
   const mu = overallMean ?? mean(data);
@@ -195,7 +195,7 @@ export function costVariance(
  */
 export function costMeanVar(data: number[], start: number, end: number): number {
   const n = end - start;
-  if (n < 1) throw new Error("Segment must have at least 1 element");
+  if (n < 1) throw new Error(`Invalid parameter 'data': expected segment with at least 1 element, received ${n}`);
   if (n === 1) return 0;
 
   const segment = data.slice(start, end);
@@ -288,10 +288,10 @@ function buildSegments(
  */
 export function cusumTest(data: number[], alpha = 0.05): CUSUMResult {
   if (data.length < 2) {
-    throw new Error("Data must have at least 2 elements");
+    throw new Error(`Invalid parameter 'data': expected at least 2 elements, received ${data.length}`);
   }
   if (alpha <= 0 || alpha >= 1) {
-    throw new Error("Alpha must be between 0 and 1 (exclusive)");
+    throw new Error(`Invalid parameter 'alpha': expected a value in (0, 1), received ${alpha}`);
   }
 
   const n = data.length;
@@ -379,10 +379,10 @@ export function pelt(data: number[], options: PELTOptions = {}): ChangepointResu
 
   const n = data.length;
   if (n < 2) {
-    throw new Error("Data must have at least 2 elements");
+    throw new Error(`Invalid parameter 'data': expected at least 2 elements, received ${n}`);
   }
   if (minSegmentLength < 2) {
-    throw new Error("Minimum segment length must be at least 2");
+    throw new Error(`Invalid parameter 'minSegmentLength': expected at least 2, received ${minSegmentLength}`);
   }
 
   const cost = getCostFn(costFunction, data);
@@ -492,10 +492,10 @@ export function binarySegmentation(
 
   const n = data.length;
   if (n < 2) {
-    throw new Error("Data must have at least 2 elements");
+    throw new Error(`Invalid parameter 'data': expected at least 2 elements, received ${n}`);
   }
   if (minSegmentLength < 2) {
-    throw new Error("Minimum segment length must be at least 2");
+    throw new Error(`Invalid parameter 'minSegmentLength': expected at least 2, received ${minSegmentLength}`);
   }
 
   const cost = getCostFn(costFunction, data);
@@ -586,13 +586,13 @@ export function bocpd(data: number[], options: BOCPDOptions = {}): BOCPDResult {
   } = options;
 
   if (data.length < 1) {
-    throw new Error("Data must have at least 1 element");
+    throw new Error(`Invalid parameter 'data': expected at least 1 element, received ${data.length}`);
   }
   if (hazardLambda <= 0) {
-    throw new Error("Hazard lambda must be positive");
+    throw new Error(`Invalid parameter 'hazardLambda': expected a positive number, received ${hazardLambda}`);
   }
   if (threshold <= 0 || threshold >= 1) {
-    throw new Error("Threshold must be between 0 and 1 (exclusive)");
+    throw new Error(`Invalid parameter 'threshold': expected a value in (0, 1), received ${threshold}`);
   }
 
   const n = data.length;

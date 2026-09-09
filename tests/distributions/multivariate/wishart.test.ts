@@ -28,7 +28,7 @@ describe("Wishart", () => {
           [-1, 0],
           [0, 1],
         ]),
-    ).toThrow("not positive definite");
+    ).toThrow("positive definite");
   });
 
   it("mean is df * scale", () => {

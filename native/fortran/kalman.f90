@@ -94,52 +94,52 @@ end subroutine
 !   m: state dimension
 !   p: observation dimension
 ! --------------------------------------------------------------------------
-subroutine c_kalman_update(H, R, y, x, P, innovation_out, S_out, loglik_out, pm, pp) &
+subroutine c_kalman_update(H, R, y, x, P_mat, innovation_out, S_out, loglik_out, pm, pp) &
     bind(C, name="fortran_kalman_update")
   use iso_c_binding
   implicit none
   real(c_double), intent(in)    :: H(*), R(*), y(*)
-  real(c_double), intent(inout) :: x(*), P(*)
+  real(c_double), intent(inout) :: x(*), P_mat(*)
   real(c_double), intent(out)   :: innovation_out(*), S_out(*), loglik_out
   integer(c_int), intent(in)    :: pm, pp
 
-  integer :: m, p, i, j, k
-  real(c_double), allocatable :: Hx(:), PH(:), S(:), K(:), innov(:)
+  integer :: m, p_dim, i, j, k
+  real(c_double), allocatable :: Hx(:), PH(:), S(:), K_arr(:), innov(:)
   real(c_double), allocatable :: KH(:), P_new(:)
   real(c_double) :: det_S, S_inv, log_det
 
   m = pm
-  p = pp
+  p_dim = pp
 
-  allocate(Hx(p))
-  allocate(PH(m * p))
-  allocate(S(p * p))
-  allocate(K(m * p))
-  allocate(innov(p))
+  allocate(Hx(p_dim))
+  allocate(PH(m * p_dim))
+  allocate(S(p_dim * p_dim))
+  allocate(K_arr(m * p_dim))
+  allocate(innov(p_dim))
   allocate(KH(m * m))
   allocate(P_new(m * m))
 
   ! Hx = H * x (p-vector)
-  do i = 1, p
+  do i = 1, p_dim
     Hx(i) = 0.0d0
     do k = 1, m
-      Hx(i) = Hx(i) + H((k-1)*p + i) * x(k)
+      Hx(i) = Hx(i) + H((k-1)*p_dim + i) * x(k)
     end do
   end do
 
   ! Innovation = y - H*x
-  do i = 1, p
+  do i = 1, p_dim
     innov(i) = y(i) - Hx(i)
     innovation_out(i) = innov(i)
   end do
 
   ! PH = P * H^T (m x p)
-  do j = 1, p
+  do j = 1, p_dim
     do i = 1, m
       PH((j-1)*m + i) = 0.0d0
       do k = 1, m
-        ! H^T(k, j) = H(j, k) = H[(k-1)*p + j]
-        PH((j-1)*m + i) = PH((j-1)*m + i) + P((k-1)*m + i) * H((k-1)*p + j)
+        ! H^T(k, j) = H(j, k) = H[(k-1)*p_dim + j]
+        PH((j-1)*m + i) = PH((j-1)*m + i) + P_mat((k-1)*m + i) * H((k-1)*p_dim + j)
       end do
     end do
   end do
@@ -152,23 +152,23 @@ subroutine c_kalman_update(H, R, y, x, P, innovation_out, S_out, loglik_out, pm,
   ! = sum_k H(i,k) * PH(k,j) + R(i,j)  where PH(k,j) = sum_l P(k,l)*H^T(l,j)
   ! Wait, PH is already P * H^T which is m x p
   ! So S = H * PH + R, where H is p x m, PH is m x p -> S is p x p
-  do j = 1, p
-    do i = 1, p
-      S((j-1)*p + i) = R((j-1)*p + i)
+  do j = 1, p_dim
+    do i = 1, p_dim
+      S((j-1)*p_dim + i) = R((j-1)*p_dim + i)
       do k = 1, m
-        S((j-1)*p + i) = S((j-1)*p + i) + H((k-1)*p + i) * PH((j-1)*m + k)
+        S((j-1)*p_dim + i) = S((j-1)*p_dim + i) + H((k-1)*p_dim + i) * PH((j-1)*m + k)
       end do
     end do
   end do
 
   ! Copy S to output
-  do i = 1, p * p
+  do i = 1, p_dim * p_dim
     S_out(i) = S(i)
   end do
 
   ! For p=1 (univariate), use simple scalar inversion
   ! For general p, we need matrix inversion of S
-  if (p == 1) then
+  if (p_dim == 1) then
     ! Scalar case (most common)
     if (S(1) > 0.0d0) then
       S_inv = 1.0d0 / S(1)
@@ -178,7 +178,7 @@ subroutine c_kalman_update(H, R, y, x, P, innovation_out, S_out, loglik_out, pm,
 
     ! K = PH * S_inv (m x 1)
     do i = 1, m
-      K(i) = PH(i) * S_inv
+      K_arr(i) = PH(i) * S_inv
     end do
 
     ! Log-likelihood contribution
@@ -187,37 +187,37 @@ subroutine c_kalman_update(H, R, y, x, P, innovation_out, S_out, loglik_out, pm,
   else
     ! General case: compute S^{-1} via simple Gauss-Jordan for small p
     ! For simplicity, use the adjugate method for p=2, else fall back
-    if (p == 2) then
+    if (p_dim == 2) then
       det_S = S(1) * S(4) - S(3) * S(2)
       if (abs(det_S) > 1.0d-300) then
         ! K = PH * S^{-1}
         ! S^{-1} for 2x2: [d -b; -c a] / det
         do i = 1, m
-          K(i)     = (PH(i) * S(4) - PH(m + i) * S(2)) / det_S
-          K(m + i) = (-PH(i) * S(3) + PH(m + i) * S(1)) / det_S
+          K_arr(i)     = (PH(i) * S(4) - PH(m + i) * S(2)) / det_S
+          K_arr(m + i) = (-PH(i) * S(3) + PH(m + i) * S(1)) / det_S
         end do
         log_det = log(max(abs(det_S), 1.0d-300))
       else
-        do i = 1, m * p
-          K(i) = 0.0d0
+        do i = 1, m * p_dim
+          K_arr(i) = 0.0d0
         end do
         log_det = 0.0d0
       end if
     else
       ! For larger p, just zero out K (caller should use LAPACK solve)
-      do i = 1, m * p
-        K(i) = 0.0d0
+      do i = 1, m * p_dim
+        K_arr(i) = 0.0d0
       end do
       log_det = 0.0d0
     end if
 
     ! Log-likelihood: -0.5 * (p*log(2*pi) + log|S| + innov^T * S^{-1} * innov)
-    loglik_out = -0.5d0 * dble(p) * log(2.0d0 * 3.14159265358979323846d0)
+    loglik_out = -0.5d0 * dble(p_dim) * log(2.0d0 * 3.14159265358979323846d0)
     loglik_out = loglik_out - 0.5d0 * log_det
     ! Compute innov^T * S^{-1} * innov using K and innov
     ! Since K = P * H^T * S^{-1}, we need S^{-1} * innov separately
     ! For p=1 already handled, for p=2:
-    if (p == 2 .and. abs(det_S) > 1.0d-300) then
+    if (p_dim == 2 .and. abs(det_S) > 1.0d-300) then
       loglik_out = loglik_out - 0.5d0 * ( &
         (S(4) * innov(1) - S(2) * innov(2)) * innov(1) + &
         (-S(3) * innov(1) + S(1) * innov(2)) * innov(2)) / det_S
@@ -226,8 +226,8 @@ subroutine c_kalman_update(H, R, y, x, P, innovation_out, S_out, loglik_out, pm,
 
   ! x_upd = x + K * innovation
   do i = 1, m
-    do j = 1, p
-      x(i) = x(i) + K((j-1)*m + i) * innov(j)
+    do j = 1, p_dim
+      x(i) = x(i) + K_arr((j-1)*m + i) * innov(j)
     end do
   end do
 
@@ -236,8 +236,8 @@ subroutine c_kalman_update(H, R, y, x, P, innovation_out, S_out, loglik_out, pm,
   do j = 1, m
     do i = 1, m
       KH((j-1)*m + i) = 0.0d0
-      do k = 1, p
-        KH((j-1)*m + i) = KH((j-1)*m + i) + K((k-1)*m + i) * H((j-1)*p + k)
+      do k = 1, p_dim
+        KH((j-1)*m + i) = KH((j-1)*m + i) + K_arr((k-1)*m + i) * H((j-1)*p_dim + k)
       end do
     end do
   end do
@@ -248,19 +248,19 @@ subroutine c_kalman_update(H, R, y, x, P, innovation_out, S_out, loglik_out, pm,
       P_new((j-1)*m + i) = 0.0d0
       do k = 1, m
         if (i == k) then
-          P_new((j-1)*m + i) = P_new((j-1)*m + i) + (1.0d0 - KH((k-1)*m + i)) * P((j-1)*m + k)
+          P_new((j-1)*m + i) = P_new((j-1)*m + i) + (1.0d0 - KH((k-1)*m + i)) * P_mat((j-1)*m + k)
         else
-          P_new((j-1)*m + i) = P_new((j-1)*m + i) - KH((k-1)*m + i) * P((j-1)*m + k)
+          P_new((j-1)*m + i) = P_new((j-1)*m + i) - KH((k-1)*m + i) * P_mat((j-1)*m + k)
         end if
       end do
     end do
   end do
 
   do i = 1, m * m
-    P(i) = P_new(i)
+    P_mat(i) = P_new(i)
   end do
 
-  deallocate(Hx, PH, S, K, innov, KH, P_new)
+  deallocate(Hx, PH, S, K_arr, innov, KH, P_new)
 end subroutine
 
 ! --------------------------------------------------------------------------
@@ -289,13 +289,13 @@ subroutine c_kalman_filter_univariate(F, H, Q, R_scalar, y, x0, P0, &
   real(c_double), intent(out) :: states_out(*), loglik_out
   integer(c_int), intent(in)  :: pT, pm
 
-  integer :: T, m, t, i, j, k
+  integer :: n_obs, m, t, i, j, k
   real(c_double), allocatable :: x(:), P(:), x_pred(:), P_pred(:)
   real(c_double), allocatable :: PH(:), FP(:)
   real(c_double) :: Hx, innov, S, S_inv, ll
   real(c_double), parameter :: LOG2PI = 1.8378770664093453d0
 
-  T = pT
+  n_obs = pT
   m = pm
 
   allocate(x(m))
@@ -315,7 +315,7 @@ subroutine c_kalman_filter_univariate(F, H, Q, R_scalar, y, x0, P0, &
 
   ll = 0.0d0
 
-  do t = 1, T
+  do t = 1, n_obs
     ! === PREDICT ===
     ! x_pred = F * x
     do i = 1, m

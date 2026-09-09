@@ -122,6 +122,17 @@ extern "C" {
                              double* result);
   void fortran_normal_cdf_batch(const double* x, const int* n,
                                   double* result);
+  void fortran_uniform_sample_batch(int seed, double a, double b,
+                                    double* result, const int* n);
+  void fortran_normal_sample_batch(int seed, double mu, double sigma,
+                                    double* result, const int* n);
+  void fortran_normal_log_density_batch(double mu, double sigma,
+                                        const double* x, double* result,
+                                        const int* n);
+  void fortran_gamma_sample_batch(int seed, double shape, double rate,
+                                   double* result, const int* n);
+  void fortran_beta_sample_batch(int seed, double alpha, double beta,
+                                  double* result, const int* n);
 }
 
 // Fortran function declarations — optimization.f90
@@ -579,6 +590,98 @@ Napi::Value WeightedCrossProducts(const Napi::CallbackInfo& info) {
   result.Set("XtWz", jsXtWz);
 
   return result;
+}
+
+// uniformSampleBatch(n: number, a: number, b: number, seed: number) => number[]
+Napi::Value UniformSampleBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[0].As<Napi::Number>().Int32Value();
+  double a = info[1].As<Napi::Number>().DoubleValue();
+  double b = info[2].As<Napi::Number>().DoubleValue();
+  int seed = info[3].As<Napi::Number>().Int32Value();
+
+  std::vector<double> result(n);
+  fortran_uniform_sample_batch(seed, a, b, result.data(), &n);
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+// normalSampleBatch(n: number, mu: number, sigma: number, seed: number) => number[]
+Napi::Value NormalSampleBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[0].As<Napi::Number>().Int32Value();
+  double mu = info[1].As<Napi::Number>().DoubleValue();
+  double sigma = info[2].As<Napi::Number>().DoubleValue();
+  int seed = info[3].As<Napi::Number>().Int32Value();
+
+  std::vector<double> result(n);
+  fortran_normal_sample_batch(seed, mu, sigma, result.data(), &n);
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+// gammaSampleBatch(n: number, shape: number, rate: number, seed: number) => number[]
+Napi::Value GammaSampleBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[0].As<Napi::Number>().Int32Value();
+  double shape = info[1].As<Napi::Number>().DoubleValue();
+  double rate = info[2].As<Napi::Number>().DoubleValue();
+  int seed = info[3].As<Napi::Number>().Int32Value();
+
+  std::vector<double> result(n);
+  fortran_gamma_sample_batch(seed, shape, rate, result.data(), &n);
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+// betaSampleBatch(n: number, alpha: number, beta: number, seed: number) => number[]
+Napi::Value BetaSampleBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[0].As<Napi::Number>().Int32Value();
+  double alpha = info[1].As<Napi::Number>().DoubleValue();
+  double beta = info[2].As<Napi::Number>().DoubleValue();
+  int seed = info[3].As<Napi::Number>().Int32Value();
+
+  std::vector<double> result(n);
+  fortran_beta_sample_batch(seed, alpha, beta, result.data(), &n);
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
+}
+
+// normalLogDensityBatch(n: number, mu: number, sigma: number, x: number[]) => number[]
+Napi::Value NormalLogDensityBatch(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int n = info[0].As<Napi::Number>().Int32Value();
+  double mu = info[1].As<Napi::Number>().DoubleValue();
+  double sigma = info[2].As<Napi::Number>().DoubleValue();
+  Napi::Array xArr = info[3].As<Napi::Array>();
+
+  std::vector<double> x = jsArrayToVector(env, xArr, n);
+  std::vector<double> result(n);
+
+  fortran_normal_log_density_batch(mu, sigma, x.data(), result.data(), &n);
+
+  Napi::Array jsResult = Napi::Array::New(env, n);
+  for (int i = 0; i < n; i++) {
+    jsResult.Set(static_cast<uint32_t>(i), Napi::Number::New(env, result[i]));
+  }
+  return jsResult;
 }
 
 // welfordBatch(values: number[], count, mean, m2, min, max)
@@ -1164,6 +1267,11 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("kdeGaussian", Napi::Function::New(env, KdeGaussian));
   exports.Set("weightedCrossProducts", Napi::Function::New(env, WeightedCrossProducts));
   exports.Set("welfordBatch", Napi::Function::New(env, WelfordBatch));
+  exports.Set("uniformSampleBatch", Napi::Function::New(env, UniformSampleBatch));
+  exports.Set("normalSampleBatch", Napi::Function::New(env, NormalSampleBatch));
+  exports.Set("normalLogDensityBatch", Napi::Function::New(env, NormalLogDensityBatch));
+  exports.Set("gammaSampleBatch", Napi::Function::New(env, GammaSampleBatch));
+  exports.Set("betaSampleBatch", Napi::Function::New(env, BetaSampleBatch));
 
   // Feature selection (Fortran-accelerated)
   exports.Set("elasticNetCd", Napi::Function::New(env, ElasticNetCd));

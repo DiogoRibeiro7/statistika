@@ -1,17 +1,17 @@
 # Tutorial: Spatial Statistics
 
-Spatial statistics analyzes data that is tied to geographic or spatial locations. node_stats provides tools for measuring spatial autocorrelation (Moran's I, Geary's C), modeling spatial dependence (variograms), and performing spatial interpolation (kriging).
+Spatial statistics analyzes data that is tied to geographic or spatial locations. statistika provides tools for measuring spatial autocorrelation (Moran's I, Geary's C), modeling spatial dependence (variograms), and performing spatial interpolation (kriging).
 
 ## Spatial Weights
 
-Most spatial analyses require a weights matrix that encodes which locations are "neighbors." node_stats provides two common approaches:
+Most spatial analyses require a weights matrix that encodes which locations are "neighbors." statistika provides two common approaches:
 
 ### Distance Band Weights
 
 Locations within a threshold distance are neighbors:
 
 ```typescript
-import { distanceBandWeights } from 'node_stats';
+import { distanceBandWeights } from 'statistika';
 
 const locations = [
   [0, 0], [1, 0], [2, 0],
@@ -29,7 +29,7 @@ const W = distanceBandWeights(locations, 1.5);
 Each location's k closest points are its neighbors:
 
 ```typescript
-import { knnWeights } from 'node_stats';
+import { knnWeights } from 'statistika';
 
 const W = knnWeights(locations, 4);
 // Each location has exactly 4 neighbors
@@ -41,7 +41,7 @@ const W = knnWeights(locations, 4);
 You can also compute the full pairwise distance matrix directly:
 
 ```typescript
-import { spatialDistanceMatrix } from 'node_stats';
+import { spatialDistanceMatrix } from 'statistika';
 
 const D = spatialDistanceMatrix(locations);
 // D[i][j] = Euclidean distance between locations i and j
@@ -53,7 +53,7 @@ console.log(D[0][4]); // distance from (0,0) to (1,1) = sqrt(2)
 Moran's I is the most widely used measure of global spatial autocorrelation. It tests whether nearby locations have similar values (positive autocorrelation) or dissimilar values (negative autocorrelation).
 
 ```typescript
-import { moranI, distanceBandWeights } from 'node_stats';
+import { moranI, distanceBandWeights } from 'statistika';
 
 // Property values at 9 grid locations
 const values = [
@@ -95,7 +95,7 @@ console.log(result.pValue.toFixed(4));
 Geary's C is an alternative to Moran's I that focuses on pairwise differences rather than deviations from the mean. It is more sensitive to local spatial autocorrelation.
 
 ```typescript
-import { gearyC } from 'node_stats';
+import { gearyC } from 'statistika';
 
 const result = gearyC(values, W);
 
@@ -114,7 +114,7 @@ console.log(result.pValue.toFixed(4));
 The variogram describes how spatial dependence changes with distance. The semivariance increases with distance until reaching a "sill," beyond which points are no longer correlated.
 
 ```typescript
-import { empiricalVariogram } from 'node_stats';
+import { empiricalVariogram } from 'statistika';
 
 // Soil contamination measurements at scattered locations
 const points = [
@@ -148,7 +148,7 @@ Fit a parametric model to the empirical variogram using weighted least squares. 
 - **Range**: distance at which spatial correlation effectively reaches zero
 
 ```typescript
-import { fitVariogramModel } from 'node_stats';
+import { fitVariogramModel } from 'statistika';
 
 const model = fitVariogramModel(bins, 'spherical');
 // Also available: 'exponential', 'gaussian', 'linear'
@@ -177,7 +177,7 @@ console.log(model.evaluate(10));   // near nugget + sill (beyond range)
 Kriging uses the fitted variogram to interpolate values at unobserved locations. It provides both a prediction and an estimate of uncertainty (kriging variance).
 
 ```typescript
-import { ordinaryKriging, empiricalVariogram, fitVariogramModel } from 'node_stats';
+import { ordinaryKriging, empiricalVariogram, fitVariogramModel } from 'statistika';
 
 // Fit the variogram
 const bins = empiricalVariogram(points, contamination, 10);
@@ -216,7 +216,7 @@ import {
   empiricalVariogram,
   fitVariogramModel,
   ordinaryKriging,
-} from 'node_stats';
+} from 'statistika';
 
 // Rainfall measurements at 12 weather stations
 const stations = [

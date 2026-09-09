@@ -92,6 +92,46 @@ export class Cauchy extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = -log(pi) - log(gamma) - log(1 + ((x - x0) / gamma)^2)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density.
+   */
+  logPdf(x: number): number {
+    const z = (x - this.x0) / this.gammaParam;
+    return -Math.log(Math.PI) - Math.log(this.gammaParam) - Math.log(1 + z * z);
+  }
+
+  /**
+   * Returns the skewness of the Cauchy distribution.
+   *
+   * The skewness is undefined (NaN) for the Cauchy distribution.
+   */
+  get skewness(): number {
+    return NaN;
+  }
+
+  /**
+   * Returns the excess kurtosis of the Cauchy distribution.
+   *
+   * The kurtosis is undefined (NaN) for the Cauchy distribution.
+   */
+  get kurtosis(): number {
+    return NaN;
+  }
+
+  /**
+   * Returns the mode of the Cauchy distribution.
+   *
+   * The mode equals the location parameter `x0`.
+   */
+  get mode(): number {
+    return this.x0;
+  }
+
+  /**
    * Evaluates the cumulative distribution function (CDF) at x.
    *
    * CDF: F(x) = 0.5 + arctan((x - x0) / gamma) / pi

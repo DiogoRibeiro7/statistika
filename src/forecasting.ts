@@ -25,12 +25,12 @@ export function adfTest(
   maxLags?: number,
 ): { statistic: number; pValue: number; lags: number; isStationary: boolean } {
   const n = series.length;
-  if (n < 10) throw new Error("Need at least 10 observations for ADF test");
+  if (n < 10) throw new Error(`Invalid parameter 'series': expected at least 10 observations, received ${n}`);
 
   // NaN / Infinity guard
   for (let i = 0; i < n; i++) {
     if (!Number.isFinite(series[i])) {
-      throw new Error(`series[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'series': expected finite number at index ${i}, received ${series[i]}`);
     }
   }
 
@@ -41,7 +41,7 @@ export function adfTest(
   const start = lags;
   const nObs = diffed.length - start;
 
-  if (nObs < lags + 3) throw new Error("Not enough observations for the specified lag");
+  if (nObs < lags + 3) throw new Error(`Invalid parameter 'maxLags': expected enough observations for the specified lag, received nObs=${nObs}, lags=${lags}`);
 
   // Build design matrix
   const y: number[] = [];
@@ -131,12 +131,12 @@ export function autoArima(
     maxQ?: number;
   } = {},
 ): ARIMAResult & { selectedOrder: { p: number; d: number; q: number } } {
-  if (series.length < 10) throw new Error("Need at least 10 observations for autoArima");
+  if (series.length < 10) throw new Error(`Invalid parameter 'series': expected at least 10 observations, received ${series.length}`);
 
   // NaN / Infinity guard
   for (let i = 0; i < series.length; i++) {
     if (!Number.isFinite(series[i])) {
-      throw new Error(`series[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'series': expected finite number at index ${i}, received ${series[i]}`);
     }
   }
 
@@ -222,10 +222,10 @@ export function forecastWithIntervals(
   confidence: number;
 } {
   if (!Number.isFinite(steps) || steps < 1) {
-    throw new Error("steps must be a positive integer");
+    throw new Error(`Invalid parameter 'steps': expected a positive integer, received ${steps}`);
   }
   if (!Number.isFinite(confidence) || confidence <= 0 || confidence >= 1) {
-    throw new Error("confidence must be in (0, 1)");
+    throw new Error(`Invalid parameter 'confidence': confidence must be in (0, 1), received ${confidence}`);
   }
 
   const point = model.forecast(steps);
@@ -269,13 +269,13 @@ export function seasonalDecompose(
   period: number,
 ): { trend: (number | null)[]; seasonal: number[]; residual: (number | null)[] } {
   const n = series.length;
-  if (period < 2) throw new Error("Period must be at least 2");
-  if (n < 2 * period) throw new Error("Need at least 2 full periods of data");
+  if (period < 2) throw new Error(`Invalid parameter 'period': expected at least 2, received ${period}`);
+  if (n < 2 * period) throw new Error(`Invalid parameter 'series': expected at least 2 full periods (${2 * period}), received ${n}`);
 
   // NaN / Infinity guard
   for (let i = 0; i < n; i++) {
     if (!Number.isFinite(series[i])) {
-      throw new Error(`series[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'series[${i}]': expected a finite number, received ${series[i]}`);
     }
   }
 
@@ -376,7 +376,7 @@ function seasonalDifference(series: number[], m: number, D: number): number[] {
   let result = series;
   for (let iter = 0; iter < D; iter++) {
     if (result.length <= m) {
-      throw new Error("Series too short for seasonal differencing");
+      throw new Error(`Invalid parameter 'series': expected length > ${m} for seasonal differencing, received ${result.length}`);
     }
     const diff = new Array(result.length - m);
     for (let i = m; i < result.length; i++) {
@@ -462,19 +462,19 @@ export function sarima(
   Q: number,
   m: number,
 ): SARIMAResult {
-  if (m < 2) throw new Error("Seasonal period m must be at least 2");
+  if (m < 2) throw new Error(`Invalid parameter 'm': expected at least 2, received ${m}`);
   if (p < 0 || d < 0 || q < 0 || P < 0 || D < 0 || Q < 0) {
-    throw new Error("All orders must be non-negative");
+    throw new Error(`Invalid parameters: expected non-negative orders, received p=${p}, d=${d}, q=${q}, P=${P}, D=${D}, Q=${Q}`);
   }
 
   const minLen = p + d + q + (P + D + Q) * m + 2;
   if (series.length < minLen) {
-    throw new Error("Series too short for the specified SARIMA order");
+    throw new Error(`Invalid parameter 'series': expected at least ${minLen} observations for the specified SARIMA order, received ${series.length}`);
   }
 
   for (let i = 0; i < series.length; i++) {
     if (!Number.isFinite(series[i])) {
-      throw new Error(`series[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'series[${i}]': expected a finite number, received ${series[i]}`);
     }
   }
 
@@ -492,7 +492,7 @@ export function sarima(
   const maxStart = Math.max(maxArLag, maxMaLag);
 
   if (n <= maxStart + 1) {
-    throw new Error("Series too short after differencing for the given orders");
+    throw new Error(`Invalid parameter 'series': expected more than ${maxStart + 1} observations after differencing, received ${n}`);
   }
 
   // Compute autocovariances up to needed lag
@@ -763,12 +763,12 @@ export function prophetDecompose(
   } = {},
 ): ProphetDecomposition {
   const n = series.length;
-  if (n < 2 * period) throw new Error("Need at least 2 full periods of data");
-  if (period < 2) throw new Error("Period must be at least 2");
+  if (n < 2 * period) throw new Error(`Invalid parameter 'series': expected at least 2 full periods (${2 * period}), received ${n}`);
+  if (period < 2) throw new Error(`Invalid parameter 'period': expected at least 2, received ${period}`);
 
   for (let i = 0; i < n; i++) {
     if (!Number.isFinite(series[i])) {
-      throw new Error(`series[${i}] is not finite`);
+      throw new Error(`Invalid parameter 'series[${i}]': expected a finite number, received ${series[i]}`);
     }
   }
 

@@ -96,6 +96,48 @@ export class Gumbel extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = -(z + exp(-z)) - log(beta), where z = (x - mu) / beta
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density.
+   */
+  logPdf(x: number): number {
+    const z = (x - this.mu) / this.beta;
+    return -(z + Math.exp(-z)) - Math.log(this.beta);
+  }
+
+  /**
+   * Returns the skewness of the Gumbel distribution.
+   *
+   * The skewness is 12 * sqrt(6) * zeta(3) / pi^3 ~ 1.1396.
+   */
+  get skewness(): number {
+    // 12 * sqrt(6) * zeta(3) / pi^3
+    // zeta(3) = Apery's constant = 1.2020569031595942
+    return (12 * Math.sqrt(6) * 1.2020569031595942) / (Math.PI * Math.PI * Math.PI);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Gumbel distribution.
+   *
+   * The excess kurtosis is always 12/5.
+   */
+  get kurtosis(): number {
+    return 12 / 5;
+  }
+
+  /**
+   * Returns the mode of the Gumbel distribution.
+   *
+   * The mode equals the location parameter `mu`.
+   */
+  get mode(): number {
+    return this.mu;
+  }
+
+  /**
    * Evaluates the cumulative distribution function (CDF) at x.
    *
    * CDF: F(x) = exp(-exp(-(x - mu) / beta))

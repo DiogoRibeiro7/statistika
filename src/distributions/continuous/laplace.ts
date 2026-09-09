@@ -80,6 +80,45 @@ export class Laplace extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = -|x - mu| / b - log(2 * b)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density.
+   */
+  logPdf(x: number): number {
+    return -Math.abs(x - this.mu) / this.b - Math.log(2 * this.b);
+  }
+
+  /**
+   * Returns the skewness of the Laplace distribution.
+   *
+   * The skewness is always 0 (symmetric distribution).
+   */
+  get skewness(): number {
+    return 0;
+  }
+
+  /**
+   * Returns the excess kurtosis of the Laplace distribution.
+   *
+   * The excess kurtosis is always 3.
+   */
+  get kurtosis(): number {
+    return 3;
+  }
+
+  /**
+   * Returns the mode of the Laplace distribution.
+   *
+   * The mode equals the location parameter `mu`.
+   */
+  get mode(): number {
+    return this.mu;
+  }
+
+  /**
    * Evaluates the cumulative distribution function at `x`.
    *
    * CDF: F(x) = 0.5 + 0.5 * sign(x - mu) * (1 - exp(-|x - mu| / b))

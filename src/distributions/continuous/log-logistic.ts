@@ -100,6 +100,76 @@ export class LogLogistic extends BaseContinuous {
   }
 
   /**
+   * Computes the log of the probability density function at `x`.
+   *
+   * log f(x) = log(beta/alpha) + (beta-1)*log(x/alpha) - 2*log(1 + (x/alpha)^beta)
+   *
+   * @param x - The point at which to evaluate the log-density.
+   * @returns The log-density. Returns -Infinity for x < 0.
+   */
+  logPdf(x: number): number {
+    if (x < 0) return -Infinity;
+    if (x === 0) {
+      if (this.beta === 1) return -Math.log(this.alpha);
+      if (this.beta < 1) return Infinity;
+      return -Infinity;
+    }
+    const z = x / this.alpha;
+    const zb = Math.pow(z, this.beta);
+    return (
+      Math.log(this.beta / this.alpha) +
+      (this.beta - 1) * Math.log(z) -
+      2 * Math.log(1 + zb)
+    );
+  }
+
+  /**
+   * Returns the skewness of the Log-Logistic distribution.
+   *
+   * Defined only for beta > 3.
+   */
+  get skewness(): number {
+    if (this.beta <= 3) return NaN;
+    const b = this.beta;
+    const p1 = Math.PI / b;
+    const m1 = p1 / Math.sin(p1);
+    const m2 = 2 * p1 / Math.sin(2 * p1);
+    const m3 = 3 * p1 / Math.sin(3 * p1);
+    const sigma2 = m2 - m1 * m1;
+    const sigma = Math.sqrt(sigma2);
+    return (m3 - 3 * m1 * sigma2 - m1 * m1 * m1) / (sigma * sigma * sigma);
+  }
+
+  /**
+   * Returns the excess kurtosis of the Log-Logistic distribution.
+   *
+   * Defined only for beta > 4.
+   */
+  get kurtosis(): number {
+    if (this.beta <= 4) return NaN;
+    const b = this.beta;
+    const p1 = Math.PI / b;
+    const m1 = p1 / Math.sin(p1);
+    const m2 = 2 * p1 / Math.sin(2 * p1);
+    const m3 = 3 * p1 / Math.sin(3 * p1);
+    const m4 = 4 * p1 / Math.sin(4 * p1);
+    const mu = m1;
+    const sigma2 = m2 - m1 * m1;
+    const sigma4 = sigma2 * sigma2;
+    return (m4 - 4 * m3 * mu + 6 * m2 * mu * mu - 3 * mu * mu * mu * mu) / sigma4 - 3;
+  }
+
+  /**
+   * Returns the mode of the Log-Logistic distribution.
+   *
+   * Formula: alpha * ((beta - 1) / (beta + 1))^(1/beta) for beta > 1, 0 for beta <= 1.
+   */
+  get mode(): number {
+    if (this.beta <= 1) return 0;
+    return this.alpha * Math.pow((this.beta - 1) / (this.beta + 1), 1 / this.beta);
+  }
+
+  /**
    * Evaluates the cumulative distribution function at `x`.
    *
    * CDF: F(x) = 1 / (1 + (x/alpha)^(-beta))
