@@ -6,22 +6,24 @@
  * The library falls back to pure TypeScript implementations at runtime.
  */
 
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const PLATFORM = process.platform;
 const IS_WINDOWS = PLATFORM === "win32";
-const FORTRAN_COMPILE_FLAGS = IS_WINDOWS ? "-c -O2 -Wno-error=line-truncation" : "-c -fPIC -O2";
+const FORTRAN_COMPILE_FLAGS = IS_WINDOWS
+  ? ["-c", "-O2", "-Wno-error=line-truncation"]
+  : ["-c", "-fPIC", "-O2"];
 
-function run(cmd, label) {
+function run(executable, args, label) {
   try {
-    execSync(cmd, { cwd: ROOT, stdio: "pipe", shell: true });
+    execFileSync(executable, args, { cwd: ROOT, stdio: "pipe", shell: false });
     return true;
   } catch (error) {
     console.warn(`⚠  Skipping native build: ${label} failed`);
-    console.warn(`    Command: ${cmd}`);
+    console.warn(`    Command: ${executable} ${args.join(" ")}`);
     if (error.stdout) {
       console.warn(`    stdout: ${error.stdout.toString().trim()}`);
     }
@@ -34,9 +36,9 @@ function run(cmd, label) {
 
 function findGfortranLibrary(name) {
   try {
-    const resolved = execSync(`gfortran -print-file-name=${name}`, {
+    const resolved = execFileSync("gfortran", [`-print-file-name=${name}`], {
       stdio: "pipe",
-      shell: true,
+      shell: false,
     })
       .toString()
       .trim();
@@ -95,13 +97,16 @@ function linkFortranBridgeDll(objFiles, hasLapack, outDir) {
   fs.mkdirSync(outDir, { recursive: true });
   const dll = path.join(outDir, "fortran_native.dll");
   const implib = path.join(outDir, "libfortran_native.dll.a");
-  const libs = hasLapack ? "-llapack -lblas" : "";
-  const objs = objFiles.map((f) => `"${f}"`).join(" ");
-  // -Wl,--export-all-symbols ensures every bind(C) routine is exported even
-  // if MinGW's auto-export heuristic ever changes. The link will fail loudly
-  // if -llapack/-lblas can't be resolved, which is the right behavior.
-  const cmd = `gfortran -shared -o "${dll}" -Wl,--out-implib="${implib}" -Wl,--export-all-symbols ${objs} ${libs}`;
-  return run(cmd, "Fortran bridge DLL link");
+  const args = [
+    "-shared",
+    "-o",
+    dll,
+    `-Wl,--out-implib=${implib}`,
+    "-Wl,--export-all-symbols",
+    ...objFiles,
+  ];
+  if (hasLapack) args.push("-llapack", "-lblas");
+  return run("gfortran", args, "Fortran bridge DLL link");
 }
 
 function copyLapackRuntimeDlls(sourceDir, destDir) {
@@ -132,10 +137,35 @@ function copyLapackRuntimeDlls(sourceDir, destDir) {
   return true;
 }
 
+function hasSystemLapack() {
+  const knownPaths = [
+    "/usr/lib/liblapack.so",
+    "/usr/lib/x86_64-linux-gnu/liblapack.so",
+  ];
+  if (knownPaths.some((candidate) => fs.existsSync(candidate))) return true;
+
+  try {
+    const libraries = execFileSync("ldconfig", ["-p"], {
+      stdio: "pipe",
+      shell: false,
+    }).toString();
+    return libraries.includes("liblapack");
+  } catch {
+    return false;
+  }
+}
+
+function compileFortran(source, output, label, moduleDir = null) {
+  const args = [...FORTRAN_COMPILE_FLAGS];
+  if (moduleDir) args.push(`-J${moduleDir}`);
+  args.push("-o", output, source);
+  return run("gfortran", args, label);
+}
+
 function main() {
   // Check if gfortran is available
   try {
-    execSync("gfortran --version", { stdio: "pipe", shell: true });
+    execFileSync("gfortran", ["--version"], { stdio: "pipe", shell: false });
   } catch {
     console.warn(
       "⚠  gfortran not found — skipping native addon build.\n" +
@@ -160,135 +190,88 @@ function main() {
           "   If you have LAPACK installed, ensure gfortran can resolve liblapack (for example via liblapack.dll.a or liblapack.a in your MinGW/MSYS2 toolchain).",
       );
     }
+  } else if (hasSystemLapack()) {
+    hasLapack = true;
   } else {
-    try {
-      execSync("ldconfig -p 2>/dev/null | grep -q liblapack || test -f /usr/lib/liblapack.so || test -f /usr/lib/x86_64-linux-gnu/liblapack.so", {
-        stdio: "pipe",
-        shell: true,
-      });
-      hasLapack = true;
-    } catch {
-      console.warn(
-        "⚠  LAPACK not found — linear algebra will use pure TypeScript fallbacks.\n" +
-          "   Install liblapack-dev (Debian/Ubuntu) or lapack-devel (RHEL/Fedora) for native acceleration.",
-      );
-    }
+    console.warn(
+      "⚠  LAPACK not found — linear algebra will use pure TypeScript fallbacks.\n" +
+        "   Install liblapack-dev (Debian/Ubuntu) or lapack-devel (RHEL/Fedora) for native acceleration.",
+    );
   }
 
   // Check if source files exist
-  const specialSrc = path.join(ROOT, "native/fortran/special_functions.f90");
-  const linalgSrc = path.join(ROOT, "native/fortran/linalg.f90");
+  const moduleDir = path.join(ROOT, "native/fortran");
+  const specialSrc = path.join(moduleDir, "special_functions.f90");
+  const linalgSrc = path.join(moduleDir, "linalg.f90");
   if (!fs.existsSync(specialSrc)) {
     console.warn("⚠  Fortran source not found — skipping native addon build.");
     return;
   }
 
   // Compile special_functions.f90
-  const specialObj = path.join(ROOT, "native/fortran/special_functions.o");
-  if (
-    !run(
-      `gfortran ${FORTRAN_COMPILE_FLAGS} -J${path.join(ROOT, "native/fortran")} -o ${specialObj} ${specialSrc}`,
-      "Fortran special functions compilation",
-    )
-  ) {
+  const specialObj = path.join(moduleDir, "special_functions.o");
+  if (!compileFortran(specialSrc, specialObj, "Fortran special functions compilation", moduleDir)) {
     return;
   }
 
   // Compile distributions.f90 (depends on special_functions module)
-  const distSrc = path.join(ROOT, "native/fortran/distributions.f90");
-  const distObj = path.join(ROOT, "native/fortran/distributions.o");
+  const distSrc = path.join(moduleDir, "distributions.f90");
+  const distObj = path.join(moduleDir, "distributions.o");
   if (fs.existsSync(distSrc)) {
-    if (
-      !run(
-        `gfortran ${FORTRAN_COMPILE_FLAGS} -J${path.join(ROOT, "native/fortran")} -o ${distObj} ${distSrc}`,
-        "Fortran distributions compilation",
-      )
-    ) {
+    if (!compileFortran(distSrc, distObj, "Fortran distributions compilation", moduleDir)) {
       try { fs.unlinkSync(distObj); } catch {}
     }
   }
 
   // Compile statistics.f90
-  const statsSrc = path.join(ROOT, "native/fortran/statistics.f90");
-  const statsObj = path.join(ROOT, "native/fortran/statistics.o");
+  const statsSrc = path.join(moduleDir, "statistics.f90");
+  const statsObj = path.join(moduleDir, "statistics.o");
   if (fs.existsSync(statsSrc)) {
-    if (
-      !run(
-        `gfortran ${FORTRAN_COMPILE_FLAGS} -o ${statsObj} ${statsSrc}`,
-        "Fortran statistics compilation",
-      )
-    ) {
-      // Create empty stub if compilation fails
+    if (!compileFortran(statsSrc, statsObj, "Fortran statistics compilation")) {
       try { fs.unlinkSync(statsObj); } catch {}
     }
   }
 
   // Compile time_series.f90
-  const tsSrc = path.join(ROOT, "native/fortran/time_series.f90");
-  const tsObj = path.join(ROOT, "native/fortran/time_series.o");
+  const tsSrc = path.join(moduleDir, "time_series.f90");
+  const tsObj = path.join(moduleDir, "time_series.o");
   if (fs.existsSync(tsSrc)) {
-    if (
-      !run(
-        `gfortran ${FORTRAN_COMPILE_FLAGS} -o ${tsObj} ${tsSrc}`,
-        "Fortran time_series compilation",
-      )
-    ) {
+    if (!compileFortran(tsSrc, tsObj, "Fortran time_series compilation")) {
       try { fs.unlinkSync(tsObj); } catch {}
     }
   }
 
   // Compile kalman.f90
-  const kalmanSrc = path.join(ROOT, "native/fortran/kalman.f90");
-  const kalmanObj = path.join(ROOT, "native/fortran/kalman.o");
+  const kalmanSrc = path.join(moduleDir, "kalman.f90");
+  const kalmanObj = path.join(moduleDir, "kalman.o");
   if (fs.existsSync(kalmanSrc)) {
-    if (
-      !run(
-        `gfortran ${FORTRAN_COMPILE_FLAGS} -o ${kalmanObj} ${kalmanSrc}`,
-        "Fortran kalman compilation",
-      )
-    ) {
+    if (!compileFortran(kalmanSrc, kalmanObj, "Fortran kalman compilation")) {
       try { fs.unlinkSync(kalmanObj); } catch {}
     }
   }
 
   // Compile optimization.f90
-  const optSrc = path.join(ROOT, "native/fortran/optimization.f90");
-  const optObj = path.join(ROOT, "native/fortran/optimization.o");
+  const optSrc = path.join(moduleDir, "optimization.f90");
+  const optObj = path.join(moduleDir, "optimization.o");
   if (fs.existsSync(optSrc)) {
-    if (
-      !run(
-        `gfortran ${FORTRAN_COMPILE_FLAGS} -o ${optObj} ${optSrc}`,
-        "Fortran optimization compilation",
-      )
-    ) {
+    if (!compileFortran(optSrc, optObj, "Fortran optimization compilation")) {
       try { fs.unlinkSync(optObj); } catch {}
     }
   }
 
   // Compile sampling.f90
-  const samplingSrc = path.join(ROOT, "native/fortran/sampling.f90");
-  const samplingObj = path.join(ROOT, "native/fortran/sampling.o");
+  const samplingSrc = path.join(moduleDir, "sampling.f90");
+  const samplingObj = path.join(moduleDir, "sampling.o");
   if (fs.existsSync(samplingSrc)) {
-    if (
-      !run(
-        `gfortran ${FORTRAN_COMPILE_FLAGS} -o ${samplingObj} ${samplingSrc}`,
-        "Fortran sampling compilation",
-      )
-    ) {
+    if (!compileFortran(samplingSrc, samplingObj, "Fortran sampling compilation")) {
       try { fs.unlinkSync(samplingObj); } catch {}
     }
   }
 
   // Compile linalg.f90 (only if LAPACK is available and source exists)
   if (hasLapack && fs.existsSync(linalgSrc)) {
-    const linalgObj = path.join(ROOT, "native/fortran/linalg.o");
-    if (
-      !run(
-        `gfortran ${FORTRAN_COMPILE_FLAGS} -o ${linalgObj} ${linalgSrc}`,
-        "Fortran linalg compilation",
-      )
-    ) {
-      // If linalg fails, remove the object so binding.gyp doesn't try to link it
+    const linalgObj = path.join(moduleDir, "linalg.o");
+    if (!compileFortran(linalgSrc, linalgObj, "Fortran linalg compilation")) {
       try { fs.unlinkSync(linalgObj); } catch {}
       hasLapack = false;
     }
@@ -300,9 +283,8 @@ function main() {
   // Statistical routines are provided by statistics.o and must not be
   // duplicated here.
   if (!hasLapack) {
-    const linalgObj = path.join(ROOT, "native/fortran/linalg.o");
-    const stubSrc = path.join(ROOT, "native/fortran/linalg_stub.f90");
-    // Write a minimal stub that provides only the expected linalg symbols.
+    const linalgObj = path.join(moduleDir, "linalg.o");
+    const stubSrc = path.join(moduleDir, "linalg_stub.f90");
     fs.writeFileSync(stubSrc, `
 subroutine fortran_mat_mul(a, b, c, m, k, n) bind(C, name="fortran_mat_mul")
   use iso_c_binding
@@ -383,11 +365,7 @@ subroutine fortran_svd(a, u_out, s_out, vt_out, m, n, info) bind(C, name="fortra
   info = -999
 end subroutine
 `);
-    run(
-      `gfortran ${FORTRAN_COMPILE_FLAGS} -o ${linalgObj} ${stubSrc}`,
-      "Fortran linalg stub compilation",
-    );
-    // Clean up stub source
+    compileFortran(stubSrc, linalgObj, "Fortran linalg stub compilation");
     try { fs.unlinkSync(stubSrc); } catch {}
   }
 
@@ -400,7 +378,7 @@ end subroutine
   }
 
   // Run node-gyp with the LAPACK flag set for the generated build.
-  if (!run(`npx node-gyp configure -- -Duse_lapack=${hasLapack ? 1 : 0}`, "node-gyp configure")) {
+  if (!run("npx", ["node-gyp", "configure", "--", `-Duse_lapack=${hasLapack ? 1 : 0}`], "node-gyp configure")) {
     return;
   }
 
@@ -409,14 +387,14 @@ end subroutine
   // import lib. binding.gyp expects the import lib at build/Release/.
   if (IS_WINDOWS) {
     const bridgeObjs = [
-      path.join(ROOT, "native/fortran/special_functions.o"),
-      path.join(ROOT, "native/fortran/distributions.o"),
-      path.join(ROOT, "native/fortran/linalg.o"),
-      path.join(ROOT, "native/fortran/statistics.o"),
-      path.join(ROOT, "native/fortran/time_series.o"),
-      path.join(ROOT, "native/fortran/kalman.o"),
-      path.join(ROOT, "native/fortran/optimization.o"),
-      path.join(ROOT, "native/fortran/sampling.o"),
+      path.join(moduleDir, "special_functions.o"),
+      path.join(moduleDir, "distributions.o"),
+      path.join(moduleDir, "linalg.o"),
+      path.join(moduleDir, "statistics.o"),
+      path.join(moduleDir, "time_series.o"),
+      path.join(moduleDir, "kalman.o"),
+      path.join(moduleDir, "optimization.o"),
+      path.join(moduleDir, "sampling.o"),
     ].filter((p) => fs.existsSync(p));
     const releaseDir = path.join(ROOT, "build", "Release");
     if (!linkFortranBridgeDll(bridgeObjs, hasLapack, releaseDir)) {
@@ -424,7 +402,7 @@ end subroutine
     }
   }
 
-  if (!run("npx node-gyp build", "node-gyp build")) {
+  if (!run("npx", ["node-gyp", "build"], "node-gyp build")) {
     return;
   }
 
