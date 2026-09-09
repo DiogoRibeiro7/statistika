@@ -20,8 +20,8 @@ try {
     // Walk up from the utils directory. Works whether we're in src/ or dist/cjs/.
     // We detect which by checking if __dirname contains "dist".
     projectRoot = __dirname.includes("dist")
-      ? join(__dirname, "..", "..", "..")   // dist/cjs/utils -> root
-      : join(__dirname, "..", "..");        // src/utils -> root
+      ? join(__dirname, "..", "..", "..")
+      : join(__dirname, "..", "..");
   } else {
     projectRoot = process.cwd();
   }
@@ -29,8 +29,25 @@ try {
   const addonPath = join(projectRoot, "build", "Release", "fortran_special.node");
   const require_ = createRequire(join(projectRoot, "package.json"));
   addon = require_(addonPath);
+
+  // A no-LAPACK build can still produce a loadable .node binary because the
+  // linalg entry points are backed by stubs. Do not expose that partial addon
+  // as a fully capable native backend: downstream modules otherwise select
+  // native sampling/statistics paths while LAPACK-dependent symbols remain
+  // unavailable. Probe a 1x1 solve; the no-LAPACK stub reports info=-999.
+  if (typeof addon?.solve !== "function") {
+    addon = null;
+  } else {
+    const probe = addon.solve([[1]], [1]);
+    const x0 = Array.isArray(probe?.x) ? probe.x[0] : NaN;
+    if (probe?.info !== 0 || !Number.isFinite(x0) || Math.abs(x0 - 1) > 1e-12) {
+      addon = null;
+    }
+  }
 } catch {
-  // Native addon not available — pure TypeScript fallbacks will be used.
+  // Native addon not available or not fully functional — pure TypeScript
+  // fallbacks will be used.
+  addon = null;
 }
 
 /** The loaded native addon, or null if unavailable. */
