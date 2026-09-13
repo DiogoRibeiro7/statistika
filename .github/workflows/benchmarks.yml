@@ -19,9 +19,9 @@ jobs:
     name: Run Benchmarks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -40,7 +40,7 @@ jobs:
           BENCH_JSON: "1"
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: benchmark-results
@@ -68,7 +68,7 @@ jobs:
 
       - name: Comment on PR with benchmark results
         if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const regression = '${{ steps.bench-compare.outputs.regression }}' === 'true';
