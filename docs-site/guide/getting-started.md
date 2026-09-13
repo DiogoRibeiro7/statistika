@@ -4,7 +4,7 @@ statistika is a comprehensive statistical modeling and probability distribution 
 
 ## Prerequisites
 
-- Node.js 18 or later
+- Node.js 22 or later
 - A package manager: yarn, npm, or pnpm
 
 ## Install

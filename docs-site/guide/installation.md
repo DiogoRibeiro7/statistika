@@ -95,8 +95,7 @@ The `exports` field in `package.json` ensures the correct format is resolved aut
 
 ## Supported Node.js Versions
 
-statistika requires Node.js 18 or later. It is tested against:
+statistika requires Node.js 22 or later. It is tested against:
 
-- Node.js 18 (LTS)
-- Node.js 20 (LTS)
-- Node.js 22 (Current)
+- Node.js 22
+- Node.js 24
