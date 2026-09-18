@@ -20,6 +20,15 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      - name: Verify release tag matches package version
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          EXPECTED_TAG="v${PACKAGE_VERSION}"
+          if [ "${GITHUB_REF_NAME}" != "${EXPECTED_TAG}" ]; then
+            echo "Release tag ${GITHUB_REF_NAME} does not match package version ${PACKAGE_VERSION}."
+            echo "Expected tag: ${EXPECTED_TAG}"
+            exit 1
+          fi
       - name: Activate Yarn
         run: |
           corepack enable
@@ -28,6 +37,7 @@ jobs:
       - run: yarn lint
       - run: yarn test
       - run: yarn build:ts
+      - run: yarn package:verify
 
   publish:
     name: Publish to GitHub Packages
@@ -49,6 +59,7 @@ jobs:
           corepack prepare yarn@${YARN_VERSION} --activate
       - run: yarn install --immutable
       - run: yarn build:ts
+      - run: yarn package:verify
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
