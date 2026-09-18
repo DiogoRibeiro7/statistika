@@ -23,6 +23,25 @@ describe("Random Number Generation", () => {
         expect(v).toBeLessThan(1);
       }
     });
+    it("has approximately uniform first two moments", () => {
+      const rng = new SeededRng(42);
+      const n = 20000;
+      let sum = 0;
+      let sumSquares = 0;
+
+      for (let i = 0; i < n; i++) {
+        const value = rng.next();
+        sum += value;
+        sumSquares += value * value;
+      }
+
+      const mean = sum / n;
+      const variance = sumSquares / n - mean * mean;
+
+      expect(mean).toBeCloseTo(0.5, 1);
+      expect(variance).toBeCloseTo(1 / 12, 2);
+    });
+
 
     it("generates integers in range", () => {
       const rng = new SeededRng(42);
