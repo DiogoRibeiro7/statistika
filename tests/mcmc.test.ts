@@ -16,6 +16,7 @@ describe("MCMC Sampler", () => {
         proposalStd: 2.0,
         iterations: 100000,
         burnIn: 20000,
+        seed: 42,
       });
 
       expect(Math.abs(result.posteriorMean - 3)).toBeLessThan(1);
