@@ -69,10 +69,15 @@ export function resolveRng(rng?: (() => number)): () => number {
   return Math.random;
 }
 
+function rotateLeft32(x: number, k: number): number {
+  return ((x << k) | (x >>> (32 - k))) >>> 0;
+}
+
 /**
- * Seeded pseudo-random number generator (xorshift128+).
+ * Seeded pseudo-random number generator (xoshiro128**).
  *
- * Provides reproducible random number sequences for simulations
+ * Uses a four-word state seeded via SplitMix32, matching the worker-thread
+ * generator and providing well-distributed reproducible sequences for simulations
  * and statistical sampling.
  *
  * @throws {Error} If seed is NaN or Infinity
@@ -87,8 +92,7 @@ export function resolveRng(rng?: (() => number)): () => number {
  * ```
  */
 export class SeededRng {
-  private s0: number;
-  private s1: number;
+  private s: Uint32Array;
 
   /**
    * Create a new seeded random number generator.
@@ -98,8 +102,18 @@ export class SeededRng {
    */
   constructor(seed: number) {
     if (!Number.isFinite(seed)) throw new Error(`Invalid parameter 'seed': expected a finite number, received ${seed}`);
-    this.s0 = seed | 0 || 1;
-    this.s1 = (seed * 2654435761) | 0 || 2;
+
+    this.s = new Uint32Array(4);
+    let z = (seed | 0) >>> 0;
+    for (let i = 0; i < 4; i++) {
+      z = (z + 0x9e3779b9) >>> 0;
+      let t = z ^ (z >>> 16);
+      t = Math.imul(t, 0x21f0aaad);
+      t ^= t >>> 15;
+      t = Math.imul(t, 0x735a2d97);
+      t ^= t >>> 15;
+      this.s[i] = t >>> 0;
+    }
   }
 
   /**
@@ -108,15 +122,18 @@ export class SeededRng {
    * @returns A pseudo-random number in [0, 1)
    */
   next(): number {
-    let a = this.s0;
-    const b = this.s1;
-    this.s0 = b;
-    a ^= a << 23;
-    a ^= a >> 17;
-    a ^= b;
-    a ^= b >> 26;
-    this.s1 = a;
-    return ((this.s0 + this.s1) >>> 0) / 4294967296;
+    const s = this.s;
+    const result = Math.imul(rotateLeft32(Math.imul(s[1], 5), 7), 9) >>> 0;
+    const t = (s[1] << 9) >>> 0;
+
+    s[2] ^= s[0];
+    s[3] ^= s[1];
+    s[1] ^= s[2];
+    s[0] ^= s[3];
+    s[2] ^= t;
+    s[3] = rotateLeft32(s[3], 11);
+
+    return result / 0x100000000;
   }
 
   /**
