@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A518-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A522-green.svg)](https://nodejs.org/)
 [![Jest](https://img.shields.io/badge/Tests-Jest-red.svg)](https://jestjs.io/)
 
 A comprehensive statistical modeling and probability distribution library for Node.js, written in TypeScript with optional native Fortran acceleration.
