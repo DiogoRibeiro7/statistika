@@ -303,6 +303,7 @@
   "files": [
     "dist",
     "native",
+    "scripts/build-native.js",
     "binding.gyp"
   ],
   "scripts": {
@@ -318,6 +319,7 @@
     "bench:regression": "npx ts-node benchmark/regression-glm.ts",
     "bench:mcmc": "npx ts-node benchmark/mcmc-clustering.ts",
     "bench:all": "node scripts/run-benchmarks.js",
+    "package:verify": "node scripts/verify-package-contents.js",
     "build:wasm": "./scripts/build-wasm.sh",
     "docs": "typedoc",
     "docs:site": "vitepress dev docs-site",
