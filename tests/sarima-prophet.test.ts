@@ -1,4 +1,4 @@
-import { sarima, prophetDecompose, SARIMAResult, ProphetDecomposition } from "../src/forecasting";
+import { sarima, prophetDecompose } from "../src/forecasting";
 
 // Generate a seasonal time series for testing
 function generateSeasonalSeries(
