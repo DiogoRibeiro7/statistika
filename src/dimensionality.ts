@@ -1,5 +1,5 @@
-import { Dataset } from "./types";
-import { mean, variance } from "./utils/descriptive";
+
+import { mean } from "./utils/descriptive";
 import { euclidean } from "./distance";
 import { pairwiseEuclidean } from "./utils/native-stats";
 import { createRng } from "./utils/linalg";
