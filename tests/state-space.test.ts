@@ -1,11 +1,4 @@
-import {
-  kalmanFilter,
-  kalmanSmoother,
-  stateSpaceEM,
-  localLevelModel,
-  localLinearTrendModel,
-  stateSpacePredict,
-} from "../src/state-space";
+import { kalmanFilter, kalmanSmoother, localLevelModel, localLinearTrendModel, stateSpacePredict } from "../src/state-space";
 import type { StateSpaceModel } from "../src/state-space";
 
 // Simple local level data: random walk + noise

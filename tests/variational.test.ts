@@ -1,12 +1,4 @@
-import {
-  computeELBO,
-  meanFieldVI,
-  advi,
-  normalVariational,
-  logNormalVariational,
-  multivariateNormalVariational,
-  compareModelsVI,
-} from "../src/variational";
+import { computeELBO, meanFieldVI, advi, normalVariational, multivariateNormalVariational, compareModelsVI } from "../src/variational";
 import { SeededRng } from "../src/random";
 
 // Simple target: standard normal

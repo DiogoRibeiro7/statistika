@@ -1,5 +1,5 @@
-import { mean } from "./utils/descriptive";
-import { solveLinearSystem, invertMatrix } from "./utils/linalg";
+
+import { invertMatrix } from "./utils/linalg";
 
 /**
  * Result of fitting a VAR(p) model.

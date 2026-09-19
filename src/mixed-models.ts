@@ -9,7 +9,7 @@
  * - **Model comparison** — likelihood ratio test, AIC, BIC.
  */
 
-import { solveLinearSystem, invertMatrix } from "./utils/linalg";
+import { solveLinearSystem } from "./utils/linalg";
 import { mean } from "./utils/descriptive";
 
 // ── Types ─────────────────────────────────────────────────────────────────

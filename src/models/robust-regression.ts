@@ -8,7 +8,6 @@
  *   random subsets and selects the one with the most inlier support.
  */
 
-import { mean } from "../utils/descriptive";
 import { solveLinearSystem, randomSample } from "../utils/linalg";
 import { weightedCrossProducts } from "../utils/native-stats";
 

@@ -1,5 +1,5 @@
 import { BaseContinuous } from "../base";
-import { gamma, quantileBisect } from "../../utils/math";
+import { gamma } from "../../utils/math";
 import { RandomFn } from "../../types";
 
 /**

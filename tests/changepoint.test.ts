@@ -1,12 +1,4 @@
-import {
-  cusumTest,
-  pelt,
-  binarySegmentation,
-  bocpd,
-  costMean,
-  costVariance,
-  costMeanVar,
-} from "../src/changepoint";
+import { cusumTest, pelt, binarySegmentation, bocpd, costMean, costVariance } from "../src/changepoint";
 
 // Data with a clear mean shift at index 50
 const shiftData: number[] = [];

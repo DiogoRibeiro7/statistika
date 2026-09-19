@@ -1,5 +1,5 @@
 import { Dataset } from "../types";
-import { mean } from "../utils/descriptive";
+
 import { solveLinearSystem } from "../utils/linalg";
 import { weightedCrossProducts } from "../utils/native-stats";
 

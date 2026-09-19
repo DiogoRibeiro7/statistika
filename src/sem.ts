@@ -8,7 +8,7 @@
  */
 
 import { mean } from "./utils/descriptive";
-import { solveLinearSystem, invertMatrix, symmetricEigen } from "./utils/linalg";
+import { solveLinearSystem, invertMatrix } from "./utils/linalg";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 

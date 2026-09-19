@@ -1,4 +1,4 @@
-import { normalCdf } from "./utils/linalg";
+
 import { regularizedGammaP } from "./utils/math";
 
 /**

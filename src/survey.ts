@@ -9,7 +9,6 @@
  */
 
 import { mean } from "./utils/descriptive";
-import { normalCdf } from "./utils/linalg";
 
 // ── Weighted Descriptive Statistics ───────────────────────────────────────
 

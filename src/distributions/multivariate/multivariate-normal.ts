@@ -15,7 +15,6 @@
  * ```
  */
 
-import { gammaLn } from "../../utils/math";
 import { RandomFn } from "../../types";
 import { resolveRng } from "../../random";
 

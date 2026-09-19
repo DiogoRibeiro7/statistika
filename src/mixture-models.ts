@@ -1,5 +1,5 @@
 import { Dataset } from "./types";
-import { mean, variance } from "./utils/descriptive";
+import { variance } from "./utils/descriptive";
 import { createRng } from "./utils/linalg";
 
 /**

@@ -1,6 +1,4 @@
 import { nativeAddon } from "./native-addon";
-import { SeededRng } from "../random";
-import { normalSampleBatch } from "./native-sampling";
 
 interface NativeVariational {
   normalLogDensityBatch(n: number, mu: number, sigma: number, x: number[]): number[];

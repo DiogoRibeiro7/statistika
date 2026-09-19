@@ -12,10 +12,10 @@ import { Exponential } from "./distributions/continuous/exponential";
 import { LogNormal } from "./distributions/continuous/log-normal";
 import { GammaDistribution } from "./distributions/continuous/gamma";
 import { BetaDistribution } from "./distributions/continuous/beta";
-import { Weibull } from "./distributions/continuous/weibull";
+
 import { Poisson } from "./distributions/discrete/poisson";
 import { Geometric } from "./distributions/discrete/geometric";
-import { NegativeBinomial } from "./distributions/discrete/negative-binomial";
+
 import { ZeroInflatedPoisson } from "./distributions/discrete/zero-inflated-poisson";
 import { ContinuousDistribution } from "./types";
 import { mean, variance } from "./utils/descriptive";
