@@ -11,7 +11,7 @@ Conjugate models provide exact, closed-form posterior distributions. No sampling
 The Beta-Binomial model is ideal for estimating conversion rates, click-through rates, or any binary outcome.
 
 ```typescript
-import { betaBinomial } from 'statistika';
+import { betaBinomial } from '@diogoribeiro7/statistika';
 
 // Variant A: 45 conversions out of 500 visitors
 const variantA = betaBinomial(45, 500);
@@ -35,7 +35,7 @@ The default prior is Beta(1, 1), which is uniform on [0, 1]. You can specify a d
 When the data variance is known, the Normal-Normal conjugate model updates your belief about the population mean:
 
 ```typescript
-import { normalNormal } from 'statistika';
+import { normalNormal } from '@diogoribeiro7/statistika';
 
 // Prior: historical average temperature is 20C with high uncertainty
 // Data: 10 temperature measurements; known measurement variance = 4
@@ -56,7 +56,7 @@ Because the prior variance (100) is large relative to the data precision, the po
 For count data where you want to estimate an event rate:
 
 ```typescript
-import { gammaPoisson } from 'statistika';
+import { gammaPoisson } from '@diogoribeiro7/statistika';
 
 // Weekly bug counts over 8 weeks
 const bugs = [3, 5, 2, 4, 6, 3, 4, 5];
@@ -76,7 +76,7 @@ When you have a custom posterior that does not have a conjugate form, use Metrop
 ### Single-Dimensional MCMC
 
 ```typescript
-import { metropolisHastings } from 'statistika';
+import { metropolisHastings } from '@diogoribeiro7/statistika';
 
 // Target: mixture of two normals
 const logPosterior = (x: number) => {
@@ -105,7 +105,7 @@ console.log(mcmc.credibleInterval);
 For posteriors with multiple parameters:
 
 ```typescript
-import { metropolisHastingsND } from 'statistika';
+import { metropolisHastingsND } from '@diogoribeiro7/statistika';
 
 // 2D target: bivariate normal with correlation
 const logDensity = (x: number[]) => {
@@ -132,7 +132,7 @@ After running MCMC, you should check that the chains have converged.
 Run multiple chains from different starting points and compute the R-hat statistic:
 
 ```typescript
-import { metropolisHastings, gelmanRubin } from 'statistika';
+import { metropolisHastings, gelmanRubin } from '@diogoribeiro7/statistika';
 
 const logPost = (x: number) => -0.5 * x * x;
 
@@ -154,7 +154,7 @@ console.log(rhat);
 Autocorrelation in MCMC chains means consecutive samples are not independent. The effective sample size (ESS) estimates the equivalent number of independent samples:
 
 ```typescript
-import { estimateESS } from 'statistika';
+import { estimateESS } from '@diogoribeiro7/statistika';
 
 const ess = estimateESS(mcmc.samples);
 console.log(ess);
@@ -170,7 +170,7 @@ console.log(ess);
 Compare two hypotheses by computing a Bayes factor:
 
 ```typescript
-import { bayesFactor } from 'statistika';
+import { bayesFactor } from '@diogoribeiro7/statistika';
 
 // Compare marginal likelihoods of two models
 const bf = bayesFactor(logMarginalH1, logMarginalH0);
@@ -185,7 +185,7 @@ console.log(bf);
 Putting it all together -- a Bayesian analysis of customer churn rate:
 
 ```typescript
-import { betaBinomial, metropolisHastings } from 'statistika';
+import { betaBinomial, metropolisHastings } from '@diogoribeiro7/statistika';
 
 // Step 1: Quick conjugate analysis
 // 23 churns out of 200 customers this quarter
