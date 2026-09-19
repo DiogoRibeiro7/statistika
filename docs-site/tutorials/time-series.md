@@ -9,7 +9,7 @@ This tutorial covers time series analysis in statistika: exploratory data analys
 The ACF and PACF are the primary tools for identifying the order of ARIMA models:
 
 ```typescript
-import { autocorrelation } from 'statistika';
+import { autocorrelation } from '@diogoribeiro7/statistika';
 
 const sales = [
   120, 135, 150, 145, 160, 175, 170, 185, 200, 195, 210, 225,
@@ -32,7 +32,7 @@ for (let k = 0; k <= 6; k++) {
 Use the Augmented Dickey-Fuller test to check whether a series is stationary:
 
 ```typescript
-import { adfTest } from 'statistika';
+import { adfTest } from '@diogoribeiro7/statistika';
 
 const adf = adfTest(sales);
 console.log(adf.statistic);    // ADF test statistic
@@ -46,7 +46,7 @@ If the series is non-stationary, differencing is needed before fitting ARMA mode
 ### Differencing
 
 ```typescript
-import { difference } from 'statistika';
+import { difference } from '@diogoribeiro7/statistika';
 
 const diff1 = difference(sales, 1); // first difference
 console.log(diff1);
@@ -62,7 +62,7 @@ console.log(adfDiff.isStationary); // likely true now
 Smooth the series to reveal the underlying trend:
 
 ```typescript
-import { simpleMovingAverage, exponentialMovingAverage } from 'statistika';
+import { simpleMovingAverage, exponentialMovingAverage } from '@diogoribeiro7/statistika';
 
 const sma = simpleMovingAverage(sales, 3);
 console.log(sma.values); // smoothed values (2 fewer points)
@@ -78,7 +78,7 @@ console.log(ema.values); // same length as input
 The `arima(series, p, d, q)` function fits an ARIMA model:
 
 ```typescript
-import { arima } from 'statistika';
+import { arima } from '@diogoribeiro7/statistika';
 
 // ARIMA(2,1,0): 2 AR terms, 1 differencing, 0 MA terms
 const model = arima(sales, 2, 1, 0);
@@ -106,7 +106,7 @@ for (let i = 0; i < forecast.length; i++) {
 Let the library select the best (p, d, q) order automatically by minimizing AIC:
 
 ```typescript
-import { autoArima } from 'statistika';
+import { autoArima } from '@diogoribeiro7/statistika';
 
 const best = autoArima(sales, { maxP: 3, maxD: 2, maxQ: 3 });
 console.log(best.selectedOrder);
@@ -119,7 +119,7 @@ console.log(best.maCoefficients);
 ### Forecasting with Prediction Intervals
 
 ```typescript
-import { forecastWithIntervals } from 'statistika';
+import { forecastWithIntervals } from '@diogoribeiro7/statistika';
 
 const fc = forecastWithIntervals(best, 6, 0.95);
 for (let i = 0; i < fc.point.length; i++) {
@@ -135,7 +135,7 @@ for (let i = 0; i < fc.point.length; i++) {
 Decompose a series into trend, seasonal, and residual components:
 
 ```typescript
-import { seasonalDecompose } from 'statistika';
+import { seasonalDecompose } from '@diogoribeiro7/statistika';
 
 // Monthly data with period 12
 const monthly = Array.from({ length: 48 }, (_, i) =>
@@ -155,7 +155,7 @@ GARCH models capture time-varying volatility -- essential for financial time ser
 ### GARCH(1,1)
 
 ```typescript
-import { garchFit, garchForecast } from 'statistika/garch';
+import { garchFit, garchForecast } from '@diogoribeiro7/statistika/garch';
 
 // Daily stock returns
 const returns = [0.01, -0.02, 0.015, -0.005, 0.03, -0.025, 0.008,
@@ -181,7 +181,7 @@ console.log(volForecast); // 5-step-ahead variance forecasts
 EGARCH captures leverage effects -- negative returns often increase volatility more than positive returns:
 
 ```typescript
-import { egarchFit } from 'statistika/garch';
+import { egarchFit } from '@diogoribeiro7/statistika/garch';
 
 const efit = egarchFit(returns, 1, 1);
 console.log(efit.omega);  // log-variance intercept
@@ -195,7 +195,7 @@ console.log(efit.gamma);  // leverage/asymmetry coefficients
 Test whether ARCH effects are present in the residuals:
 
 ```typescript
-import { archLMTest } from 'statistika/garch';
+import { archLMTest } from '@diogoribeiro7/statistika/garch';
 
 const test = archLMTest(returns, 5);
 console.log(test.fStatistic);
@@ -211,7 +211,7 @@ Vector Autoregression models the interdependencies between multiple time series.
 ### Fitting a VAR Model
 
 ```typescript
-import { varFit, varLagSelect } from 'statistika/var';
+import { varFit, varLagSelect } from '@diogoribeiro7/statistika/var';
 
 // Two interrelated series: GDP growth and inflation (quarterly, 40 obs)
 const gdp = Array.from({ length: 40 }, (_, i) => 2 + 0.5 * Math.sin(i / 4) + Math.random() * 0.3);
@@ -236,7 +236,7 @@ console.log(model.bic);
 Test whether one variable helps predict another:
 
 ```typescript
-import { grangerCausality } from 'statistika/var';
+import { grangerCausality } from '@diogoribeiro7/statistika/var';
 
 const result = grangerCausality(data, lagSel.bicLag, 0, 1);
 // Does variable 0 (GDP) Granger-cause variable 1 (inflation)?
@@ -247,7 +247,7 @@ console.log(result.pValue);
 ### Impulse Response and Variance Decomposition
 
 ```typescript
-import { impulseResponse, varianceDecomposition, varForecast } from 'statistika/var';
+import { impulseResponse, varianceDecomposition, varForecast } from '@diogoribeiro7/statistika/var';
 
 // How does a shock to GDP affect inflation over 10 periods?
 const irf = impulseResponse(model, 10);
@@ -266,7 +266,7 @@ console.log(fc.forecasts); // 5-step-ahead forecasts for each variable
 ## Complete Workflow Example
 
 ```typescript
-import { adfTest, autoArima, forecastWithIntervals, seasonalDecompose } from 'statistika';
+import { adfTest, autoArima, forecastWithIntervals, seasonalDecompose } from '@diogoribeiro7/statistika';
 
 const series = Array.from({ length: 100 }, (_, i) =>
   10 + 0.5 * i + Math.random() * 3
