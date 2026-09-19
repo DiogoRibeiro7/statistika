@@ -943,7 +943,7 @@ function dualAveraging(
 
   let logEpsBar = 0;
   let hBar = 0;
-  let mu = Math.log(10 * (options.initialStepSize ?? 1));
+  const mu = Math.log(10 * (options.initialStepSize ?? 1));
   let m = 0;
 
   return {

@@ -642,7 +642,7 @@ export function bayesianBootstrap(
     // Multinomial resampling according to Dirichlet weights
     const sample: number[] = new Array(n);
     for (let i = 0; i < n; i++) {
-      let u = rng();
+      const u = rng();
       let cumulative = 0;
       let chosen = n - 1;
       for (let j = 0; j < n; j++) {

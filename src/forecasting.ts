@@ -553,9 +553,9 @@ export function sarima(
   }
 
   // Non-seasonal MA coefficients
-  let maCoeffs = new Array(q).fill(0);
+  const maCoeffs = new Array(q).fill(0);
   // Seasonal MA coefficients
-  let smaCoeffs = new Array(Q).fill(0);
+  const smaCoeffs = new Array(Q).fill(0);
 
   if (q > 0 || Q > 0) {
     for (let iter = 0; iter < 20; iter++) {

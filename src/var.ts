@@ -489,9 +489,9 @@ function regularizedBeta(x: number, a: number, b: number): number {
 function betaCF(x: number, a: number, b: number): number {
   const maxIter = 200;
   const eps = 1e-14;
-  let qab = a + b;
-  let qap = a + 1;
-  let qam = a - 1;
+  const qab = a + b;
+  const qap = a + 1;
+  const qam = a - 1;
   let c = 1;
   let d = 1 - (qab * x) / qap;
   if (Math.abs(d) < 1e-30) d = 1e-30;
