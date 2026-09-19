@@ -7,7 +7,7 @@
 
 import { mean } from "./utils/descriptive";
 import { solveLinearSystem } from "./utils/linalg";
-import { GLMFamily, gaussian, poisson, binomial } from "./glm";
+import { GLMFamily, gaussian } from "./glm";
 
 // ---------------------------------------------------------------------------
 // Interfaces
