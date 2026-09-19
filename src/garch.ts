@@ -154,9 +154,8 @@ function lowerIncompleteGamma(a: number, x: number): number {
   if (x < 0) return 0;
   if (x === 0) return 0;
 
-  let sum = 0;
   let term = 1 / a;
-  sum = term;
+  let sum = term;
   for (let n = 1; n < 200; n++) {
     term *= x / (a + n);
     sum += term;

@@ -92,13 +92,6 @@ function zeros(m: number, n: number): number[][] {
   return Array.from({ length: m }, () => new Array<number>(n).fill(0));
 }
 
-/** Create an n x n identity matrix. */
-function eye(n: number): number[][] {
-  const I = zeros(n, n);
-  for (let i = 0; i < n; i++) I[i][i] = 1;
-  return I;
-}
-
 /** Matrix multiply: A (m x k) * B (k x n) -> (m x n). */
 function matMul(A: number[][], B: number[][]): number[][] {
   const m = A.length;
@@ -159,28 +152,6 @@ function matSub(A: number[][], B: number[][]): number[][] {
     for (let j = 0; j < n; j++) C[i][j] = A[i][j] - B[i][j];
   }
   return C;
-}
-
-/** Scalar multiply: c * A. */
-function matScale(A: number[][], c: number): number[][] {
-  const m = A.length;
-  const n = A[0].length;
-  const C = zeros(m, n);
-  for (let i = 0; i < m; i++) {
-    for (let j = 0; j < n; j++) C[i][j] = c * A[i][j];
-  }
-  return C;
-}
-
-/** Outer product: u (m) * v (n)^T -> (m x n). */
-function outer(u: number[], v: number[]): number[][] {
-  const m = u.length;
-  const n = v.length;
-  const M = zeros(m, n);
-  for (let i = 0; i < m; i++) {
-    for (let j = 0; j < n; j++) M[i][j] = u[i] * v[j];
-  }
-  return M;
 }
 
 /**
@@ -359,7 +330,7 @@ export function kalmanFilter(
   model: StateSpaceModel,
   observations: number[][],
 ): KalmanFilterResult {
-  const { m, p } = validateModel(model);
+  const { p } = validateModel(model);
   const { F, H, Q, R, x0, P0 } = model;
   const T = observations.length;
 

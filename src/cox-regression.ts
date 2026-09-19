@@ -115,7 +115,6 @@ export function coxRegression(
     return a.event === b.event ? 0 : a.event ? -1 : 1;
   });
 
-  const times = sorted.map((o) => o.time);
   const events = sorted.map((o) => (o.event ? 1 : 0));
   const X: number[][] = sorted.map((o) => o.covariates);
 
@@ -150,7 +149,6 @@ export function coxRegression(
     // Walk backwards through sorted observations
     // At time t, risk set = {i : time_i >= t}
     // We accumulate from the end
-    const ii = n - 1;
     // First, add all to risk set
     for (let i = 0; i < n; i++) {
       riskSum += expXBeta[i];
@@ -164,8 +162,6 @@ export function coxRegression(
 
     // Now process events from earliest to latest
     // Remove subjects with times before the current event time from risk set
-    const prevTime = -Infinity;
-    const removeIdx = 0;
 
     for (let i = 0; i < n; i++) {
       if (events[i] === 0) continue;

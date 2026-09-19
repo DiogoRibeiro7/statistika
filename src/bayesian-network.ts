@@ -171,7 +171,6 @@ export class BayesianNetwork {
    * @throws {Error} If a cycle is detected (should not happen if edges were validated)
    */
   topologicalSort(): string[] {
-    const visited = new Set<string>();
     const result: string[] = [];
     const visiting = new Set<string>();
 

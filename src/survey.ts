@@ -59,12 +59,10 @@ export function weightedStats(
   }
   if (n === 0) throw new Error(`Invalid parameter 'data': expected at least 1 observation, received 0`);
 
-  let sumW = 0;
   let sumW2 = 0;
   let sumWX = 0;
   for (let i = 0; i < n; i++) {
     if (weights[i] < 0) throw new Error(`Invalid parameter 'weights[${i}]': expected a non-negative number, received ${weights[i]}`);
-    sumW += weights[i];
     sumW2 += weights[i] * weights[i];
     sumWX += weights[i] * data[i];
   }
@@ -370,7 +368,6 @@ export function ratioEstimator(
 
   // Linearised variance: Var(R̂) ≈ (1/X̄²) Var(ȳ - R̂ x̄)
   let sumE2 = 0;
-  const meanE = 0; // residuals should be mean-zero by construction
   for (let i = 0; i < n; i++) {
     const e = weights[i] * (y[i] - ratio * x[i]);
     sumE2 += e * e;
