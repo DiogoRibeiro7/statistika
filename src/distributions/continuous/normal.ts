@@ -1,5 +1,5 @@
 import { BaseContinuous } from "../base";
-import { erf, quantileBisect } from "../../utils/math";
+import { erf } from "../../utils/math";
 import { RandomFn } from "../../types";
 import { hasNativeSampling, normalSampleBatch } from "../../utils/native-sampling";
 
