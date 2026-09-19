@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - name: Verify release tag matches package version
+      - name: Verify release metadata
         run: |
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           EXPECTED_TAG="v${PACKAGE_VERSION}"
@@ -29,14 +29,22 @@ jobs:
             echo "Expected tag: ${EXPECTED_TAG}"
             exit 1
           fi
+          if ! grep -Fq "## [${PACKAGE_VERSION}]" CHANGELOG.md; then
+            echo "CHANGELOG.md has no release section for ${PACKAGE_VERSION}."
+            exit 1
+          fi
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran liblapack-dev libblas-dev
       - name: Activate Yarn
         run: |
           corepack enable
           corepack prepare yarn@${YARN_VERSION} --activate
       - run: yarn install --immutable
+      - run: yarn build:ts
       - run: yarn lint
       - run: yarn test
-      - run: yarn build:ts
       - run: yarn package:verify
 
   publish:
@@ -53,6 +61,10 @@ jobs:
           node-version: 22
           registry-url: "https://npm.pkg.github.com"
           scope: "@diogoribeiro7"
+      - name: Install native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran liblapack-dev libblas-dev
       - name: Activate Yarn
         run: |
           corepack enable
@@ -72,25 +84,24 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Generate release notes
-        id: notes
+      - name: Extract release notes from changelog
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          PREV_TAG=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || echo "")
-          if [ -n "$PREV_TAG" ]; then
-            NOTES=$(git log "$PREV_TAG..$TAG" --pretty=format:"- %s (%h)" --no-merges)
-          else
-            NOTES=$(git log "$TAG" --pretty=format:"- %s (%h)" --no-merges -20)
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          awk -v version="${PACKAGE_VERSION}" '
+            $0 == "## [" version "] - " substr($0, length($0) - 9) { capture = 1 }
+            capture && $0 ~ /^## \[/ && $0 !~ ("^## \[" version "\]") { exit }
+            capture { print }
+          ' CHANGELOG.md > release-notes.md
+
+          if [ ! -s release-notes.md ]; then
+            echo "Could not extract CHANGELOG.md section for ${PACKAGE_VERSION}."
+            exit 1
           fi
-          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$NOTES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          body: |
-            ## Changes
-            ${{ steps.notes.outputs.notes }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --verify-tag \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file release-notes.md
