@@ -43,7 +43,7 @@ jobs:
           corepack prepare yarn@${YARN_VERSION} --activate
       - run: yarn install --immutable
       - run: yarn build:ts
-      - run: yarn lint
+      - run: yarn lint --quiet
       - run: yarn test
       - run: yarn package:verify
 
