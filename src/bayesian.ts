@@ -2,7 +2,6 @@
  * Bayesian methods: conjugate priors, posterior inference, and MCMC sampling.
  */
 
-import { gammaLn } from "./utils/math";
 import { normalQuantile } from "./utils/linalg";
 
 // ---- Conjugate Prior Models ----
