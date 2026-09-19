@@ -78,7 +78,7 @@ jobs:
 
   github-release:
     name: GitHub Release
-    needs: validate
+    needs: [validate, publish]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -88,8 +88,8 @@ jobs:
         run: |
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           awk -v version="${PACKAGE_VERSION}" '
-            $0 == "## [" version "] - " substr($0, length($0) - 9) { capture = 1 }
-            capture && $0 ~ /^## \[/ && $0 !~ ("^## \[" version "\]") { exit }
+            index($0, "## [" version "] - ") == 1 { capture = 1 }
+            capture && /^## \[/ && index($0, "## [" version "] - ") != 1 { exit }
             capture { print }
           ' CHANGELOG.md > release-notes.md
 
