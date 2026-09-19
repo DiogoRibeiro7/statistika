@@ -7,7 +7,7 @@ Changepoint detection identifies points in a time series where the statistical p
 The CUSUM (Cumulative Sum) test detects a single change in mean. It computes the maximum deviation of the cumulative sum of centered residuals.
 
 ```typescript
-import { cusumTest } from 'statistika';
+import { cusumTest } from '@diogoribeiro7/statistika';
 
 // Stable process that shifts at index 50
 const data = [
@@ -50,7 +50,7 @@ console.log(`Peak CUSUM at index ${peak.idx}: ${peak.val.toFixed(3)}`);
 PELT (Pruned Exact Linear Time) finds the optimal set of multiple changepoints by minimizing a penalized cost function. It is exact and typically runs in O(n) expected time.
 
 ```typescript
-import { pelt } from 'statistika';
+import { pelt } from '@diogoribeiro7/statistika';
 
 // Three distinct regimes
 const data = [
@@ -111,7 +111,7 @@ const customResult = pelt(data, { penalty: 10.0 });
 Binary Segmentation is a greedy, top-down approach. It is faster than PELT for very long series but may miss some changepoints because it splits recursively rather than optimizing globally.
 
 ```typescript
-import { binarySegmentation } from 'statistika';
+import { binarySegmentation } from '@diogoribeiro7/statistika';
 
 const result = binarySegmentation(data, {
   costFunction: 'meanvar',
@@ -132,7 +132,7 @@ console.log(result.segments.length);
 BOCPD processes data sequentially and maintains a probability distribution over run lengths (time since the last changepoint). It is ideal for streaming data.
 
 ```typescript
-import { bocpd } from 'statistika';
+import { bocpd } from '@diogoribeiro7/statistika';
 
 // Simulate a mean shift from 0 to 5 at index 40
 const data = [
@@ -187,7 +187,7 @@ const conservative = bocpd(data, { hazardLambda: 1 / 500, threshold: 0.7 });
 ## Complete Example: Sensor Monitoring
 
 ```typescript
-import { pelt, cusumTest, bocpd } from 'statistika';
+import { pelt, cusumTest, bocpd } from '@diogoribeiro7/statistika';
 
 // Simulated temperature sensor readings (one per minute)
 const readings: number[] = [];
