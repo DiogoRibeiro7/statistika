@@ -1,13 +1,4 @@
-import {
-  streamingStats,
-  streamingCorrelation,
-  windowedStats,
-  batchStats,
-  changeDetection,
-  ObservableLike,
-  StatsSnapshot,
-  CorrelationSnapshot,
-} from "../src/observable";
+import { streamingStats, streamingCorrelation, windowedStats, batchStats, changeDetection, ObservableLike, StatsSnapshot } from "../src/observable";
 
 /** Helper: create an ObservableLike from an array of values. */
 function fromArray<T>(values: T[]): ObservableLike<T> {
