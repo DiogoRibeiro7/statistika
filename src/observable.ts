@@ -10,7 +10,7 @@
  * @example
  * ```ts
  * import { from } from 'rxjs';
- * import { streamingStats, streamingCorrelation } from 'statistika/observable';
+ * import { streamingStats, streamingCorrelation } from '@diogoribeiro7/statistika/observable';
  *
  * const data$ = from([10, 20, 30, 40, 50]);
  * const stats$ = streamingStats(data$);
