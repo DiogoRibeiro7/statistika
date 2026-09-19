@@ -60,3 +60,15 @@ jobs:
       - run: yarn install --immutable
       - run: yarn build:ts
       - run: yarn package:verify
+      - name: Smoke-test packed package as a consumer
+        shell: bash
+        run: |
+          TARBALL=$(npm pack --ignore-scripts --json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>process.stdout.write(JSON.parse(s)[0].filename))")
+          ROOT="$PWD"
+          TMP_DIR=$(mktemp -d)
+          trap 'rm -rf "$TMP_DIR" "$ROOT/$TARBALL"' EXIT
+          cd "$TMP_DIR"
+          npm init -y >/dev/null 2>&1
+          npm install "$ROOT/$TARBALL" --ignore-scripts >/dev/null 2>&1
+          node -e "const s=require('@diogoribeiro7/statistika'); if(typeof s.mean!=='function'||s.mean([1,2,3])!==2) process.exit(1)"
+          node --input-type=module -e "import { mean } from '@diogoribeiro7/statistika'; if(mean([1,2,3])!==2) process.exit(1)"
