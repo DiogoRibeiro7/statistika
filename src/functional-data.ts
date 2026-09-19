@@ -9,7 +9,6 @@
  */
 
 import { solveLinearSystem, symmetricEigen } from "./utils/linalg";
-import { mean } from "./utils/descriptive";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
