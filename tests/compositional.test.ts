@@ -1,16 +1,4 @@
-import {
-  clr, clrInverse,
-  alr, alrInverse,
-  ilr, ilrInverse,
-  closure,
-  perturbation,
-  powering,
-  aitchisonInnerProduct,
-  aitchisonDistance,
-  aitchisonNorm,
-  compositionalCentre,
-  variationMatrix,
-} from "../src/compositional";
+import { clr, clrInverse, alr, alrInverse, ilr, ilrInverse, closure, perturbation, powering, aitchisonDistance, aitchisonNorm, compositionalCentre, variationMatrix } from "../src/compositional";
 
 // ── CLR ───────────────────────────────────────────────────────────────────
 
