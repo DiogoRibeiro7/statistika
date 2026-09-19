@@ -356,8 +356,8 @@ export function gamFit(
 
   // --- Initialisation -------------------------------------------------------
   const intercept_init = mean(y);
-  let mu = new Array(n).fill(intercept_init);
-  let eta = mu.map((m) => fam.link.link(m));
+  const mu = new Array(n).fill(intercept_init);
+  const eta = mu.map((m) => fam.link.link(m));
 
   // Smooth contributions per term, initialised to zero
   const smoothVals: number[][] = terms.map(() => new Array(n).fill(0));

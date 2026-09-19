@@ -108,7 +108,6 @@ type TaskData =
 
 function runMCMC(task: MCMCTaskData): number[] {
   const rng = new WorkerRng(task.seed);
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   const logDensity = new Function("x", `return (${task.logDensitySource})(x)`) as (
     x: number,
   ) => number;
@@ -140,7 +139,6 @@ function runMCMC(task: MCMCTaskData): number[] {
 
 function runBootstrap(task: BootstrapTaskData): number[] {
   const rng = new WorkerRng(task.seed);
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   const statistic = new Function("data", `return (${task.statisticSource})(data)`) as (
     data: number[],
   ) => number;
@@ -160,7 +158,6 @@ function runBootstrap(task: BootstrapTaskData): number[] {
 }
 
 function runCrossValidation(task: CrossValidationTaskData): number {
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   const modelFn = new Function(
     "trainData",
     "trainLabels",
