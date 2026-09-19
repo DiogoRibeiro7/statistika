@@ -147,7 +147,7 @@ export function autoArima(
   // Determine d by testing stationarity
   let d = 0;
   let current = series;
-  for (d = 0; d < maxD; d++) {
+  for (; d < maxD; d++) {
     try {
       const test = adfTest(current);
       if (test.isStationary) break;

@@ -939,7 +939,6 @@ function dualAveraging(
   const gamma = options.gamma ?? 0.05;
   const t0 = options.t0 ?? 10;
   const kappa = options.kappa ?? 0.75;
-  const logEps0 = Math.log(options.initialStepSize ?? 1);
 
   let logEpsBar = 0;
   let hBar = 0;

@@ -144,7 +144,7 @@ describe("Resampling & Cross-Validation", () => {
     });
 
     it("custom scorer is used", () => {
-      const customScorer = (actual: number[], predicted: number[]) => {
+      const customScorer = (_actual: number[], _predicted: number[]) => {
         // Simply return a constant to verify scorer is called
         return 42;
       };

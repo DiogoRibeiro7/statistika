@@ -334,7 +334,6 @@ export interface CentralityResult {
  * ```
  */
 export function degreeCentrality(g: Graph): CentralityResult {
-  const n = g.nodeCount;
   const values = new Map<number, number>();
   for (const node of g.nodes) {
     values.set(node, n > 1 ? g.degree(node) / (n - 1) : 0);
