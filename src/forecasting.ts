@@ -1,6 +1,6 @@
 import { Dataset } from "./types";
-import { mean, variance } from "./utils/descriptive";
-import { autocorrelation, arima, difference, ARIMAResult } from "./time-series";
+import { mean } from "./utils/descriptive";
+import { arima, difference, ARIMAResult } from "./time-series";
 import { normalCdf, normalQuantile } from "./utils/linalg";
 
 /**
