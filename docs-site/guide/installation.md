@@ -77,7 +77,7 @@ yarn build:ts
 You can check whether native acceleration is active:
 
 ```typescript
-import { gamma } from 'statistika';
+import { gamma } from '@diogoribeiro7/statistika';
 
 // The function works identically regardless of backend.
 // Native acceleration is transparent — same API, faster execution.
