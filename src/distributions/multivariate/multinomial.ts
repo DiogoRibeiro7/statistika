@@ -17,7 +17,7 @@
  * ```
  */
 
-import { gammaLn, logFactorial } from "../../utils/math";
+import { logFactorial } from "../../utils/math";
 import { RandomFn } from "../../types";
 import { resolveRng } from "../../random";
 
