@@ -85,11 +85,6 @@ export interface StateSpaceEMOptions {
   stateDim?: number;
 }
 
-import {
-  hasNativeKalman,
-  kalmanFilterUnivariate as nativeKalmanFilter,
-} from "./utils/native-kalman";
-
 // ── Matrix helpers (small-matrix operations) ────────────────────────────
 
 /** Create an m x n zero matrix. */
