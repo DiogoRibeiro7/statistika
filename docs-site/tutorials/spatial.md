@@ -11,7 +11,7 @@ Most spatial analyses require a weights matrix that encodes which locations are 
 Locations within a threshold distance are neighbors:
 
 ```typescript
-import { distanceBandWeights } from 'statistika';
+import { distanceBandWeights } from '@diogoribeiro7/statistika';
 
 const locations = [
   [0, 0], [1, 0], [2, 0],
@@ -29,7 +29,7 @@ const W = distanceBandWeights(locations, 1.5);
 Each location's k closest points are its neighbors:
 
 ```typescript
-import { knnWeights } from 'statistika';
+import { knnWeights } from '@diogoribeiro7/statistika';
 
 const W = knnWeights(locations, 4);
 // Each location has exactly 4 neighbors
@@ -41,7 +41,7 @@ const W = knnWeights(locations, 4);
 You can also compute the full pairwise distance matrix directly:
 
 ```typescript
-import { spatialDistanceMatrix } from 'statistika';
+import { spatialDistanceMatrix } from '@diogoribeiro7/statistika';
 
 const D = spatialDistanceMatrix(locations);
 // D[i][j] = Euclidean distance between locations i and j
@@ -53,7 +53,7 @@ console.log(D[0][4]); // distance from (0,0) to (1,1) = sqrt(2)
 Moran's I is the most widely used measure of global spatial autocorrelation. It tests whether nearby locations have similar values (positive autocorrelation) or dissimilar values (negative autocorrelation).
 
 ```typescript
-import { moranI, distanceBandWeights } from 'statistika';
+import { moranI, distanceBandWeights } from '@diogoribeiro7/statistika';
 
 // Property values at 9 grid locations
 const values = [
@@ -95,7 +95,7 @@ console.log(result.pValue.toFixed(4));
 Geary's C is an alternative to Moran's I that focuses on pairwise differences rather than deviations from the mean. It is more sensitive to local spatial autocorrelation.
 
 ```typescript
-import { gearyC } from 'statistika';
+import { gearyC } from '@diogoribeiro7/statistika';
 
 const result = gearyC(values, W);
 
@@ -114,7 +114,7 @@ console.log(result.pValue.toFixed(4));
 The variogram describes how spatial dependence changes with distance. The semivariance increases with distance until reaching a "sill," beyond which points are no longer correlated.
 
 ```typescript
-import { empiricalVariogram } from 'statistika';
+import { empiricalVariogram } from '@diogoribeiro7/statistika';
 
 // Soil contamination measurements at scattered locations
 const points = [
@@ -148,7 +148,7 @@ Fit a parametric model to the empirical variogram using weighted least squares. 
 - **Range**: distance at which spatial correlation effectively reaches zero
 
 ```typescript
-import { fitVariogramModel } from 'statistika';
+import { fitVariogramModel } from '@diogoribeiro7/statistika';
 
 const model = fitVariogramModel(bins, 'spherical');
 // Also available: 'exponential', 'gaussian', 'linear'
@@ -177,7 +177,7 @@ console.log(model.evaluate(10));   // near nugget + sill (beyond range)
 Kriging uses the fitted variogram to interpolate values at unobserved locations. It provides both a prediction and an estimate of uncertainty (kriging variance).
 
 ```typescript
-import { ordinaryKriging, empiricalVariogram, fitVariogramModel } from 'statistika';
+import { ordinaryKriging, empiricalVariogram, fitVariogramModel } from '@diogoribeiro7/statistika';
 
 // Fit the variogram
 const bins = empiricalVariogram(points, contamination, 10);
@@ -216,7 +216,7 @@ import {
   empiricalVariogram,
   fitVariogramModel,
   ordinaryKriging,
-} from 'statistika';
+} from '@diogoribeiro7/statistika';
 
 // Rainfall measurements at 12 weather stations
 const stations = [

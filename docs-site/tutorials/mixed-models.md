@@ -16,7 +16,7 @@ Use a mixed model when:
 The simplest mixed model allows each group to have its own intercept while sharing fixed-effect slopes across groups.
 
 ```typescript
-import { lmmRandomIntercept } from 'statistika';
+import { lmmRandomIntercept } from '@diogoribeiro7/statistika';
 
 // Student test scores nested within schools
 // y = scores, X = study hours, groups = school ID
@@ -82,7 +82,7 @@ console.log(`School A student with 4 hours: ${schoolAPred.toFixed(1)}`);
 When the effect of a covariate varies by group, add a random slope. For example, the benefit of study hours may differ across schools:
 
 ```typescript
-import { lmmRandomSlope } from 'statistika';
+import { lmmRandomSlope } from '@diogoribeiro7/statistika';
 
 const result = lmmRandomSlope(scores, studyHours, schools);
 
@@ -120,7 +120,7 @@ for (const [school, blup] of result.blups) {
 The ICC measures what proportion of total variance is attributable to between-group differences. A high ICC means groups differ substantially.
 
 ```typescript
-import { icc } from 'statistika';
+import { icc } from '@diogoribeiro7/statistika';
 
 const result = icc(scores, schools);
 
@@ -141,7 +141,7 @@ An ICC near 0 suggests grouping has little effect, and a standard regression may
 Compare a simpler model (e.g., random intercept only) to a more complex one (random intercept + slope) using a likelihood ratio test:
 
 ```typescript
-import { lmmRandomIntercept, lmmRandomSlope, lrtTest } from 'statistika';
+import { lmmRandomIntercept, lmmRandomSlope, lrtTest } from '@diogoribeiro7/statistika';
 
 const simple = lmmRandomIntercept(scores, studyHours, schools);
 const full = lmmRandomSlope(scores, studyHours, schools);
@@ -169,7 +169,7 @@ console.log(`Random slope     — AIC: ${full.aic.toFixed(1)}, BIC: ${full.bic.t
 ## Complete Example: Classroom Data
 
 ```typescript
-import { lmmRandomIntercept, icc } from 'statistika';
+import { lmmRandomIntercept, icc } from '@diogoribeiro7/statistika';
 
 // Reading scores for 20 students across 5 classrooms
 const readingScores = [

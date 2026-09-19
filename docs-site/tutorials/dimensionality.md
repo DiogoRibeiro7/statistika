@@ -7,7 +7,7 @@ statistika provides a full suite of dimensionality reduction techniques (PCA, t-
 PCA projects high-dimensional data onto orthogonal axes of maximum variance. Use it to visualize data, reduce feature sets, or remove noise.
 
 ```typescript
-import { pca } from 'statistika';
+import { pca } from '@diogoribeiro7/statistika';
 
 // Iris-like data: 4 features per observation
 const data = [
@@ -48,7 +48,7 @@ console.log(result.eigenvalues);
 t-SNE is a nonlinear technique best suited for visualizing high-dimensional data in 2D. It preserves local neighborhood structure but does not preserve global distances.
 
 ```typescript
-import { tsne } from 'statistika';
+import { tsne } from '@diogoribeiro7/statistika';
 
 const highDimData = [
   [1, 2, 3, 4, 5],
@@ -81,7 +81,7 @@ console.log(result.iterations);
 UMAP produces embeddings similar to t-SNE but often runs faster and better preserves global structure.
 
 ```typescript
-import { umap } from 'statistika';
+import { umap } from '@diogoribeiro7/statistika';
 
 const result = umap(highDimData, {
   nNeighbors: 3,
@@ -102,7 +102,7 @@ console.log(result.nEpochs);
 k-Means partitions data into k groups by minimizing within-cluster sum of squares. It uses k-means++ initialization and multiple restarts for robustness.
 
 ```typescript
-import { kMeans } from 'statistika';
+import { kMeans } from '@diogoribeiro7/statistika';
 
 const data = [
   [1, 2], [1.5, 1.8], [1.2, 2.1],
@@ -127,7 +127,7 @@ console.log(result.totalWCSS);
 Agglomerative clustering builds a tree of merges. You choose a linkage criterion and the desired number of clusters.
 
 ```typescript
-import { hierarchicalClustering } from 'statistika';
+import { hierarchicalClustering } from '@diogoribeiro7/statistika';
 
 const result = hierarchicalClustering(data, 3, {
   linkage: 'complete', // also: 'single', 'average'
@@ -145,7 +145,7 @@ console.log(result.merges);
 DBSCAN discovers clusters of arbitrary shape based on point density. It automatically determines the number of clusters and labels sparse points as noise.
 
 ```typescript
-import { dbscan } from 'statistika';
+import { dbscan } from '@diogoribeiro7/statistika';
 
 const data = [
   [0, 0], [0.1, 0], [0, 0.1],
@@ -169,7 +169,7 @@ console.log(result.corePoints);
 GMMs fit a probabilistic model of k Gaussian components using the EM algorithm. Each observation gets soft (probabilistic) assignments.
 
 ```typescript
-import { gaussianMixture } from 'statistika';
+import { gaussianMixture } from '@diogoribeiro7/statistika';
 
 // Bimodal 1D data
 const data = [1.0, 1.2, 0.9, 1.1, 5.0, 5.2, 4.8, 5.1];
@@ -188,7 +188,7 @@ console.log(result.bic);        // use BIC to choose k
 Use BIC to compare models with different numbers of components:
 
 ```typescript
-import { selectComponents } from 'statistika';
+import { selectComponents } from '@diogoribeiro7/statistika';
 
 const best = selectComponents(data, 1, 5, { seed: 42 });
 // Fits GMMs with k = 1..5 and returns the one with the lowest BIC
@@ -201,7 +201,7 @@ const best = selectComponents(data, 1, 5, { seed: 42 });
 The silhouette score measures how similar each point is to its own cluster compared to other clusters. Values range from -1 to +1; higher is better.
 
 ```typescript
-import { silhouetteScore, kMeans } from 'statistika';
+import { silhouetteScore, kMeans } from '@diogoribeiro7/statistika';
 
 const clusters = kMeans(data, 3, { seed: 42 });
 const score = silhouetteScore(data, clusters.assignments);
@@ -215,7 +215,7 @@ console.log(score);
 Lower values indicate better clustering. Unlike silhouette, it does not require pairwise distance computation for every point.
 
 ```typescript
-import { daviesBouldinIndex } from 'statistika';
+import { daviesBouldinIndex } from '@diogoribeiro7/statistika';
 
 const dbi = daviesBouldinIndex(data, clusters.assignments);
 console.log(dbi);
@@ -227,7 +227,7 @@ console.log(dbi);
 Compare two clustering solutions (e.g., predicted vs. true labels):
 
 ```typescript
-import { adjustedRandIndex } from 'statistika';
+import { adjustedRandIndex } from '@diogoribeiro7/statistika';
 
 const trueLabels = [0, 0, 0, 1, 1, 1, 2, 2, 2];
 const predLabels = clusters.assignments;
@@ -242,7 +242,7 @@ console.log(ari);
 A typical workflow: reduce dimensionality with PCA, cluster in the reduced space, and validate the result.
 
 ```typescript
-import { pca, kMeans, silhouetteScore, tsne } from 'statistika';
+import { pca, kMeans, silhouetteScore, tsne } from '@diogoribeiro7/statistika';
 
 // 1. Reduce to 3 principal components
 const pcaResult = pca(rawData, { nComponents: 3 });

@@ -10,7 +10,7 @@ Each distribution is a class you instantiate with its parameters:
 import {
   Normal, Exponential, BetaDistribution, GammaDistribution,
   Poisson, Binomial, Uniform,
-} from 'statistika';
+} from '@diogoribeiro7/statistika';
 
 const normal = new Normal(0, 1);          // mean=0, sd=1
 const expo = new Exponential(0.5);        // rate=0.5
@@ -114,7 +114,7 @@ console.log(empiricalMean);   // ~2.0 (empirical, varies by run)
 You can compare distributions by overlaying their CDFs or computing statistical tests:
 
 ```typescript
-import { Normal, StudentT } from 'statistika';
+import { Normal, StudentT } from '@diogoribeiro7/statistika';
 
 const normal = new Normal(0, 1);
 const t10 = new StudentT(10);
@@ -136,7 +136,7 @@ for (const x of points) {
 The Beta distribution is useful for modeling proportions and probabilities, such as conversion rates:
 
 ```typescript
-import { BetaDistribution } from 'statistika';
+import { BetaDistribution } from '@diogoribeiro7/statistika';
 
 // Prior belief: conversion rate is around 10% (Beta(2, 18))
 const prior = new BetaDistribution(2, 18);
@@ -157,7 +157,7 @@ console.log(posterior.quantile(0.975)); // tighter upper bound
 statistika includes GEV, Gumbel, Frechet, and GPD for modeling rare events:
 
 ```typescript
-import { GEV, Gumbel, GPD } from 'statistika';
+import { GEV, Gumbel, GPD } from '@diogoribeiro7/statistika';
 
 // Gumbel distribution for annual maximum temperatures
 const gumbel = new Gumbel(35, 3); // location=35, scale=3
@@ -181,7 +181,7 @@ Given a dataset, you can fit a distribution via maximum likelihood estimation (M
 import {
   fitNormal, fitExponential, fitGamma, fitLogNormal, fitWeibull,
   andersonDarling, cramerVonMises,
-} from 'statistika';
+} from '@diogoribeiro7/statistika';
 
 // Observed data: response times in milliseconds
 const data = [
@@ -226,7 +226,7 @@ console.log('W² statistic:', cvm.statistic);
 For count data, use the discrete fitting functions:
 
 ```typescript
-import { fitPoisson, fitGeometric } from 'statistika';
+import { fitPoisson, fitGeometric } from '@diogoribeiro7/statistika';
 
 const counts = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 0, 2, 4, 3];
 

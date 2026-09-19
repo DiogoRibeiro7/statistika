@@ -36,7 +36,7 @@ A comprehensive statistical modeling and probability distribution library for No
 ## Installation
 
 ```bash
-yarn add statistika
+yarn add @diogoribeiro7/statistika
 ```
 
 ### Optional: Native Fortran acceleration
@@ -60,7 +60,7 @@ yarn build:ts
 ## Quick start
 
 ```typescript
-import { Normal, mean, stdDev, oneSampleTTest } from "statistika";
+import { Normal, mean, stdDev, oneSampleTTest } from "@diogoribeiro7/statistika";
 
 // Create a normal distribution
 const dist = new Normal(0, 1);
@@ -139,7 +139,7 @@ import {
   mannWhitneyU,
   wilcoxonSignedRank,
   fisherExactTest,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 ```
 
 ### t-tests
@@ -205,7 +205,7 @@ fisherExactTest([[a, b], [c, d]], alpha?);
 ## Descriptive statistics
 
 ```typescript
-import { mean, median, variance, stdDev, describe } from "statistika";
+import { mean, median, variance, stdDev, describe } from "@diogoribeiro7/statistika";
 
 const data = [4, 8, 15, 16, 23, 42];
 
@@ -223,7 +223,7 @@ describe(data);
 ### Simple linear regression
 
 ```typescript
-import { linearRegression } from "statistika";
+import { linearRegression } from "@diogoribeiro7/statistika";
 
 const x = [1, 2, 3, 4, 5];
 const y = [2.1, 3.9, 6.2, 7.8, 10.1];
@@ -238,7 +238,7 @@ console.log(fit.predict(6)); // predict y for x = 6
 ### Multiple linear regression
 
 ```typescript
-import { multipleRegression } from "statistika";
+import { multipleRegression } from "@diogoribeiro7/statistika";
 
 const X = [
   [1, 5], [2, 3], [3, 1], [4, 6], [5, 2],
@@ -255,7 +255,7 @@ console.log(fit.predict([3, 4])); // predict for new observation
 ### Polynomial regression
 
 ```typescript
-import { polynomialRegression } from "statistika";
+import { polynomialRegression } from "@diogoribeiro7/statistika";
 
 const x = [-2, -1, 0, 1, 2, 3];
 const y = x.map((xi) => 1 + 2 * xi + 3 * xi ** 2);
@@ -269,7 +269,7 @@ console.log(fit.predict(4));   // 57
 ### Logistic regression
 
 ```typescript
-import { logisticRegression } from "statistika";
+import { logisticRegression } from "@diogoribeiro7/statistika";
 
 const X = [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]];
 const y = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1];
@@ -284,7 +284,7 @@ console.log(fit.predict([8])); // P(y=1) — close to 1
 ### Generalized Linear Models
 
 ```typescript
-import { glm, poisson, gaussian, binomial, gamma } from "statistika";
+import { glm, poisson, gaussian, binomial, gamma } from "@diogoribeiro7/statistika";
 
 // Poisson regression for count data
 const X = [[1], [2], [3], [4], [5]];
@@ -301,7 +301,7 @@ import {
   pearsonCorrelation,
   spearmanCorrelation,
   kendallCorrelation,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 const x = [1, 2, 3, 4, 5];
 const y = [2, 4, 6, 8, 10];
@@ -320,7 +320,7 @@ console.log(tau.coefficient); // 1.0
 ## Confidence intervals
 
 ```typescript
-import { meanCI, proportionCI, linearRegressionCI } from "statistika";
+import { meanCI, proportionCI, linearRegressionCI } from "@diogoribeiro7/statistika";
 
 // CI for population mean
 const ci = meanCI([2.3, 1.8, 3.1, 2.7, 2.5], 0.95);
@@ -338,7 +338,7 @@ console.log(rci.slope); // { lower, upper }
 ## Effect sizes
 
 ```typescript
-import { cohensD, hedgesG, etaSquared, cramersV, oddsRatio } from "statistika";
+import { cohensD, hedgesG, etaSquared, cramersV, oddsRatio } from "@diogoribeiro7/statistika";
 
 // Cohen's d for two groups
 const d = cohensD([1, 2, 3], [4, 5, 6]);
@@ -355,7 +355,7 @@ console.log(or.oddsRatio, or.ci);
 ## Power analysis
 
 ```typescript
-import { tTestSampleSize, tTestPower, anovaSampleSize } from "statistika";
+import { tTestSampleSize, tTestPower, anovaSampleSize } from "@diogoribeiro7/statistika";
 
 // How many subjects for a medium effect at 80% power?
 const n = tTestSampleSize(0.5, 0.8, 0.05, 2);
@@ -369,7 +369,7 @@ console.log(power); // achieved power
 ## Survival analysis
 
 ```typescript
-import { kaplanMeier, nelsonAalen, logRankTest, coxRegression } from "statistika";
+import { kaplanMeier, nelsonAalen, logRankTest, coxRegression } from "@diogoribeiro7/statistika";
 
 const obs = [
   { time: 1, event: true },
@@ -394,7 +394,7 @@ console.log(lr.pValue);
 import {
   autocorrelation, arima, difference,
   autoArima, forecastWithIntervals, seasonalDecompose, adfTest,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 // ACF/PACF
 const acf = autocorrelation(series, 10);
@@ -426,7 +426,7 @@ console.log(adf.statistic, adf.pValue);
 import {
   betaBinomial, normalNormal, gammaPoisson,
   metropolisHastings, bayesFactor,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 // Beta-Binomial conjugate model
 const posterior = betaBinomial(45, 500);
@@ -445,7 +445,7 @@ console.log(mcmc.mean, mcmc.std, mcmc.acceptanceRate);
 ```typescript
 import {
   metropolisHastingsND, gelmanRubin, estimateESS,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 // Multi-dimensional MCMC
 const result = metropolisHastingsND(logDensity, 2, {
@@ -466,7 +466,7 @@ console.log(ess); // effective sample size
 ### Principal Component Analysis
 
 ```typescript
-import { pca } from "statistika";
+import { pca } from "@diogoribeiro7/statistika";
 
 const data = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
 const result = pca(data, { nComponents: 2 });
@@ -478,7 +478,7 @@ console.log(result.projected);          // projected data
 ### Clustering
 
 ```typescript
-import { kMeans, hierarchicalClustering } from "statistika";
+import { kMeans, hierarchicalClustering } from "@diogoribeiro7/statistika";
 
 // K-means with k-means++ initialization
 const km = kMeans(data, 3);
@@ -493,7 +493,7 @@ console.log(hc.labels);
 ### Dimensionality reduction & cluster validation
 
 ```typescript
-import { tsne, silhouetteScore, daviesBouldinIndex, adjustedRandIndex } from "statistika";
+import { tsne, silhouetteScore, daviesBouldinIndex, adjustedRandIndex } from "@diogoribeiro7/statistika";
 
 // t-SNE for 2D visualization
 const embedded = tsne(highDimData, { perplexity: 30 });
@@ -508,7 +508,7 @@ const ari = adjustedRandIndex(labels1, labels2); // agreement between clustering
 ### Gaussian Mixture Models
 
 ```typescript
-import { gaussianMixture, selectComponents } from "statistika";
+import { gaussianMixture, selectComponents } from "@diogoribeiro7/statistika";
 
 const result = gaussianMixture(data, 3);
 console.log(result.means);       // component means
@@ -526,7 +526,7 @@ console.log(best.k); // optimal number of components
 import {
   glm, gaussian, binomial, poisson, gamma,
   identityLink, logLink, logitLink, probitLink,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 // Poisson regression
 const fit = glm(X, y, poisson());
@@ -538,7 +538,7 @@ console.log(fit.aic);
 ## Nonparametric methods
 
 ```typescript
-import { kernelDensity, bootstrapCI, permutationTest } from "statistika";
+import { kernelDensity, bootstrapCI, permutationTest } from "@diogoribeiro7/statistika";
 
 // Kernel density estimation
 const kde = kernelDensity(data);
@@ -556,7 +556,7 @@ console.log(pt.pValue);
 ## Resampling & cross-validation
 
 ```typescript
-import { kFoldCV, loocv, jackknife, stratifiedSample, mse, r2Score } from "statistika";
+import { kFoldCV, loocv, jackknife, stratifiedSample, mse, r2Score } from "@diogoribeiro7/statistika";
 
 // K-fold cross-validation
 const scores = kFoldCV(X, y, fitPredictFn, { k: 5, scorer: mse });
@@ -577,7 +577,7 @@ console.log(jk.estimate, jk.bias, jk.standardError);
 import {
   mad, trimmedMean, winsorizedMean, huberMean,
   detectOutliers, iqr, biweightMidvariance,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 const data = [1, 2, 3, 4, 5, 100]; // contains outlier
 
@@ -591,7 +591,7 @@ detectOutliers(data); // { outliers: [100], indices: [5], bounds }
 ## Multiple testing corrections
 
 ```typescript
-import { bonferroni, holm, benjaminiHochberg } from "statistika";
+import { bonferroni, holm, benjaminiHochberg } from "@diogoribeiro7/statistika";
 
 const pValues = [0.01, 0.04, 0.03, 0.20, 0.005];
 
@@ -612,7 +612,7 @@ console.log(bh.rejected);
 ```typescript
 import {
   entropy, mutualInformation, klDivergence, jsDivergence,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 // Shannon entropy
 entropy([0.5, 0.5]);      // 1.0 (max entropy for binary)
@@ -632,7 +632,7 @@ jsDivergence([0.5, 0.5], [0.9, 0.1]); // symmetric
 import {
   euclidean, manhattan, cosineDistance,
   mahalanobis, distanceMatrix,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 euclidean([1, 0], [0, 1]);     // 1.414...
 manhattan([1, 0], [0, 1]);     // 2
@@ -651,7 +651,7 @@ const dm = distanceMatrix(vectors, euclidean);
 import {
   analyzeMissing, meanImputation, medianImputation,
   linearInterpolation, listwiseDeletion,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 const data = [1, null, 3, undefined, 5, NaN, 7];
 
@@ -668,7 +668,7 @@ linearInterpolation(data);      // interpolate between neighbors
 ## Streaming statistics
 
 ```typescript
-import { OnlineStats, OnlineCovariance, OnlineQuantile } from "statistika";
+import { OnlineStats, OnlineCovariance, OnlineQuantile } from "@diogoribeiro7/statistika";
 
 // Online mean/variance (Welford's algorithm)
 const stats = new OnlineStats();
@@ -692,7 +692,7 @@ console.log(q.quantile);
 ## Smoothing & interpolation
 
 ```typescript
-import { loess, cubicSpline, sma, ema } from "statistika";
+import { loess, cubicSpline, sma, ema } from "@diogoribeiro7/statistika";
 
 // LOESS smoothing
 const smoothed = loess(x, y, 0.3);
@@ -712,7 +712,7 @@ ema(data, 0.3);  // exponential moving average
 ```typescript
 import {
   contingencyTable, mcnemarsTest, cochranMantelHaenszel, gTest,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 // Contingency table with expected counts
 const ct = contingencyTable([[10, 20], [30, 40]]);
@@ -728,7 +728,7 @@ gTest([[10, 20, 30], [15, 25, 35]]);
 ## Regression diagnostics
 
 ```typescript
-import { regressionSummary, residualDiagnostics, vif } from "statistika";
+import { regressionSummary, residualDiagnostics, vif } from "@diogoribeiro7/statistika";
 
 // Full regression summary (similar to R's summary(lm()))
 const summary = regressionSummary(X, y);
@@ -749,7 +749,7 @@ console.log(vifs); // values > 10 indicate multicollinearity
 ## Random number generation
 
 ```typescript
-import { SeededRng, haltonSequence, latinHypercube } from "statistika";
+import { SeededRng, haltonSequence, latinHypercube } from "@diogoribeiro7/statistika";
 
 // Reproducible pseudo-random numbers
 const rng = new SeededRng(42);
@@ -772,7 +772,7 @@ import {
   gamma, gammaLn, factorial, logFactorial,
   binomialCoeff, betaFn, erf, erfc,
   regularizedGammaP, regularizedBeta,
-} from "statistika";
+} from "@diogoribeiro7/statistika";
 
 gamma(5);              // 24
 factorial(10);         // 3628800

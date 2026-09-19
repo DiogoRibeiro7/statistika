@@ -18,7 +18,7 @@ interface SurvivalObservation {
 The Kaplan-Meier estimator is the standard nonparametric method for estimating the survival function.
 
 ```typescript
-import { kaplanMeier } from 'statistika';
+import { kaplanMeier } from '@diogoribeiro7/statistika';
 
 // Clinical trial: time to relapse (months)
 const treatment = [
@@ -80,7 +80,7 @@ for (const pt of km.curve) {
 The Nelson-Aalen estimator provides an alternative estimate of the cumulative hazard function H(t):
 
 ```typescript
-import { nelsonAalen } from 'statistika';
+import { nelsonAalen } from '@diogoribeiro7/statistika';
 
 const na = nelsonAalen(treatment);
 for (const pt of na.curve) {
@@ -94,7 +94,7 @@ for (const pt of na.curve) {
 The log-rank test compares survival curves between two groups to determine if there is a statistically significant difference:
 
 ```typescript
-import { logRankTest } from 'statistika';
+import { logRankTest } from '@diogoribeiro7/statistika';
 
 const control = [
   { time: 1, event: true },
@@ -124,7 +124,7 @@ Cox regression models the hazard as a function of covariates without specifying 
 h(t | X) = h_0(t) * exp(beta_1 * X_1 + beta_2 * X_2 + ...)
 
 ```typescript
-import { coxRegression, CoxObservation } from 'statistika';
+import { coxRegression, CoxObservation } from '@diogoribeiro7/statistika';
 
 // Model: hazard depends on age and treatment group (0=control, 1=treatment)
 const data: CoxObservation[] = [
@@ -191,7 +191,7 @@ console.log('Relative hazard:', hr45treat / hr70ctrl);
 A typical survival analysis workflow:
 
 ```typescript
-import { kaplanMeier, logRankTest, coxRegression } from 'statistika';
+import { kaplanMeier, logRankTest, coxRegression } from '@diogoribeiro7/statistika';
 
 // Step 1: Kaplan-Meier for each group
 const kmTreatment = kaplanMeier(treatment);

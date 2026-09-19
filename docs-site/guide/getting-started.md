@@ -24,7 +24,7 @@ npm install @diogoribeiro7/statistika
 Import what you need from the top-level package:
 
 ```typescript
-import { Normal, mean, stdDev, oneSampleTTest } from 'statistika';
+import { Normal, mean, stdDev, oneSampleTTest } from '@diogoribeiro7/statistika';
 
 // Create a normal distribution
 const dist = new Normal(0, 1);
@@ -50,54 +50,54 @@ statistika uses sub-path exports so you can import from specific modules. This e
 
 ```typescript
 // Import everything from the top level
-import { Normal, linearRegression } from 'statistika';
+import { Normal, linearRegression } from '@diogoribeiro7/statistika';
 
 // Or import from specific sub-paths
-import { Normal, BetaDistribution } from 'statistika/distributions';
-import { linearRegression, multipleRegression } from 'statistika/models';
-import { oneSampleTTest, chiSquaredIndependence } from 'statistika/tests';
-import { mean, variance, describe } from 'statistika/utils';
+import { Normal, BetaDistribution } from '@diogoribeiro7/statistika/distributions';
+import { linearRegression, multipleRegression } from '@diogoribeiro7/statistika/models';
+import { oneSampleTTest, chiSquaredIndependence } from '@diogoribeiro7/statistika/tests';
+import { mean, variance, describe } from '@diogoribeiro7/statistika/utils';
 
 // Specialized modules
-import { betaBinomial, normalNormal } from 'statistika/bayesian';
-import { metropolisHastings, gelmanRubin } from 'statistika/mcmc';
-import { arima, autoArima, seasonalDecompose } from 'statistika/time-series';
-import { garchFit, egarchFit } from 'statistika/garch';
-import { varFit, grangerCausality } from 'statistika/var';
-import { glm, poisson, binomial } from 'statistika/glm';
-import { kaplanMeier, logRankTest } from 'statistika/survival';
-import { propensityScore, differenceInDifferences, rdd } from 'statistika/causal-inference';
+import { betaBinomial, normalNormal } from '@diogoribeiro7/statistika/bayesian';
+import { metropolisHastings, gelmanRubin } from '@diogoribeiro7/statistika/mcmc';
+import { arima, autoArima, seasonalDecompose } from '@diogoribeiro7/statistika/time-series';
+import { garchFit, egarchFit } from '@diogoribeiro7/statistika/garch';
+import { varFit, grangerCausality } from '@diogoribeiro7/statistika/var';
+import { glm, poisson, binomial } from '@diogoribeiro7/statistika/glm';
+import { kaplanMeier, logRankTest } from '@diogoribeiro7/statistika/survival';
+import { propensityScore, differenceInDifferences, rdd } from '@diogoribeiro7/statistika/causal-inference';
 ```
 
 Available sub-paths:
 
 | Sub-path | Contents |
 |---|---|
-| `statistika/distributions` | All 37 probability distributions |
-| `statistika/models` | Regression models (linear, multiple, polynomial, logistic, robust) |
-| `statistika/tests` | Hypothesis tests (t-test, chi-squared, ANOVA, KS, etc.) |
-| `statistika/utils` | Descriptive statistics, linear algebra, special functions |
-| `statistika/bayesian` | Conjugate models and Bayes factors |
-| `statistika/mcmc` | Metropolis-Hastings, Gelman-Rubin, ESS |
-| `statistika/time-series` | ARIMA, auto-ARIMA, ACF/PACF, seasonal decompose, ADF |
-| `statistika/garch` | ARCH, GARCH, EGARCH, GJR-GARCH |
-| `statistika/var` | VAR models, Granger causality, impulse response |
-| `statistika/glm` | Generalized linear models |
-| `statistika/gam` | Generalized additive models |
-| `statistika/survival` | Kaplan-Meier, Nelson-Aalen, log-rank test |
-| `statistika/causal-inference` | Propensity scores, matching, DiD, RDD, 2SLS |
-| `statistika/resampling` | Cross-validation, bootstrap, jackknife |
-| `statistika/diagnostics` | Regression diagnostics, VIF, residual analysis |
+| `@diogoribeiro7/statistika/distributions` | All 37 probability distributions |
+| `@diogoribeiro7/statistika/models` | Regression models (linear, multiple, polynomial, logistic, robust) |
+| `@diogoribeiro7/statistika/tests` | Hypothesis tests (t-test, chi-squared, ANOVA, KS, etc.) |
+| `@diogoribeiro7/statistika/utils` | Descriptive statistics, linear algebra, special functions |
+| `@diogoribeiro7/statistika/bayesian` | Conjugate models and Bayes factors |
+| `@diogoribeiro7/statistika/mcmc` | Metropolis-Hastings, Gelman-Rubin, ESS |
+| `@diogoribeiro7/statistika/time-series` | ARIMA, auto-ARIMA, ACF/PACF, seasonal decompose, ADF |
+| `@diogoribeiro7/statistika/garch` | ARCH, GARCH, EGARCH, GJR-GARCH |
+| `@diogoribeiro7/statistika/var` | VAR models, Granger causality, impulse response |
+| `@diogoribeiro7/statistika/glm` | Generalized linear models |
+| `@diogoribeiro7/statistika/gam` | Generalized additive models |
+| `@diogoribeiro7/statistika/survival` | Kaplan-Meier, Nelson-Aalen, log-rank test |
+| `@diogoribeiro7/statistika/causal-inference` | Propensity scores, matching, DiD, RDD, 2SLS |
+| `@diogoribeiro7/statistika/resampling` | Cross-validation, bootstrap, jackknife |
+| `@diogoribeiro7/statistika/diagnostics` | Regression diagnostics, VIF, residual analysis |
 
 ## TypeScript Support
 
 statistika is written in TypeScript with strict typing. All public interfaces and result types are exported:
 
 ```typescript
-import type { TestResult, AnovaResult } from 'statistika';
-import type { KaplanMeierResult } from 'statistika/survival';
-import type { GARCHResult } from 'statistika/garch';
-import type { VARResult, GrangerCausalityResult } from 'statistika/var';
+import type { TestResult, AnovaResult } from '@diogoribeiro7/statistika';
+import type { KaplanMeierResult } from '@diogoribeiro7/statistika/survival';
+import type { GARCHResult } from '@diogoribeiro7/statistika/garch';
+import type { VARResult, GrangerCausalityResult } from '@diogoribeiro7/statistika/var';
 ```
 
 ## What's Next?

@@ -5,7 +5,7 @@ Here are six examples covering the major features of statistika.
 ## 1. Descriptive Statistics
 
 ```typescript
-import { mean, median, variance, stdDev, describe } from 'statistika';
+import { mean, median, variance, stdDev, describe } from '@diogoribeiro7/statistika';
 
 const data = [4, 8, 15, 16, 23, 42];
 
@@ -22,7 +22,7 @@ const summary = describe(data);
 ## 2. Probability Distributions
 
 ```typescript
-import { Normal, Poisson, BetaDistribution } from 'statistika';
+import { Normal, Poisson, BetaDistribution } from '@diogoribeiro7/statistika';
 
 // Normal distribution — IQ scores
 const iq = new Normal(100, 15);
@@ -47,7 +47,7 @@ console.log(beta.cdf(0.5));     // P(rate < 0.5) = 0.9844
 ```typescript
 import {
   oneSampleTTest, welchTTest, chiSquaredIndependence, oneWayAnova,
-} from 'statistika';
+} from '@diogoribeiro7/statistika';
 
 // One-sample t-test: is the mean different from 50?
 const sample = [48, 52, 51, 49, 53, 50, 47, 54];
@@ -77,7 +77,7 @@ console.log(anova.fStatistic, anova.pValue);
 ## 4. Regression Models
 
 ```typescript
-import { linearRegression, logisticRegression, glm, poisson } from 'statistika';
+import { linearRegression, logisticRegression, glm, poisson } from '@diogoribeiro7/statistika';
 
 // Simple linear regression
 const x = [1, 2, 3, 4, 5];
@@ -107,7 +107,7 @@ console.log(pfit.aic);
 ## 5. Time Series Forecasting
 
 ```typescript
-import { autocorrelation, arima, autoArima, forecastWithIntervals } from 'statistika';
+import { autocorrelation, arima, autoArima, forecastWithIntervals } from '@diogoribeiro7/statistika';
 
 const sales = [
   120, 135, 150, 145, 160, 175, 170, 185, 200, 195, 210, 225,
@@ -138,7 +138,7 @@ console.log(fc.upper); // upper 95% bounds
 ## 6. Bayesian Inference
 
 ```typescript
-import { betaBinomial, normalNormal, metropolisHastings } from 'statistika';
+import { betaBinomial, normalNormal, metropolisHastings } from '@diogoribeiro7/statistika';
 
 // A/B testing with Beta-Binomial conjugate model
 const variantA = betaBinomial(45, 500);
