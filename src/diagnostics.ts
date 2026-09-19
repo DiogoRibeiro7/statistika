@@ -1,6 +1,6 @@
 import { Dataset } from "./types";
 import { mean, variance } from "./utils/descriptive";
-import { solveLinearSystem, invertMatrix, normalCdf, transpose, matMul } from "./utils/linalg";
+import { solveLinearSystem, invertMatrix, normalCdf } from "./utils/linalg";
 import { regularizedGammaP, regularizedBeta } from "./utils/math";
 
 /**
