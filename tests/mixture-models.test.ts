@@ -26,6 +26,16 @@ describe("Mixture Models", () => {
       expect(sortedMeans[1]).toBeGreaterThan(5);
     });
 
+    it("uses the seed for reproducible k-means++ initialization", () => {
+      const probe = [-10, -8, -7, -2, -1, 0, 1, 4, 7, 9, 15, 20];
+      const a = gaussianMixture(probe, 3, { seed: 123, maxIterations: 0 });
+      const b = gaussianMixture(probe, 3, { seed: 123, maxIterations: 0 });
+      const c = gaussianMixture(probe, 3, { seed: 124, maxIterations: 0 });
+
+      expect(a.means).toEqual(b.means);
+      expect(a.means).not.toEqual(c.means);
+    });
+
     it("produces valid responsibilities", () => {
       const result = gaussianMixture(data, 2, { seed: 42 });
       for (const row of result.responsibilities) {

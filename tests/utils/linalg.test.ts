@@ -329,6 +329,25 @@ describe("createRng", () => {
     const vals2 = Array.from({ length: 10 }, () => rng2());
     expect(vals1).not.toEqual(vals2);
   });
+
+  it("has approximately uniform first two moments", () => {
+    const rng = createRng(42);
+    const n = 20000;
+    let sum = 0;
+    let sumSquares = 0;
+
+    for (let i = 0; i < n; i++) {
+      const value = rng();
+      sum += value;
+      sumSquares += value * value;
+    }
+
+    const mean = sum / n;
+    const variance = sumSquares / n - mean * mean;
+
+    expect(mean).toBeCloseTo(0.5, 1);
+    expect(variance).toBeCloseTo(1 / 12, 2);
+  });
 });
 
 // ── randomSample ────────────────────────────────────────────────────────
