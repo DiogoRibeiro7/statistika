@@ -11,6 +11,7 @@
 
 import { solveLinearSystem } from "./utils/linalg";
 import { mean } from "./utils/descriptive";
+import { gammaLn } from "./utils/math";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -647,17 +648,4 @@ function regularizedGammaLower(a: number, x: number): number {
     if (Math.abs(term) < 1e-14) break;
   }
   return sum * Math.exp(-x + a * Math.log(x) - gammaLn(a));
-}
-
-function gammaLn(x: number): number {
-  const c = [
-    76.18009172947146, -86.50532032941677, 24.01409824083091,
-    -1.231739572450155, 0.001208650973866179, -0.000005395239384953,
-  ];
-  let y = x;
-  let tmp = x + 5.5;
-  tmp -= (x + 0.5) * Math.log(tmp);
-  let ser = 1.000000000190015;
-  for (let j = 0; j < 6; j++) ser += c[j] / ++y;
-  return -tmp + Math.log((2.5066282746310005 * ser) / x);
 }
