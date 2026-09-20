@@ -76,17 +76,37 @@ export function gaussianMixture(
   const tol = options.tol ?? 1e-6;
   const rng = options.seed != null ? createRng(options.seed) : Math.random;
 
-  // Initialize with k-means++ style
-  const sorted = [...data].sort((a, b) => a - b);
+  // Seeded k-means++ initialization.
   const weights = new Array<number>(k).fill(1 / k);
-  const means = new Array<number>(k);
-  const variances = new Array<number>(k);
+  const means: number[] = [data[Math.floor(rng() * n)]];
   const overallVar = variance(data);
+  const variances = new Array<number>(k).fill(overallVar);
 
-  // Spread initial means across the data range
-  for (let j = 0; j < k; j++) {
-    means[j] = sorted[Math.floor(((j + 0.5) / k) * n)];
-    variances[j] = overallVar;
+  while (means.length < k) {
+    const squaredDistances = data.map((x) => {
+      let nearest = Infinity;
+      for (const center of means) {
+        nearest = Math.min(nearest, (x - center) ** 2);
+      }
+      return nearest;
+    });
+
+    const totalDistance = squaredDistances.reduce((sum, d) => sum + d, 0);
+    if (!(totalDistance > 0)) {
+      means.push(data[Math.floor(rng() * n)]);
+      continue;
+    }
+
+    let threshold = rng() * totalDistance;
+    let chosen = data[n - 1];
+    for (let i = 0; i < n; i++) {
+      threshold -= squaredDistances[i];
+      if (threshold <= 0) {
+        chosen = data[i];
+        break;
+      }
+    }
+    means.push(chosen);
   }
 
   const responsibilities = Array.from({ length: n }, () => new Array<number>(k).fill(0));

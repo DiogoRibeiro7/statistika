@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Seeded statistical algorithms using `createRng()` now share the corrected SplitMix32-seeded `xoshiro128**` generator used by `SeededRng`. Deterministic sequences from these algorithms therefore change.
+
+### Fixed
+- `gaussianMixture(..., { seed })` now actually uses the supplied seed through seeded k-means++ initialization.
+- Corrected the legacy `createRng()` generator so resampling, nonparametric, dimensionality-reduction, clustering, and related seeded algorithms no longer inherit its biased uniform output.
+
 ## [2.0.0] - 2026-09-19
 
 ### Added

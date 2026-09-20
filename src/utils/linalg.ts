@@ -8,6 +8,7 @@
 
 import { nativeAddon } from "./native-addon";
 import { getAccelerated, hasWasm } from "../wasm";
+import { SeededRng } from "../random";
 
 // ── Native addon interface ──────────────────────────────────────────────
 
@@ -432,22 +433,15 @@ export function normalQuantile(p: number): number {
 }
 
 /**
- * Seeded pseudo-random number generator (xorshift128+).
+ * Seeded pseudo-random number generator backed by {@link SeededRng}.
+ *
+ * Uses the same SplitMix32-seeded xoshiro128** implementation as the public
+ * random-number API so seeded statistical algorithms share one well-tested
+ * generator.
  */
 export function createRng(seed: number): () => number {
-  let s0 = seed | 0 || 1;
-  let s1 = (seed * 2654435761) | 0 || 2;
-  return () => {
-    let a = s0;
-    const b = s1;
-    s0 = b;
-    a ^= a << 23;
-    a ^= a >> 17;
-    a ^= b;
-    a ^= b >> 26;
-    s1 = a;
-    return ((s0 + s1) >>> 0) / 4294967296;
-  };
+  const generator = new SeededRng(seed);
+  return () => generator.next();
 }
 
 /**
