@@ -19,6 +19,8 @@ export {
   regularizedGammaP,
   regularizedBeta,
   quantileBisect,
+  isNativeAvailable,
+  isWasmAvailable,
 } from "./math";
 export {
   solveLinearSystem,

@@ -57,6 +57,30 @@ On Windows, `yarn build` will now attempt a native Fortran build if `gfortran` i
 yarn build:ts
 ```
 
+### Runtime acceleration
+
+Acceleration is selected per operation. Native Fortran/LAPACK is preferred where a routine has a native implementation, some linear-algebra and special-function paths can use WASM, and every accelerated path has a TypeScript fallback.
+
+You can inspect the active backends at runtime:
+
+```typescript
+import {
+  hasNativeLinalg,
+  hasNativeStats,
+  isNativeAvailable,
+  isWasmAvailable,
+} from "@diogoribeiro7/statistika";
+
+console.log({
+  nativeSpecialFunctions: isNativeAvailable(),
+  nativeLinalg: hasNativeLinalg,
+  nativeStats: hasNativeStats,
+  wasm: isWasmAvailable(),
+});
+```
+
+Backend support is operation-specific rather than package-wide. See the [performance and acceleration guide](docs-site/guide/performance.md) for the dispatch table, WASM initialization, and benchmarking guidance.
+
 ## Quick start
 
 ```typescript
