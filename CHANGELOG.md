@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Seeded statistical algorithms using `createRng()` now share the corrected SplitMix32-seeded `xoshiro128**` generator used by `SeededRng`. Deterministic sequences from these algorithms therefore change.
 
 ### Fixed
+- Mixed-model and SEM chi-squared calculations now use the shared `gammaLn` implementation instead of duplicated local Lanczos approximations.
 - `gaussianMixture(..., { seed })` now actually uses the supplied seed through seeded k-means++ initialization.
 - Corrected the legacy `createRng()` generator so resampling, nonparametric, dimensionality-reduction, clustering, and related seeded algorithms no longer inherit its biased uniform output.
 
