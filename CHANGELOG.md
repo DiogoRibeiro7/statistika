@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Runtime backend inspection exports for special-function native and WASM availability, plus a performance and acceleration guide documenting the actual per-operation fallback paths.
+
 ### Changed
 - Seeded statistical algorithms using `createRng()` now share the corrected SplitMix32-seeded `xoshiro128**` generator used by `SeededRng`. Deterministic sequences from these algorithms therefore change.
 

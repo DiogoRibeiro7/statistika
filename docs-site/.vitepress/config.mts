@@ -16,6 +16,7 @@ export default defineConfig({
         { text: 'Getting Started', link: '/guide/getting-started' },
         { text: 'Installation', link: '/guide/installation' },
         { text: 'Quick Start', link: '/guide/quick-start' },
+        { text: 'Performance & Acceleration', link: '/guide/performance' },
       ],
       '/tutorials/': [
         { text: 'Distributions', link: '/tutorials/distributions' },
