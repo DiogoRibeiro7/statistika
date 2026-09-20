@@ -9,7 +9,7 @@
 
 import { Worker } from "node:worker_threads";
 import { join } from "node:path";
-import { writeFileSync, unlinkSync, mkdirSync, existsSync } from "node:fs";
+import { writeFileSync, unlinkSync, mkdirSync, existsSync, rmdirSync } from "node:fs";
 
 jest.setTimeout(30_000);
 
@@ -444,7 +444,6 @@ describe("worker-thread-runner: Generic task", () => {
       }
     }
     try {
-      const { rmdirSync } = require("fs");
       rmdirSync(tmpDir);
     } catch {
       // ignore

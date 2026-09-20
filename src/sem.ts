@@ -148,7 +148,7 @@ export function pathAnalysis(
     // Build X matrix and y vector (standardised)
     const yRaw = data[endoVar];
     if (!yRaw) continue;
-    const { values: yStd, m: yM, s: yS } = standardize(yRaw);
+    const { values: yStd } = standardize(yRaw);
 
     const xCols: number[][] = [];
     const xStats: { m: number; s: number }[] = [];

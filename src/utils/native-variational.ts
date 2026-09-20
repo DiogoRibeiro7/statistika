@@ -15,16 +15,6 @@ try {
 
 export const hasNativeVariational = native !== null;
 
-function normalizeSeed(seed?: number): number {
-  if (seed === undefined || seed === null) {
-    return Math.floor(Math.random() * 2147483647);
-  }
-  if (!Number.isFinite(seed) || !Number.isInteger(seed)) {
-    throw new Error(`Invalid parameter 'seed': expected an integer, received ${seed}`);
-  }
-  return Math.max(1, Math.min(2147483646, seed));
-}
-
 export function normalLogDensityBatch(
   n: number,
   mu: number,

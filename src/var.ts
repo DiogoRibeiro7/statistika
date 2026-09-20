@@ -241,8 +241,7 @@ export function varFit(data: number[][], p: number): VARResult {
     throw new Error(`Invalid parameter 'data'/'p': expected T > p, received T=${T}, p=${p}`);
   }
 
-  // Build the regressor matrix Z [nobs x (k*p + 1)] with intercept as first column
-  const nRegressors = k * p + 1;
+  // Build the regressor matrix Z with intercept as first column
   const Z: number[][] = [];
   const Y: number[][] = [];
 
@@ -647,9 +646,6 @@ export function varianceDecomposition(result: VARResult, horizon: number): FEVDR
 export function varForecast(result: VARResult, horizon: number): VARForecastResult {
   const { coefficients, intercept, data, p, k } = result;
   const T = data.length;
-
-  // Build a buffer of the last max(p, horizon+p) observations
-  const buffer: number[][] = data.map((row) => [...row]);
 
   const forecast: number[][] = [];
 

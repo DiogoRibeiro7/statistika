@@ -359,7 +359,6 @@ export function degreeCentrality(g: Graph): CentralityResult {
  * ```
  */
 export function closenessCentrality(g: Graph): CentralityResult {
-  const n = g.nodeCount;
   const values = new Map<number, number>();
 
   for (const node of g.nodes) {

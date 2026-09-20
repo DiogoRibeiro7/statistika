@@ -356,11 +356,9 @@ export function ratioEstimator(
 
   let sumWY = 0;
   let sumWX = 0;
-  let sumW = 0;
   for (let i = 0; i < n; i++) {
     sumWY += weights[i] * y[i];
     sumWX += weights[i] * x[i];
-    sumW += weights[i];
   }
 
   if (sumWX === 0) throw new Error(`Invalid parameter 'x'/'weights': expected non-zero weighted sum of x, received ${sumWX}`);
@@ -370,7 +368,6 @@ export function ratioEstimator(
 
   // Linearised variance: Var(R̂) ≈ (1/X̄²) Var(ȳ - R̂ x̄)
   let sumE2 = 0;
-  const meanE = 0; // residuals should be mean-zero by construction
   for (let i = 0; i < n; i++) {
     const e = weights[i] * (y[i] - ratio * x[i]);
     sumE2 += e * e;
