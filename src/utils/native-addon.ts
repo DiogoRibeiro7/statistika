@@ -9,7 +9,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let addon: any = null;
+let addon: any;
 try {
   // Determine the project root from __dirname.
   //   - From source (ts-node/jest): __dirname = <root>/src/utils
@@ -52,4 +52,4 @@ try {
 
 /** The loaded native addon, or null if unavailable. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const nativeAddon: Record<string, (...args: any[]) => any> | null = addon;
+export const nativeAddon: Record<string, (...args: any[]) => any> | null = addon ?? null;

@@ -218,12 +218,11 @@ function tsRegularizedBeta(x: number, a: number, b: number): number {
 
 function betaCf(x: number, a: number, b: number): number {
   const EPS = 1e-14;
-  let f = 1;
   let c = 1;
   let d = 1 - ((a + b) * x) / (a + 1);
   if (Math.abs(d) < EPS) d = EPS;
   d = 1 / d;
-  f = d;
+  let f = d;
 
   for (let m = 1; m <= 200; m++) {
     // Even step: d_{2m} numerator

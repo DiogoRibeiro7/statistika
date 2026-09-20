@@ -257,7 +257,7 @@ export function meanFieldVI(
   let converged = false;
   let iter = 0;
 
-  for (iter = 0; iter < maxIterations; iter++) {
+  for (; iter < maxIterations; iter++) {
     const stds = logStds.map((ls) => Math.exp(ls));
 
     // Compute ELBO for tracking
@@ -397,7 +397,7 @@ export function advi(
   let converged = false;
   let iterations = 0;
 
-  for (iterations = 0; iterations < maxIterations; iterations++) {
+  for (; iterations < maxIterations; iterations++) {
     t++;
     const sigma = omega.map((w) => softplus(w));
 

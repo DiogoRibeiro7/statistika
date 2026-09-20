@@ -26,7 +26,9 @@
 // Minimal WebAssembly type declarations for Node.js environments
 // where the DOM lib is not included in tsconfig.
 declare namespace WebAssembly {
-  interface Module {}
+  interface Module {
+    readonly __statistikaWebAssemblyModuleBrand?: never;
+  }
   interface Instance {
     readonly exports: Record<string, unknown>;
   }
