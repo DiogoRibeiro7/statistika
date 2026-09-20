@@ -216,7 +216,6 @@ export class BayesianNetwork {
    */
   dSeparated(x: string, y: string, z: Set<string>): boolean {
     // BFS-like reachability using Bayes-Ball rules
-    const visited = new Set<string>();
     // Queue items: [node, direction] where direction = "up" (from child) or "down" (from parent)
     const queue: [string, "up" | "down"][] = [[x, "up"]];
     const seen = new Set<string>();

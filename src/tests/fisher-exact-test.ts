@@ -61,13 +61,6 @@ export function fisherExactTest(
   // Probability of a specific table configuration (hypergeometric)
   // P = C(r1, a) * C(r2, c) / C(n, c1)
   // Using log-space for numerical stability
-  const logDenom =
-    logFactorial(n) -
-    logFactorial(r1) -
-    logFactorial(r2) -
-    logFactorial(c1) -
-    logFactorial(c2);
-
   function logTableProb(ai: number): number {
     const bi = r1 - ai;
     const ci = c1 - ai;

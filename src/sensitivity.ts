@@ -280,7 +280,6 @@ export function sobolIndices(
 
   // Compute total variance
   const allOutputs = fA.concat(fB);
-  const grandMean = mean(allOutputs);
   const totalVar = variance(allOutputs);
 
   if (totalVar === 0) {

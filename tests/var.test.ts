@@ -68,7 +68,6 @@ describe("varLagSelect", () => {
 
 describe("grangerCausality", () => {
   it("returns valid test statistics", () => {
-    const fit = varFit(data, 1);
     const result = grangerCausality(data, 1, 0, 1);
     expect(result.fStatistic).toBeGreaterThanOrEqual(0);
     expect(result.pValue).toBeGreaterThanOrEqual(0);

@@ -371,7 +371,7 @@ export function gamFit(
   let outerIter = 0;
 
   // --- Outer loop (IRLS) ----------------------------------------------------
-  for (outerIter = 0; outerIter < maxOuter; outerIter++) {
+  for (; outerIter < maxOuter; outerIter++) {
     // Working weights and working response (Fisher scoring step)
     const w = new Array(n);
     const z = new Array(n);
@@ -547,7 +547,6 @@ export function partialDependence(
   term: SmoothTerm,
   gridSize: number = 100
 ): PartialDependenceResult {
-  const n = X.length;
   const varIdx = term.variables[0];
 
   // Build evaluation grid spanning the range of the predictor
