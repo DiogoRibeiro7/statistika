@@ -662,51 +662,7 @@ export function trimAndFill(
   const originalMeta = fixedEffectsMeta(effects, variances);
   const originalPooled = originalMeta.pooledEffect;
 
-  // Step 2: estimate number of missing studies using the L0 estimator
-  // Sort effects by distance from pooled estimate
-  const indexed = effects.map((e, i) => ({
-    effect: e,
-    variance: variances[i],
-    dist: Math.abs(e - originalPooled),
-    sign: e - originalPooled >= 0 ? 1 : -1,
-  }));
-  indexed.sort((a, b) => a.dist - b.dist);
-
-  // Determine which side has fewer studies (the "missing" side)
-  let nRight = 0;
-  let nLeft = 0;
-  for (let i = 0; i < k; i++) {
-    if (effects[i] >= originalPooled) nRight++;
-    else nLeft++;
-  }
-  const missingOnRight = nLeft > nRight;
-
-  // Rank by distance from pooled, count studies on the asymmetric side
-  // that are further than the furthest study on the opposite side
-  const sorted = indexed.slice();
-  sorted.sort((a, b) => a.dist - b.dist);
-
-  // Assign ranks (1-based) by distance from center
-  const ranks = sorted.map((_, i) => i + 1);
-
-  // Count studies on the side with more studies
-  // For each study on the "fat" side, count how many lack a mirror
-  let sn = 0;
-  for (let i = k - 1; i >= 0; i--) {
-    const s = sorted[i];
-    const onFatSide = missingOnRight ? s.sign < 0 : s.sign > 0;
-    if (onFatSide) {
-      // Check if there's a matching study on the other side
-      const mirrorEffect = 2 * originalPooled - s.effect;
-      const hasMatch = sorted.some(
-        (other) =>
-          other !== s &&
-          Math.abs(other.effect - mirrorEffect) < s.dist * 0.5,
-      );
-      if (!hasMatch) sn++;
-    }
-  }
-
+  // Step 2: estimate the number of missing studies using the iterative L0 estimator.
   // L0 estimator: R0 = max(0, round(Sn))
   // Using iterative approach for robustness
   let nMissing = 0;
